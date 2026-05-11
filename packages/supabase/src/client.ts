@@ -15,6 +15,8 @@ declare const process: {
 };
 
 type AppExtra = {
+  authRedirectUrl?: string;
+  siteUrl?: string;
   supabaseAnonKey?: string;
   supabaseUrl?: string;
 };
@@ -33,6 +35,17 @@ const supabaseAnonKey =
   process.env?.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ??
   extra?.supabaseAnonKey ??
   "";
+
+const siteUrl =
+  process.env?.EXPO_PUBLIC_SITE_URL ??
+  process.env?.NEXT_PUBLIC_SITE_URL ??
+  extra?.siteUrl ??
+  "https://athmira.com";
+
+const authRedirectUrl =
+  process.env?.EXPO_PUBLIC_AUTH_REDIRECT_URL ??
+  extra?.authRedirectUrl ??
+  `${normalizeBaseUrl(siteUrl)}/auth/callback`;
 
 export const isSupabaseConfigured = Boolean(supabaseUrl && supabaseAnonKey);
 
@@ -54,7 +67,7 @@ export const supabase = createClient<Database>(
     auth: {
       ...(Platform.OS !== "web" ? { storage: AsyncStorage } : {}),
       autoRefreshToken: true,
-      detectSessionInUrl: false,
+      detectSessionInUrl: Platform.OS === "web" && typeof window !== "undefined",
       lock: processLock,
       persistSession: true
     },
@@ -76,6 +89,18 @@ export function assertSupabaseConfigured() {
   if (!isSupabaseConfigured) {
     throw new Error("Supabase is not configured. Set EXPO_PUBLIC_SUPABASE_URL and EXPO_PUBLIC_SUPABASE_ANON_KEY.");
   }
+}
+
+export function getAuthRedirectUrl() {
+  if (authRedirectUrl) {
+    return authRedirectUrl;
+  }
+
+  if (typeof window !== "undefined") {
+    return `${window.location.origin.replace(/\/+$/, "")}/auth/callback`;
+  }
+
+  return "https://athmira.com/auth/callback";
 }
 
 function getRealtimeOptions() {
@@ -102,4 +127,18 @@ function getRealtimeTransport(): typeof WebSocket | undefined {
   }
 
   return StaticRenderWebSocket as unknown as typeof WebSocket;
+}
+
+function normalizeBaseUrl(value: string) {
+  const trimmed = value.trim().replace(/\/+$/, "");
+
+  if (!trimmed) {
+    return "https://athmira.com";
+  }
+
+  if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) {
+    return trimmed;
+  }
+
+  return `https://${trimmed}`;
 }

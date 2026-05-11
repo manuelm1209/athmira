@@ -7,6 +7,9 @@ export const en = {
   analysisIntro:
     "Use your camera for preliminary bike-fit and aero posture guidance. Keep the whole rider and bike visible.",
   authEmail: "Email",
+  authCallbackBody: "Confirming your email and preparing your account.",
+  authCallbackError: "We could not verify this email link. Try signing in or request a new confirmation email.",
+  authCallbackTitle: "Verifying email",
   authName: "Name",
   authPassword: "Password",
   beginAnalysis: "Begin analysis",
@@ -102,6 +105,9 @@ export const es: Record<keyof typeof en, string> = {
   analysisIntro:
     "Usa tu camara para recibir guia preliminar de bike fit y postura aero. Manten visible al ciclista y la bici completos.",
   authEmail: "Correo",
+  authCallbackBody: "Confirmando tu correo y preparando tu cuenta.",
+  authCallbackError: "No pudimos verificar este enlace. Intenta iniciar sesion o solicita un nuevo correo de confirmacion.",
+  authCallbackTitle: "Verificando correo",
   authName: "Nombre",
   authPassword: "Contrasena",
   beginAnalysis: "Iniciar analisis",

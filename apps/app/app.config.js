@@ -28,12 +28,28 @@ const supabaseAnonKey =
   process.env.SUPABASE_PUBLISHABLE_KEY ||
   "";
 
+const siteUrl = normalizeBaseUrl(
+  process.env.EXPO_PUBLIC_SITE_URL ||
+    process.env.NEXT_PUBLIC_SITE_URL ||
+    process.env.NEXT_PUBLIC_VERCEL_URL ||
+    process.env.VERCEL_PROJECT_PRODUCTION_URL ||
+    process.env.VERCEL_URL ||
+    "https://athmira.com"
+);
+
+const authRedirectUrl =
+  process.env.EXPO_PUBLIC_AUTH_REDIRECT_URL ||
+  process.env.NEXT_PUBLIC_AUTH_REDIRECT_URL ||
+  `${siteUrl}/auth/callback`;
+
 module.exports = ({ config }) => ({
   ...config,
   ...appJson.expo,
   extra: {
     ...config.extra,
     ...appJson.expo.extra,
+    authRedirectUrl,
+    siteUrl,
     supabaseUrl,
     supabaseAnonKey
   }
@@ -76,4 +92,18 @@ function unquote(value) {
   }
 
   return value;
+}
+
+function normalizeBaseUrl(value) {
+  const trimmed = value.trim().replace(/\/+$/, "");
+
+  if (!trimmed) {
+    return "https://athmira.com";
+  }
+
+  if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) {
+    return trimmed;
+  }
+
+  return `https://${trimmed}`;
 }

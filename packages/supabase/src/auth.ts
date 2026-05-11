@@ -1,6 +1,6 @@
 import type { LanguageCode, UserProfile } from "@athmira/types";
 
-import { assertSupabaseConfigured, supabase } from "./client";
+import { assertSupabaseConfigured, getAuthRedirectUrl, supabase } from "./client";
 
 export async function signInWithEmail(email: string, password: string) {
   assertSupabaseConfigured();
@@ -40,7 +40,8 @@ export async function signUpWithEmail(input: {
       data: {
         name: input.name?.trim() || null,
         preferred_language: input.preferredLanguage ?? "en"
-      }
+      },
+      emailRedirectTo: getAuthRedirectUrl()
     }
   });
 
@@ -48,7 +49,7 @@ export async function signUpWithEmail(input: {
     throw error;
   }
 
-  if (data.user) {
+  if (data.session && data.user) {
     await ensureProfile({
       id: data.user.id,
       email,

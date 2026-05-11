@@ -50,6 +50,7 @@ cp .env.example .env
 ```bash
 EXPO_PUBLIC_SUPABASE_URL=
 EXPO_PUBLIC_SUPABASE_ANON_KEY=
+EXPO_PUBLIC_SITE_URL=https://athmira.com
 ```
 
 In this monorepo, Expo runs from `apps/app`. The app config also reads `.env.local` from the repository root and accepts these public aliases:
@@ -62,6 +63,14 @@ In this monorepo, Expo runs from `apps/app`. The app config also reads `.env.loc
 - `SUPABASE_PUBLISHABLE_KEY`
 
 Do not expose `SUPABASE_SERVICE_ROLE_KEY` or other secret keys to the client app.
+
+For Supabase email confirmation links, the app sends users to `/auth/callback`. Configure Supabase Auth URL settings:
+
+- Site URL: `https://athmira.com`
+- Redirect URL: `https://athmira.com/auth/callback`
+- Optional local Redirect URL: `http://localhost:8082/auth/callback`
+
+For local-only email verification, set `EXPO_PUBLIC_AUTH_REDIRECT_URL=http://localhost:8082/auth/callback`.
 
 4. Start the web app:
 
@@ -99,6 +108,7 @@ Set these Vercel environment variables:
 ```bash
 EXPO_PUBLIC_SUPABASE_URL=
 EXPO_PUBLIC_SUPABASE_ANON_KEY=
+EXPO_PUBLIC_SITE_URL=https://athmira.com
 ```
 
 The web build is produced by Expo static export. The main product app does not use Next.js.
