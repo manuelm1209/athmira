@@ -1,0 +1,31 @@
+{
+  "name": "athmira",
+  "version": "0.1.0",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "npm run dev -w @athmira/app",
+    "web": "npm run web -w @athmira/app",
+    "build": "npm run build -w @athmira/app",
+    "lint": "npm run lint -w @athmira/app",
+    "typecheck": "tsc --noEmit -p tsconfig.json"
+  },
+  "devDependencies": {
+    "@react-native-async-storage/async-storage": "2.2.0",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "react": "19.2.0",
+    "react-native": "0.83.6",
+    "typescript": "^5.9.3"
+  },
+  "overrides": {
+    "@react-native-async-storage/async-storage": "2.2.0",
+    "react-native": "0.83.6"
+  },
+  "engines": {
+    "node": ">=20.19.0"
+  }
+}
