@@ -2,9 +2,11 @@ import { calculateAeroScore } from "@athmira/aero-engine";
 import { createCoachSummary } from "@athmira/ai-engine";
 import { calculateFitScore, generateFitRecommendations } from "@athmira/fit-engine";
 import { analyzePoseFrame } from "@athmira/pose-engine";
+import { getFitAnalysisResults } from "@athmira/supabase";
+import type { FitMeasurement, Recommendation } from "@athmira/types";
 import { Body, Card, Heading, Inline, Screen, colors, spacing } from "@athmira/ui";
 import { useLocalSearchParams } from "expo-router";
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
 
 import { LinkButton } from "@/components/LinkButton";
@@ -15,27 +17,83 @@ export function ResultsScreen() {
   const { sessionId } = useLocalSearchParams<{ sessionId?: string }>();
   const { profile } = useAuth();
   const { language, t } = useLanguage();
+  const [savedResult, setSavedResult] = useState<Awaited<ReturnType<typeof getFitAnalysisResults>> | null>(null);
+  const [loading, setLoading] = useState(Boolean(sessionId));
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadResults() {
+      if (!sessionId) {
+        setLoading(false);
+        return;
+      }
+
+      setLoading(true);
+      setError(null);
+
+      try {
+        const nextResult = await getFitAnalysisResults(sessionId);
+
+        if (!cancelled) {
+          setSavedResult(nextResult);
+        }
+      } catch (loadError) {
+        if (!cancelled) {
+          setError(loadError instanceof Error ? loadError.message : t("notFound"));
+        }
+      } finally {
+        if (!cancelled) {
+          setLoading(false);
+        }
+      }
+    }
+
+    loadResults();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [sessionId, t]);
 
   const result = useMemo(() => {
+    const savedMeasurement = savedResult?.measurement;
+    const savedAeroScore = savedResult?.aeroScore;
     const pose = analyzePoseFrame({ width: 1280, height: 720 });
-    const fitScore = calculateFitScore(pose.angles);
-    const aeroScore = calculateAeroScore(pose, pose.angles);
-    const recommendations = generateFitRecommendations(pose.angles, null, profile, language);
+    const angles = savedMeasurement ? anglesFromMeasurement(savedMeasurement) : pose.angles;
+    const fitScore = calculateFitScore(savedMeasurement ?? angles);
+    const aeroScore = savedAeroScore
+      ? {
+          estimatedFrontalArea: savedAeroScore.estimated_frontal_area ?? 0,
+          torsoPositionScore: savedAeroScore.torso_position_score ?? 0,
+          headPositionScore: savedAeroScore.head_position_score ?? 0,
+          armCompactnessScore: savedAeroScore.arm_compactness_score ?? 0,
+          stabilityScore: savedAeroScore.stability_score ?? 0,
+          finalAeroScore: savedAeroScore.final_aero_score ?? 0
+        }
+      : calculateAeroScore(pose, angles);
+    const recommendations = savedResult?.recommendations.length
+      ? savedResult.recommendations.map(toFitRecommendation)
+      : generateFitRecommendations(angles, null, profile, language);
     const coachSummary = createCoachSummary({ recommendations, language });
 
     return {
       aeroScore,
+      angles,
       coachSummary,
       fitScore,
+      measurement: savedMeasurement,
       pose,
       recommendations
     };
-  }, [language, profile]);
+  }, [language, profile, savedResult]);
 
   const metrics = [
-    { label: t("kneeAngle"), value: `${result.pose.angles.kneeAngle ?? 0} deg` },
-    { label: t("hipAngle"), value: `${result.pose.angles.hipAngle ?? 0} deg` },
-    { label: t("elbowAngle"), value: `${result.pose.angles.elbowAngle ?? 0} deg` },
+    { label: t("kneeAngle"), value: formatKneeMetric(result.measurement) },
+    { label: t("hipAngle"), value: formatAngle(result.angles.hipAngle) },
+    { label: t("torsoAngle"), value: formatAngle(result.angles.torsoAngle) },
+    { label: t("elbowAngle"), value: formatAngle(result.angles.elbowAngle) },
     { label: t("aeroScore"), value: String(result.aeroScore.finalAeroScore) },
     { label: t("comfortScore"), value: String(result.fitScore.comfortScore) },
     { label: t("confidenceScore"), value: `${result.fitScore.confidenceScore}%` }
@@ -48,6 +106,8 @@ export function ResultsScreen() {
           <Heading>{t("fitResults")}</Heading>
           <Body>{t("resultsDisclaimer")}</Body>
           {sessionId ? <Text style={styles.sessionId}>Session {sessionId}</Text> : null}
+          {loading ? <Text style={styles.sessionId}>Loading saved analysis...</Text> : null}
+          {error ? <Text style={styles.error}>{error}</Text> : null}
         </View>
         <View style={styles.metricsGrid}>
           {metrics.map((metric) => (
@@ -85,6 +145,38 @@ export function ResultsScreen() {
   );
 }
 
+function anglesFromMeasurement(measurement: FitMeasurement) {
+  return {
+    elbowAngle: measurement.elbow_angle_avg ?? undefined,
+    hipAngle: measurement.hip_angle_avg ?? undefined,
+    kneeAngle: measurement.knee_angle_max ?? measurement.knee_angle_min ?? undefined,
+    shoulderAngle: measurement.shoulder_angle_avg ?? undefined,
+    torsoAngle: measurement.torso_angle_avg ?? undefined
+  };
+}
+
+function toFitRecommendation(recommendation: Recommendation) {
+  return {
+    adjustmentMm: recommendation.adjustment_mm ?? undefined,
+    category: recommendation.category,
+    confidenceScore: recommendation.confidence_score ?? 0,
+    message: recommendation.message,
+    priority: recommendation.priority
+  };
+}
+
+function formatAngle(value?: number) {
+  return typeof value === "number" ? `${Math.round(value)} deg` : "--";
+}
+
+function formatKneeMetric(measurement?: FitMeasurement | null) {
+  if (measurement?.knee_angle_min && measurement.knee_angle_max) {
+    return `${Math.round(measurement.knee_angle_min)}-${Math.round(measurement.knee_angle_max)} deg`;
+  }
+
+  return formatAngle(measurement?.knee_angle_max ?? measurement?.knee_angle_min ?? undefined);
+}
+
 const styles = StyleSheet.create({
   stack: {
     gap: spacing.xl
@@ -95,6 +187,11 @@ const styles = StyleSheet.create({
   sessionId: {
     color: colors.inkMuted,
     fontSize: 12
+  },
+  error: {
+    color: colors.danger,
+    fontSize: 13,
+    fontWeight: "800"
   },
   metricsGrid: {
     flexDirection: "row",

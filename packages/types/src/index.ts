@@ -157,6 +157,7 @@ export type PoseFrameResult = {
   keypoints: PoseKeypoint[];
   angles: JointAngles;
   confidenceScore: number;
+  frame?: PoseFrame;
 };
 
 export type FitScore = {

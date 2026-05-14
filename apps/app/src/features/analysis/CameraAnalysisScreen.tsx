@@ -1,5 +1,5 @@
-import { createFitSession } from "@athmira/supabase";
-import type { DeviceType } from "@athmira/types";
+import { createAeroScore, createFitMeasurement, createFitSession, createRecommendations } from "@athmira/supabase";
+import type { DeviceType, PoseFrameResult } from "@athmira/types";
 import { Body, Button, Card, Heading, Inline, Screen, colors, spacing } from "@athmira/ui";
 import { CameraView, useCameraPermissions } from "expo-camera";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -9,6 +9,9 @@ import { Platform, StyleSheet, Text, View } from "react-native";
 import { useAuth } from "@/providers/AuthProvider";
 import { useLanguage } from "@/providers/LanguageProvider";
 import { getErrorMessage } from "@/utils/form";
+
+import { createBikeFitAnalysisSummary } from "./analysisSummary";
+import { WebBikeFitCamera, type WebBikeFitCameraHandle } from "./WebBikeFitCamera";
 
 function getDeviceType(): DeviceType {
   if (Platform.OS === "ios" || Platform.OS === "android") {
@@ -20,11 +23,13 @@ function getDeviceType(): DeviceType {
 
 export function CameraAnalysisScreen() {
   const cameraRef = useRef<ElementRef<typeof CameraView> | null>(null);
+  const webCameraRef = useRef<WebBikeFitCameraHandle | null>(null);
   const router = useRouter();
   const { bikeId } = useLocalSearchParams<{ bikeId?: string }>();
-  const { user } = useAuth();
-  const { t } = useLanguage();
+  const { profile, user } = useAuth();
+  const { language, t } = useLanguage();
   const [permission, requestPermission] = useCameraPermissions();
+  const [liveResult, setLiveResult] = useState<PoseFrameResult | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [working, setWorking] = useState(false);
@@ -39,6 +44,54 @@ export function CameraAnalysisScreen() {
     setWorking(true);
 
     try {
+      if (Platform.OS === "web") {
+        const samples = await webCameraRef.current?.startAnalysis();
+
+        if (!samples?.length) {
+          throw new Error(t("poseNotReady"));
+        }
+
+        const summary = createBikeFitAnalysisSummary({
+          durationMs: 8000,
+          language,
+          profile,
+          samples
+        });
+
+        const session = await createFitSession({
+          userId: user.id,
+          bikeId: bikeId || null,
+          cameraAngle: "side",
+          deviceType: getDeviceType(),
+          sessionType: "bike_fit",
+          status: "completed"
+        });
+
+        await Promise.all([
+          createFitMeasurement({
+            sessionId: session.id,
+            angles: summary.angles,
+            confidenceScore: summary.confidenceScore,
+            kneeAngleMax: summary.kneeAngleMax,
+            kneeAngleMin: summary.kneeAngleMin
+          }),
+          createAeroScore({
+            sessionId: session.id,
+            aeroScore: summary.aeroScore
+          }),
+          createRecommendations({
+            sessionId: session.id,
+            recommendations: summary.recommendations
+          })
+        ]);
+
+        router.replace({
+          pathname: "/analysis/results",
+          params: { sessionId: session.id }
+        });
+        return;
+      }
+
       const session = await createFitSession({
         userId: user.id,
         bikeId: bikeId || null,
@@ -64,6 +117,12 @@ export function CameraAnalysisScreen() {
     setMessage(null);
 
     try {
+      if (Platform.OS === "web") {
+        await webCameraRef.current?.captureSnapshot();
+        setMessage(t("snapshotCaptured"));
+        return;
+      }
+
       await cameraRef.current?.takePictureAsync({
         quality: 0.6,
         skipProcessing: true
@@ -74,7 +133,9 @@ export function CameraAnalysisScreen() {
     }
   }
 
-  const hasPermission = permission?.granted;
+  const hasPermission = Platform.OS === "web" || permission?.granted;
+  const liveAngles = liveResult?.angles;
+  const canAnalyze = hasPermission && (Platform.OS !== "web" || Boolean(liveResult));
 
   return (
     <Screen>
@@ -90,23 +151,27 @@ export function CameraAnalysisScreen() {
           <Text style={styles.instruction}>{t("steadyPedaling")}</Text>
         </Card>
 
-        {!permission ? (
+        {Platform.OS !== "web" && !permission ? (
           <Card>
             <Body>Loading camera permission...</Body>
           </Card>
         ) : null}
 
-        {permission && !hasPermission ? (
+        {Platform.OS !== "web" && permission && !hasPermission ? (
           <Card style={styles.permissionCard}>
             <Body>{t("cameraDenied")}</Body>
             <Button onPress={requestPermission}>{t("cameraPermission")}</Button>
           </Card>
         ) : null}
 
-        {hasPermission ? (
+        {Platform.OS === "web" ? (
+          <WebBikeFitCamera ref={webCameraRef} onLiveResult={setLiveResult} />
+        ) : null}
+
+        {Platform.OS !== "web" && hasPermission ? (
           <View style={styles.cameraFrame}>
             <CameraView ref={cameraRef} facing="front" style={styles.camera} />
-            <View pointerEvents="none" style={styles.overlay}>
+            <View style={[styles.overlay, styles.noPointerEvents]}>
               <View style={styles.verticalGuide} />
               <View style={styles.torsoGuide} />
               <View style={styles.kneeGuide} />
@@ -115,11 +180,21 @@ export function CameraAnalysisScreen() {
           </View>
         ) : null}
 
+        {liveAngles ? (
+          <View style={styles.liveGrid}>
+            <Metric label={t("kneeAngle")} value={formatAngle(liveAngles.kneeAngle)} />
+            <Metric label={t("hipAngle")} value={formatAngle(liveAngles.hipAngle)} />
+            <Metric label={t("torsoAngle")} value={formatAngle(liveAngles.torsoAngle)} />
+            <Metric label={t("elbowAngle")} value={formatAngle(liveAngles.elbowAngle)} />
+            <Metric label={t("confidenceScore")} value={`${Math.round((liveResult?.confidenceScore ?? 0) * 100)}%`} />
+          </View>
+        ) : null}
+
         {message ? <Text style={styles.message}>{message}</Text> : null}
         {error ? <Text style={styles.error}>{error}</Text> : null}
 
         <Inline>
-          <Button disabled={!hasPermission} loading={working} onPress={beginAnalysis}>
+          <Button disabled={!canAnalyze} loading={working} onPress={beginAnalysis}>
             {t("beginAnalysis")}
           </Button>
           <Button disabled={!hasPermission} onPress={captureSnapshot} variant="secondary">
@@ -129,6 +204,19 @@ export function CameraAnalysisScreen() {
       </View>
     </Screen>
   );
+}
+
+function Metric({ label, value }: { label: string; value: string }) {
+  return (
+    <View style={styles.liveMetric}>
+      <Text style={styles.liveMetricLabel}>{label}</Text>
+      <Text style={styles.liveMetricValue}>{value}</Text>
+    </View>
+  );
+}
+
+function formatAngle(value?: number) {
+  return typeof value === "number" ? `${value}°` : "--";
 }
 
 const styles = StyleSheet.create({
@@ -170,6 +258,9 @@ const styles = StyleSheet.create({
   overlay: {
     ...StyleSheet.absoluteFillObject
   },
+  noPointerEvents: {
+    pointerEvents: "none"
+  },
   verticalGuide: {
     backgroundColor: "rgba(255,255,255,0.45)",
     height: "86%",
@@ -206,6 +297,31 @@ const styles = StyleSheet.create({
     position: "absolute",
     top: "58%",
     width: 20
+  },
+  liveGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: spacing.sm
+  },
+  liveMetric: {
+    backgroundColor: colors.surface,
+    borderColor: colors.border,
+    borderRadius: 8,
+    borderWidth: 1,
+    flexBasis: 128,
+    flexGrow: 1,
+    gap: spacing.xs,
+    padding: spacing.md
+  },
+  liveMetricLabel: {
+    color: colors.inkMuted,
+    fontSize: 12,
+    fontWeight: "800"
+  },
+  liveMetricValue: {
+    color: colors.ink,
+    fontSize: 22,
+    fontWeight: "900"
   },
   message: {
     color: colors.primary,
