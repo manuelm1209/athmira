@@ -1,4 +1,4 @@
-import { Body, Button, Card, Field, Heading, Inline, Screen, colors, spacing } from "@athmira/ui";
+import { Body, Button, Card, DateField, Field, Heading, Inline, Screen, SelectField, colors, spacing } from "@athmira/ui";
 import { useEffect, useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
 
@@ -6,6 +6,9 @@ import { LanguageToggle } from "@/components/LanguageToggle";
 import { useAuth } from "@/providers/AuthProvider";
 import { useLanguage } from "@/providers/LanguageProvider";
 import { getErrorMessage, numberToInput, parseOptionalNumber } from "@/utils/form";
+
+const genderValues = ["female", "male", "non_binary", "prefer_not_to_say"] as const;
+type GenderValue = (typeof genderValues)[number];
 
 export function ProfileScreen() {
   const { profile, updateProfile } = useAuth();
@@ -25,7 +28,7 @@ export function ProfileScreen() {
     }
 
     setName(profile.name ?? "");
-    setGender(profile.gender ?? "");
+    setGender(profile.gender && isGenderValue(profile.gender) ? profile.gender : "");
     setHeightCm(numberToInput(profile.height_cm));
     setWeightKg(numberToInput(profile.weight_kg));
     setDateOfBirth(profile.date_of_birth ?? "");
@@ -39,7 +42,7 @@ export function ProfileScreen() {
     try {
       await updateProfile({
         name: name.trim() || null,
-        gender: gender.trim() || null,
+        gender: isGenderValue(gender) ? gender : null,
         height_cm: parseOptionalNumber(heightCm),
         weight_kg: parseOptionalNumber(weightKg),
         date_of_birth: dateOfBirth.trim() || null
@@ -60,7 +63,18 @@ export function ProfileScreen() {
           <Body>{t("educationalNote")}</Body>
         </View>
         <Field label={t("authName")} onChangeText={setName} value={name} />
-        <Field label={t("gender")} onChangeText={setGender} value={gender} />
+        <SelectField
+          label={t("gender")}
+          onValueChange={setGender}
+          options={[
+            { label: t("genderFemale"), value: "female" },
+            { label: t("genderMale"), value: "male" },
+            { label: t("genderNonBinary"), value: "non_binary" },
+            { label: t("genderPreferNotToSay"), value: "prefer_not_to_say" }
+          ]}
+          placeholder={t("genderSelectPlaceholder")}
+          value={isGenderValue(gender) ? gender : ""}
+        />
         <Inline>
           <View style={styles.splitField}>
             <Field inputMode="numeric" label={t("height")} onChangeText={setHeightCm} value={heightCm} />
@@ -69,7 +83,14 @@ export function ProfileScreen() {
             <Field inputMode="numeric" label={t("weight")} onChangeText={setWeightKg} value={weightKg} />
           </View>
         </Inline>
-        <Field helper="YYYY-MM-DD" label={t("dateOfBirth")} onChangeText={setDateOfBirth} value={dateOfBirth} />
+        <DateField
+          helper={t("dateOfBirthHelp")}
+          label={t("dateOfBirth")}
+          max={new Date().toISOString().slice(0, 10)}
+          min="1900-01-01"
+          onValueChange={setDateOfBirth}
+          value={dateOfBirth}
+        />
         <View style={styles.languageRow}>
           <Text style={styles.languageLabel}>{t("language")}</Text>
           <LanguageToggle />
@@ -115,3 +136,7 @@ const styles = StyleSheet.create({
     fontWeight: "700"
   }
 });
+
+function isGenderValue(value: string): value is GenderValue {
+  return genderValues.includes(value as GenderValue);
+}
