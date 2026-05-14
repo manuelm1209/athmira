@@ -113,6 +113,8 @@ EXPO_PUBLIC_SITE_URL=https://athmira.com
 
 The web build is produced by Expo static export. The main product app does not use Next.js.
 
+`vercel.json` includes a filesystem-first fallback to `/index.html` so direct refreshes on Expo Router paths such as `/auth/login`, `/dashboard`, and `/auth/callback` load the app instead of returning a Vercel `404: NOT_FOUND`.
+
 ## Scripts
 
 ```bash

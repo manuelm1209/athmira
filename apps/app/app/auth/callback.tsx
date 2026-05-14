@@ -22,10 +22,12 @@ export default function AuthCallbackRoute() {
         }
 
         const url = new URL(window.location.href);
+        const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ""));
         const code = url.searchParams.get("code");
         const errorDescription =
-          url.searchParams.get("error_description") ||
-          new URLSearchParams(window.location.hash.replace(/^#/, "")).get("error_description");
+          url.searchParams.get("error_description") || hashParams.get("error_description");
+        const accessToken = hashParams.get("access_token");
+        const refreshToken = hashParams.get("refresh_token");
 
         if (errorDescription) {
           throw new Error(errorDescription);
@@ -36,6 +38,17 @@ export default function AuthCallbackRoute() {
 
           if (exchangeError) {
             throw exchangeError;
+          }
+        }
+
+        if (accessToken && refreshToken) {
+          const { error: sessionError } = await supabase.auth.setSession({
+            access_token: accessToken,
+            refresh_token: refreshToken
+          });
+
+          if (sessionError) {
+            throw sessionError;
           }
         }
 
