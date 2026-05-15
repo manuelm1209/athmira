@@ -10,6 +10,8 @@ export type CameraAngle = "side" | "front" | "rear";
 
 export type FitSessionStatus = "draft" | "processing" | "completed" | "failed";
 
+export type AnalysisType = "side_bike_fit" | "front_knee_tracking";
+
 export type RecommendationPriority = "low" | "medium" | "high";
 
 export type RecommendationCategory =
@@ -131,6 +133,52 @@ export type MediaAsset = {
   created_at: string;
 };
 
+export type AnalysisSummary = {
+  id: string;
+  session_id: string;
+  user_id: string;
+  analysis_type: AnalysisType;
+  title: string;
+  overall_score: number | null;
+  comfort_score: number | null;
+  aero_score: number | null;
+  confidence_score: number | null;
+  duration_ms: number | null;
+  sample_count: number | null;
+  metrics: Record<string, unknown>;
+  created_at: string;
+};
+
+export type FrontKneeMeasurement = {
+  id: string;
+  session_id: string;
+  user_id: string;
+  duration_ms: number | null;
+  sample_count: number | null;
+  estimated_mm_per_pixel: number | null;
+  overall_score: number | null;
+  confidence_score: number | null;
+  left_horizontal_travel_mm: number | null;
+  left_horizontal_travel_px: number | null;
+  left_vertical_travel_mm: number | null;
+  left_vertical_travel_px: number | null;
+  left_knee_drift_mm: number | null;
+  left_knee_drift_px: number | null;
+  left_stability_score: number | null;
+  left_confidence_score: number | null;
+  left_sample_count: number | null;
+  right_horizontal_travel_mm: number | null;
+  right_horizontal_travel_px: number | null;
+  right_vertical_travel_mm: number | null;
+  right_vertical_travel_px: number | null;
+  right_knee_drift_mm: number | null;
+  right_knee_drift_px: number | null;
+  right_stability_score: number | null;
+  right_confidence_score: number | null;
+  right_sample_count: number | null;
+  created_at: string;
+};
+
 export type PoseKeypoint = {
   name: string;
   x: number;
@@ -160,6 +208,45 @@ export type PoseFrameResult = {
   frame?: PoseFrame;
 };
 
+export type KneeTrackingPoint = {
+  x: number;
+  y: number;
+  confidence: number;
+};
+
+export type FrontKneeTrackingSample = {
+  timestampMs: number;
+  leftAnkle?: KneeTrackingPoint;
+  leftHip?: KneeTrackingPoint;
+  leftKnee?: KneeTrackingPoint;
+  rightAnkle?: KneeTrackingPoint;
+  rightHip?: KneeTrackingPoint;
+  rightKnee?: KneeTrackingPoint;
+};
+
+export type FrontKneeSideMetrics = {
+  confidenceScore: number;
+  horizontalTravelMm: number | null;
+  horizontalTravelPx: number;
+  kneeDriftMm: number | null;
+  kneeDriftPx: number;
+  sampleCount: number;
+  stabilityScore: number;
+  verticalTravelMm: number | null;
+  verticalTravelPx: number;
+};
+
+export type FrontKneeTrackingResult = {
+  confidenceScore: number;
+  durationMs: number;
+  estimatedMmPerPixel: number | null;
+  left: FrontKneeSideMetrics;
+  overallScore: number;
+  recommendations: FitRecommendation[];
+  right: FrontKneeSideMetrics;
+  sampleCount: number;
+};
+
 export type FitScore = {
   comfortScore: number;
   aeroScore: number;
@@ -173,4 +260,13 @@ export type CalculatedAeroScore = {
   armCompactnessScore: number;
   stabilityScore: number;
   finalAeroScore: number;
+};
+
+export type AnalysisHistoryItem = {
+  aeroScore: AeroScore | null;
+  fitMeasurement: FitMeasurement | null;
+  frontKneeMeasurement: FrontKneeMeasurement | null;
+  recommendations: Recommendation[];
+  session: FitSession;
+  summary: AnalysisSummary | null;
 };

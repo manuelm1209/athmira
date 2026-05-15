@@ -1,4 +1,5 @@
 import type {
+  AnalysisType,
   BikeType,
   CameraAngle,
   DeviceType,
@@ -249,6 +250,136 @@ export type Database = {
         Update: {
           type?: MediaAssetType;
           storage_path?: string;
+        };
+        Relationships: [];
+      };
+      analysis_summaries: {
+        Row: {
+          id: string;
+          session_id: string;
+          user_id: string;
+          analysis_type: AnalysisType;
+          title: string;
+          overall_score: number | null;
+          comfort_score: number | null;
+          aero_score: number | null;
+          confidence_score: number | null;
+          duration_ms: number | null;
+          sample_count: number | null;
+          metrics: Json;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          session_id: string;
+          user_id: string;
+          analysis_type: AnalysisType;
+          title: string;
+          overall_score?: number | null;
+          comfort_score?: number | null;
+          aero_score?: number | null;
+          confidence_score?: number | null;
+          duration_ms?: number | null;
+          sample_count?: number | null;
+          metrics?: Json;
+          created_at?: string;
+        };
+        Update: {
+          analysis_type?: AnalysisType;
+          title?: string;
+          overall_score?: number | null;
+          comfort_score?: number | null;
+          aero_score?: number | null;
+          confidence_score?: number | null;
+          duration_ms?: number | null;
+          sample_count?: number | null;
+          metrics?: Json;
+        };
+        Relationships: [];
+      };
+      front_knee_measurements: {
+        Row: {
+          id: string;
+          session_id: string;
+          user_id: string;
+          duration_ms: number | null;
+          sample_count: number | null;
+          estimated_mm_per_pixel: number | null;
+          overall_score: number | null;
+          confidence_score: number | null;
+          left_horizontal_travel_mm: number | null;
+          left_horizontal_travel_px: number | null;
+          left_vertical_travel_mm: number | null;
+          left_vertical_travel_px: number | null;
+          left_knee_drift_mm: number | null;
+          left_knee_drift_px: number | null;
+          left_stability_score: number | null;
+          left_confidence_score: number | null;
+          left_sample_count: number | null;
+          right_horizontal_travel_mm: number | null;
+          right_horizontal_travel_px: number | null;
+          right_vertical_travel_mm: number | null;
+          right_vertical_travel_px: number | null;
+          right_knee_drift_mm: number | null;
+          right_knee_drift_px: number | null;
+          right_stability_score: number | null;
+          right_confidence_score: number | null;
+          right_sample_count: number | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          session_id: string;
+          user_id: string;
+          duration_ms?: number | null;
+          sample_count?: number | null;
+          estimated_mm_per_pixel?: number | null;
+          overall_score?: number | null;
+          confidence_score?: number | null;
+          left_horizontal_travel_mm?: number | null;
+          left_horizontal_travel_px?: number | null;
+          left_vertical_travel_mm?: number | null;
+          left_vertical_travel_px?: number | null;
+          left_knee_drift_mm?: number | null;
+          left_knee_drift_px?: number | null;
+          left_stability_score?: number | null;
+          left_confidence_score?: number | null;
+          left_sample_count?: number | null;
+          right_horizontal_travel_mm?: number | null;
+          right_horizontal_travel_px?: number | null;
+          right_vertical_travel_mm?: number | null;
+          right_vertical_travel_px?: number | null;
+          right_knee_drift_mm?: number | null;
+          right_knee_drift_px?: number | null;
+          right_stability_score?: number | null;
+          right_confidence_score?: number | null;
+          right_sample_count?: number | null;
+          created_at?: string;
+        };
+        Update: {
+          duration_ms?: number | null;
+          sample_count?: number | null;
+          estimated_mm_per_pixel?: number | null;
+          overall_score?: number | null;
+          confidence_score?: number | null;
+          left_horizontal_travel_mm?: number | null;
+          left_horizontal_travel_px?: number | null;
+          left_vertical_travel_mm?: number | null;
+          left_vertical_travel_px?: number | null;
+          left_knee_drift_mm?: number | null;
+          left_knee_drift_px?: number | null;
+          left_stability_score?: number | null;
+          left_confidence_score?: number | null;
+          left_sample_count?: number | null;
+          right_horizontal_travel_mm?: number | null;
+          right_horizontal_travel_px?: number | null;
+          right_vertical_travel_mm?: number | null;
+          right_vertical_travel_px?: number | null;
+          right_knee_drift_mm?: number | null;
+          right_knee_drift_px?: number | null;
+          right_stability_score?: number | null;
+          right_confidence_score?: number | null;
+          right_sample_count?: number | null;
         };
         Relationships: [];
       };

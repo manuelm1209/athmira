@@ -3,13 +3,14 @@ import { createCoachSummary } from "@athmira/ai-engine";
 import { calculateFitScore, generateFitRecommendations } from "@athmira/fit-engine";
 import { analyzePoseFrame } from "@athmira/pose-engine";
 import { getFitAnalysisResults } from "@athmira/supabase";
-import type { FitMeasurement, Recommendation } from "@athmira/types";
+import type { FitMeasurement, FrontKneeMeasurement, Recommendation } from "@athmira/types";
 import { Body, Card, Heading, Inline, Screen, colors, spacing } from "@athmira/ui";
 import { useLocalSearchParams } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
 
 import { LinkButton } from "@/components/LinkButton";
+import type { TranslationKey } from "@/i18n";
 import { useAuth } from "@/providers/AuthProvider";
 import { useLanguage } from "@/providers/LanguageProvider";
 
@@ -89,22 +90,26 @@ export function ResultsScreen() {
     };
   }, [language, profile, savedResult]);
 
-  const metrics = [
-    { label: t("kneeAngle"), value: formatKneeMetric(result.measurement) },
-    { label: t("hipAngle"), value: formatAngle(result.angles.hipAngle) },
-    { label: t("torsoAngle"), value: formatAngle(result.angles.torsoAngle) },
-    { label: t("elbowAngle"), value: formatAngle(result.angles.elbowAngle) },
-    { label: t("aeroScore"), value: String(result.aeroScore.finalAeroScore) },
-    { label: t("comfortScore"), value: String(result.fitScore.comfortScore) },
-    { label: t("confidenceScore"), value: `${result.fitScore.confidenceScore}%` }
-  ];
+  const frontKneeMeasurement = savedResult?.frontKneeMeasurement;
+  const isFrontKneeResult = Boolean(frontKneeMeasurement);
+  const metrics = frontKneeMeasurement
+    ? getFrontKneeMetrics(frontKneeMeasurement, t)
+    : [
+        { label: t("kneeAngle"), value: formatKneeMetric(result.measurement) },
+        { label: t("hipAngle"), value: formatAngle(result.angles.hipAngle) },
+        { label: t("torsoAngle"), value: formatAngle(result.angles.torsoAngle) },
+        { label: t("elbowAngle"), value: formatAngle(result.angles.elbowAngle) },
+        { label: t("aeroScore"), value: String(result.aeroScore.finalAeroScore) },
+        { label: t("comfortScore"), value: String(result.fitScore.comfortScore) },
+        { label: t("confidenceScore"), value: `${result.fitScore.confidenceScore}%` }
+      ];
 
   return (
     <Screen>
       <View style={styles.stack}>
         <View style={styles.header}>
-          <Heading>{t("fitResults")}</Heading>
-          <Body>{t("resultsDisclaimer")}</Body>
+          <Heading>{isFrontKneeResult ? t("frontKneeResults") : t("fitResults")}</Heading>
+          <Body>{isFrontKneeResult ? t("frontKneeDisclaimer") : t("resultsDisclaimer")}</Body>
           {sessionId ? <Text style={styles.sessionId}>Session {sessionId}</Text> : null}
           {loading ? <Text style={styles.sessionId}>Loading saved analysis...</Text> : null}
           {error ? <Text style={styles.error}>{error}</Text> : null}
@@ -117,12 +122,14 @@ export function ResultsScreen() {
             </Card>
           ))}
         </View>
-        <Card style={styles.summaryCard}>
-          <Text style={styles.sectionLabel}>{t("aiSummary")}</Text>
-          <Body>{result.coachSummary}</Body>
-          <Body>{t("windTunnelNote")}</Body>
-          <Body>{t("educationalNote")}</Body>
-        </Card>
+        {isFrontKneeResult ? null : (
+          <Card style={styles.summaryCard}>
+            <Text style={styles.sectionLabel}>{t("aiSummary")}</Text>
+            <Body>{result.coachSummary}</Body>
+            <Body>{t("windTunnelNote")}</Body>
+            <Body>{t("educationalNote")}</Body>
+          </Card>
+        )}
         <Card style={styles.summaryCard}>
           <Text style={styles.sectionLabel}>{t("recommendations")}</Text>
           {result.recommendations.map((recommendation) => (
@@ -175,6 +182,35 @@ function formatKneeMetric(measurement?: FitMeasurement | null) {
   }
 
   return formatAngle(measurement?.knee_angle_max ?? measurement?.knee_angle_min ?? undefined);
+}
+
+function getFrontKneeMetrics(measurement: FrontKneeMeasurement, t: (key: TranslationKey) => string) {
+  return [
+    { label: t("frontKneeOverallScore"), value: formatNumber(measurement.overall_score) },
+    { label: t("confidenceScore"), value: formatPercent(measurement.confidence_score) },
+    { label: `${t("frontKneeLeft")} ${t("frontKneeHorizontalTravel")}`, value: formatDistance(measurement.left_horizontal_travel_mm, measurement.left_horizontal_travel_px) },
+    { label: `${t("frontKneeRight")} ${t("frontKneeHorizontalTravel")}`, value: formatDistance(measurement.right_horizontal_travel_mm, measurement.right_horizontal_travel_px) },
+    { label: `${t("frontKneeLeft")} ${t("frontKneeMaxDrift")}`, value: formatDistance(measurement.left_knee_drift_mm, measurement.left_knee_drift_px) },
+    { label: `${t("frontKneeRight")} ${t("frontKneeMaxDrift")}`, value: formatDistance(measurement.right_knee_drift_mm, measurement.right_knee_drift_px) },
+    { label: `${t("frontKneeLeft")} ${t("frontKneeStability")}`, value: formatNumber(measurement.left_stability_score) },
+    { label: `${t("frontKneeRight")} ${t("frontKneeStability")}`, value: formatNumber(measurement.right_stability_score) }
+  ];
+}
+
+function formatDistance(mm?: number | null, px?: number | null) {
+  if (typeof mm === "number") {
+    return `${Math.round(mm)} mm`;
+  }
+
+  return typeof px === "number" ? `${Math.round(px)} px` : "--";
+}
+
+function formatNumber(value?: number | null) {
+  return typeof value === "number" ? String(Math.round(value)) : "--";
+}
+
+function formatPercent(value?: number | null) {
+  return typeof value === "number" ? `${Math.round(value * 100)}%` : "--";
 }
 
 const styles = StyleSheet.create({

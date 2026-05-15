@@ -1,9 +1,14 @@
-import { createAeroScore, createFitMeasurement, createFitSession, createRecommendations } from "@athmira/supabase";
+import {
+  createAeroScore,
+  createAnalysisSummary,
+  createFitMeasurement,
+  createFitSession,
+  createRecommendations
+} from "@athmira/supabase";
 import type { DeviceType, PoseFrameResult } from "@athmira/types";
 import { Body, Button, Card, Heading, Inline, Screen, colors, spacing } from "@athmira/ui";
-import { CameraView, useCameraPermissions } from "expo-camera";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { useRef, useState, type ElementRef } from "react";
+import { useRef, useState } from "react";
 import { Platform, StyleSheet, Text, View } from "react-native";
 
 import { useAuth } from "@/providers/AuthProvider";
@@ -11,7 +16,8 @@ import { useLanguage } from "@/providers/LanguageProvider";
 import { getErrorMessage } from "@/utils/form";
 
 import { createBikeFitAnalysisSummary } from "./analysisSummary";
-import { WebBikeFitCamera, type WebBikeFitCameraHandle } from "./WebBikeFitCamera";
+import { BikeFitCamera } from "./BikeFitCamera";
+import type { BikeFitCameraHandle } from "./BikeFitCamera.types";
 
 function getDeviceType(): DeviceType {
   if (Platform.OS === "ios" || Platform.OS === "android") {
@@ -22,17 +28,31 @@ function getDeviceType(): DeviceType {
 }
 
 export function CameraAnalysisScreen() {
-  const cameraRef = useRef<ElementRef<typeof CameraView> | null>(null);
-  const webCameraRef = useRef<WebBikeFitCameraHandle | null>(null);
+  const cameraRef = useRef<BikeFitCameraHandle | null>(null);
   const router = useRouter();
   const { bikeId } = useLocalSearchParams<{ bikeId?: string }>();
   const { profile, user } = useAuth();
   const { language, t } = useLanguage();
-  const [permission, requestPermission] = useCameraPermissions();
+  const [cameraReady, setCameraReady] = useState(false);
   const [liveResult, setLiveResult] = useState<PoseFrameResult | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [working, setWorking] = useState(false);
+  const cameraLabels = {
+    analyzing: t("analyzing"),
+    cameraAnalysisUnavailable: t("cameraAnalysisUnavailable"),
+    cameraDenied: t("cameraDenied"),
+    cameraEnable: t("cameraEnable"),
+    cameraPermissionLoading: t("cameraPermissionLoading"),
+    cameraPermissionRequesting: t("cameraPermissionRequesting"),
+    cameraUnsupported: t("cameraUnsupported"),
+    insufficientPoseSamples: t("insufficientPoseSamples"),
+    nativePoseNotice: t("nativePoseNotice"),
+    poseDetectionActive: t("poseDetectionActive"),
+    poseDetectionFailed: t("poseDetectionFailed"),
+    poseDetectorLoading: t("poseDetectorLoading"),
+    poseNotReady: t("poseNotReady")
+  };
 
   async function beginAnalysis() {
     if (!user) {
@@ -44,53 +64,18 @@ export function CameraAnalysisScreen() {
     setWorking(true);
 
     try {
-      if (Platform.OS === "web") {
-        const samples = await webCameraRef.current?.startAnalysis();
+      const samples = await cameraRef.current?.startAnalysis();
 
-        if (!samples?.length) {
-          throw new Error(t("poseNotReady"));
-        }
-
-        const summary = createBikeFitAnalysisSummary({
-          durationMs: 8000,
-          language,
-          profile,
-          samples
-        });
-
-        const session = await createFitSession({
-          userId: user.id,
-          bikeId: bikeId || null,
-          cameraAngle: "side",
-          deviceType: getDeviceType(),
-          sessionType: "bike_fit",
-          status: "completed"
-        });
-
-        await Promise.all([
-          createFitMeasurement({
-            sessionId: session.id,
-            angles: summary.angles,
-            confidenceScore: summary.confidenceScore,
-            kneeAngleMax: summary.kneeAngleMax,
-            kneeAngleMin: summary.kneeAngleMin
-          }),
-          createAeroScore({
-            sessionId: session.id,
-            aeroScore: summary.aeroScore
-          }),
-          createRecommendations({
-            sessionId: session.id,
-            recommendations: summary.recommendations
-          })
-        ]);
-
-        router.replace({
-          pathname: "/analysis/results",
-          params: { sessionId: session.id }
-        });
-        return;
+      if (!samples?.length) {
+        throw new Error(t("poseNotReady"));
       }
+
+      const summary = createBikeFitAnalysisSummary({
+        durationMs: 8000,
+        language,
+        profile,
+        samples
+      });
 
       const session = await createFitSession({
         userId: user.id,
@@ -100,6 +85,45 @@ export function CameraAnalysisScreen() {
         sessionType: "bike_fit",
         status: "completed"
       });
+
+      await Promise.all([
+        createFitMeasurement({
+          sessionId: session.id,
+          angles: summary.angles,
+          confidenceScore: summary.confidenceScore,
+          kneeAngleMax: summary.kneeAngleMax,
+          kneeAngleMin: summary.kneeAngleMin
+        }),
+        createAeroScore({
+          sessionId: session.id,
+          aeroScore: summary.aeroScore
+        }),
+        createRecommendations({
+          sessionId: session.id,
+          recommendations: summary.recommendations
+        }),
+        createAnalysisSummary({
+          analysisType: "side_bike_fit",
+          aeroScore: summary.fitScore.aeroScore,
+          comfortScore: summary.fitScore.comfortScore,
+          confidenceScore: summary.confidenceScore,
+          durationMs: summary.durationMs,
+          metrics: {
+            aeroFinalScore: summary.aeroScore.finalAeroScore,
+            elbowAngleAvg: summary.angles.elbowAngle ?? null,
+            hipAngleAvg: summary.angles.hipAngle ?? null,
+            kneeAngleMax: summary.kneeAngleMax,
+            kneeAngleMin: summary.kneeAngleMin,
+            shoulderAngleAvg: summary.angles.shoulderAngle ?? null,
+            torsoAngleAvg: summary.angles.torsoAngle ?? null
+          },
+          overallScore: summary.fitScore.comfortScore,
+          sampleCount: summary.sampleCount,
+          sessionId: session.id,
+          title: t("sideFitAnalysis"),
+          userId: user.id
+        })
+      ]);
 
       router.replace({
         pathname: "/analysis/results",
@@ -117,25 +141,15 @@ export function CameraAnalysisScreen() {
     setMessage(null);
 
     try {
-      if (Platform.OS === "web") {
-        await webCameraRef.current?.captureSnapshot();
-        setMessage(t("snapshotCaptured"));
-        return;
-      }
-
-      await cameraRef.current?.takePictureAsync({
-        quality: 0.6,
-        skipProcessing: true
-      });
+      await cameraRef.current?.captureSnapshot();
       setMessage(t("snapshotCaptured"));
     } catch (snapshotError) {
       setError(getErrorMessage(snapshotError));
     }
   }
 
-  const hasPermission = Platform.OS === "web" || permission?.granted;
   const liveAngles = liveResult?.angles;
-  const canAnalyze = hasPermission && (Platform.OS !== "web" || Boolean(liveResult));
+  const canAnalyze = cameraReady && Boolean(liveResult);
 
   return (
     <Screen>
@@ -151,34 +165,12 @@ export function CameraAnalysisScreen() {
           <Text style={styles.instruction}>{t("steadyPedaling")}</Text>
         </Card>
 
-        {Platform.OS !== "web" && !permission ? (
-          <Card>
-            <Body>Loading camera permission...</Body>
-          </Card>
-        ) : null}
-
-        {Platform.OS !== "web" && permission && !hasPermission ? (
-          <Card style={styles.permissionCard}>
-            <Body>{t("cameraDenied")}</Body>
-            <Button onPress={requestPermission}>{t("cameraPermission")}</Button>
-          </Card>
-        ) : null}
-
-        {Platform.OS === "web" ? (
-          <WebBikeFitCamera ref={webCameraRef} onLiveResult={setLiveResult} />
-        ) : null}
-
-        {Platform.OS !== "web" && hasPermission ? (
-          <View style={styles.cameraFrame}>
-            <CameraView ref={cameraRef} facing="front" style={styles.camera} />
-            <View style={[styles.overlay, styles.noPointerEvents]}>
-              <View style={styles.verticalGuide} />
-              <View style={styles.torsoGuide} />
-              <View style={styles.kneeGuide} />
-              <View style={styles.marker} />
-            </View>
-          </View>
-        ) : null}
+        <BikeFitCamera
+          labels={cameraLabels}
+          onLiveResult={setLiveResult}
+          onReadyChange={setCameraReady}
+          ref={cameraRef}
+        />
 
         {liveAngles ? (
           <View style={styles.liveGrid}>
@@ -197,7 +189,7 @@ export function CameraAnalysisScreen() {
           <Button disabled={!canAnalyze} loading={working} onPress={beginAnalysis}>
             {t("beginAnalysis")}
           </Button>
-          <Button disabled={!hasPermission} onPress={captureSnapshot} variant="secondary">
+          <Button disabled={!cameraReady} onPress={captureSnapshot} variant="secondary">
             {t("captureSnapshot")}
           </Button>
         </Inline>
@@ -239,64 +231,6 @@ const styles = StyleSheet.create({
     color: colors.ink,
     fontSize: 15,
     lineHeight: 21
-  },
-  permissionCard: {
-    alignItems: "flex-start",
-    gap: spacing.md
-  },
-  cameraFrame: {
-    backgroundColor: colors.ink,
-    borderRadius: 8,
-    height: 460,
-    overflow: "hidden",
-    position: "relative"
-  },
-  camera: {
-    height: "100%",
-    width: "100%"
-  },
-  overlay: {
-    ...StyleSheet.absoluteFillObject
-  },
-  noPointerEvents: {
-    pointerEvents: "none"
-  },
-  verticalGuide: {
-    backgroundColor: "rgba(255,255,255,0.45)",
-    height: "86%",
-    left: "50%",
-    position: "absolute",
-    top: "7%",
-    width: 2
-  },
-  torsoGuide: {
-    backgroundColor: colors.accent,
-    height: 3,
-    left: "30%",
-    position: "absolute",
-    top: "38%",
-    transform: [{ rotate: "-18deg" }],
-    width: "34%"
-  },
-  kneeGuide: {
-    backgroundColor: "#b6eadc",
-    height: 3,
-    left: "42%",
-    position: "absolute",
-    top: "64%",
-    transform: [{ rotate: "28deg" }],
-    width: "24%"
-  },
-  marker: {
-    backgroundColor: colors.primarySoft,
-    borderColor: colors.primary,
-    borderRadius: 10,
-    borderWidth: 2,
-    height: 20,
-    left: "48%",
-    position: "absolute",
-    top: "58%",
-    width: 20
   },
   liveGrid: {
     flexDirection: "row",

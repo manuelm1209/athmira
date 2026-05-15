@@ -80,7 +80,7 @@ npm run web
 
 ## Supabase Setup
 
-Run the SQL migration in `supabase/migrations/0001_initial_schema.sql` against your Supabase project. It creates:
+Run the SQL migrations in `supabase/migrations` against your Supabase project in filename order. They create:
 
 - `profiles`
 - `bikes`
@@ -89,11 +89,15 @@ Run the SQL migration in `supabase/migrations/0001_initial_schema.sql` against y
 - `aero_scores`
 - `recommendations`
 - `media_assets`
+- `analysis_summaries`
+- `front_knee_measurements`
 - private `fit-media` storage bucket
 
 Row Level Security is enabled so authenticated users can only access their own data.
 
 Media should be stored in Supabase Storage, not directly in Postgres. The MVP includes signed URL helpers for private media access.
+
+`analysis_summaries` stores comparable session-level scores for side bike-fit and front knee-tracking sessions. `front_knee_measurements` stores the detailed left/right knee path metrics used to compare changes across sessions.
 
 ## Vercel Deployment
 
@@ -120,6 +124,7 @@ The web build is produced by Expo static export. The main product app does not u
 ```bash
 npm run web        # Start Expo for web
 npm run build      # Export the Expo web app
+npm run expo:check # Check Expo SDK dependency compatibility
 npm run lint       # Run Expo lint
 npm run typecheck  # Run TypeScript checks
 ```

@@ -1,5 +1,8 @@
 import type {
   AeroScore,
+  AnalysisHistoryItem,
+  AnalysisSummary,
+  AnalysisType,
   CalculatedAeroScore,
   CameraAngle,
   DeviceType,
@@ -8,11 +11,14 @@ import type {
   FitSession,
   FitSessionStatus,
   FitSessionType,
+  FrontKneeMeasurement,
+  FrontKneeTrackingResult,
   JointAngles,
   MediaAsset,
   MediaAssetType
 } from "@athmira/types";
 
+import type { Json } from "./database";
 import { assertSupabaseConfigured, supabase } from "./client";
 
 export async function createFitSession(input: {
@@ -134,17 +140,125 @@ export async function createRecommendations(input: {
   return data;
 }
 
+export async function createAnalysisSummary(input: {
+  aeroScore?: number | null;
+  analysisType: AnalysisType;
+  comfortScore?: number | null;
+  confidenceScore?: number | null;
+  durationMs?: number | null;
+  metrics?: Json;
+  overallScore?: number | null;
+  sampleCount?: number | null;
+  sessionId: string;
+  title: string;
+  userId: string;
+}): Promise<AnalysisSummary> {
+  assertSupabaseConfigured();
+
+  const { data, error } = await supabase
+    .from("analysis_summaries")
+    .upsert(
+      {
+        session_id: input.sessionId,
+        user_id: input.userId,
+        analysis_type: input.analysisType,
+        title: input.title,
+        overall_score: input.overallScore ?? null,
+        comfort_score: input.comfortScore ?? null,
+        aero_score: input.aeroScore ?? null,
+        confidence_score: input.confidenceScore ?? null,
+        duration_ms: input.durationMs ?? null,
+        sample_count: input.sampleCount ?? null,
+        metrics: input.metrics ?? {}
+      },
+      { onConflict: "session_id" }
+    )
+    .select("*")
+    .single();
+
+  if (error) {
+    throw error;
+  }
+
+  return data as AnalysisSummary;
+}
+
+export async function createFrontKneeMeasurement(input: {
+  result: FrontKneeTrackingResult;
+  sessionId: string;
+  userId: string;
+}): Promise<FrontKneeMeasurement> {
+  assertSupabaseConfigured();
+
+  const { result } = input;
+  const { data, error } = await supabase
+    .from("front_knee_measurements")
+    .upsert(
+      {
+        session_id: input.sessionId,
+        user_id: input.userId,
+        duration_ms: result.durationMs,
+        sample_count: result.sampleCount,
+        estimated_mm_per_pixel: result.estimatedMmPerPixel,
+        overall_score: result.overallScore,
+        confidence_score: result.confidenceScore,
+        left_horizontal_travel_mm: result.left.horizontalTravelMm,
+        left_horizontal_travel_px: result.left.horizontalTravelPx,
+        left_vertical_travel_mm: result.left.verticalTravelMm,
+        left_vertical_travel_px: result.left.verticalTravelPx,
+        left_knee_drift_mm: result.left.kneeDriftMm,
+        left_knee_drift_px: result.left.kneeDriftPx,
+        left_stability_score: result.left.stabilityScore,
+        left_confidence_score: result.left.confidenceScore,
+        left_sample_count: result.left.sampleCount,
+        right_horizontal_travel_mm: result.right.horizontalTravelMm,
+        right_horizontal_travel_px: result.right.horizontalTravelPx,
+        right_vertical_travel_mm: result.right.verticalTravelMm,
+        right_vertical_travel_px: result.right.verticalTravelPx,
+        right_knee_drift_mm: result.right.kneeDriftMm,
+        right_knee_drift_px: result.right.kneeDriftPx,
+        right_stability_score: result.right.stabilityScore,
+        right_confidence_score: result.right.confidenceScore,
+        right_sample_count: result.right.sampleCount
+      },
+      { onConflict: "session_id" }
+    )
+    .select("*")
+    .single();
+
+  if (error) {
+    throw error;
+  }
+
+  return data;
+}
+
 export async function getFitAnalysisResults(sessionId: string) {
   assertSupabaseConfigured();
 
-  const [measurementResult, aeroResult, recommendationsResult] = await Promise.all([
+  const [sessionResult, summaryResult, measurementResult, frontKneeResult, aeroResult, recommendationsResult] = await Promise.all([
+    supabase.from("fit_sessions").select("*").eq("id", sessionId).maybeSingle(),
+    supabase.from("analysis_summaries").select("*").eq("session_id", sessionId).maybeSingle(),
     supabase.from("fit_measurements").select("*").eq("session_id", sessionId).order("created_at", { ascending: false }).limit(1),
+    supabase.from("front_knee_measurements").select("*").eq("session_id", sessionId).maybeSingle(),
     supabase.from("aero_scores").select("*").eq("session_id", sessionId).order("created_at", { ascending: false }).limit(1),
     supabase.from("recommendations").select("*").eq("session_id", sessionId).order("created_at", { ascending: true })
   ]);
 
+  if (sessionResult.error) {
+    throw sessionResult.error;
+  }
+
+  if (summaryResult.error) {
+    throw summaryResult.error;
+  }
+
   if (measurementResult.error) {
     throw measurementResult.error;
+  }
+
+  if (frontKneeResult.error) {
+    throw frontKneeResult.error;
   }
 
   if (aeroResult.error) {
@@ -156,10 +270,81 @@ export async function getFitAnalysisResults(sessionId: string) {
   }
 
   return {
+    frontKneeMeasurement: frontKneeResult.data,
     measurement: measurementResult.data[0] ?? null,
     aeroScore: aeroResult.data[0] ?? null,
-    recommendations: recommendationsResult.data
+    recommendations: recommendationsResult.data,
+    session: sessionResult.data,
+    summary: summaryResult.data as AnalysisSummary | null
   };
+}
+
+export async function listAnalysisHistory(input: {
+  bikeId?: string | null;
+  limit?: number;
+  userId: string;
+}): Promise<AnalysisHistoryItem[]> {
+  assertSupabaseConfigured();
+
+  let query = supabase
+    .from("fit_sessions")
+    .select("*")
+    .eq("user_id", input.userId)
+    .eq("status", "completed")
+    .order("created_at", { ascending: false })
+    .limit(input.limit ?? 12);
+
+  if (input.bikeId) {
+    query = query.eq("bike_id", input.bikeId);
+  }
+
+  const { data: sessions, error } = await query;
+
+  if (error) {
+    throw error;
+  }
+
+  if (!sessions.length) {
+    return [];
+  }
+
+  const sessionIds = sessions.map((session) => session.id);
+  const [summariesResult, fitMeasurementsResult, frontKneeMeasurementsResult, aeroScoresResult, recommendationsResult] = await Promise.all([
+    supabase.from("analysis_summaries").select("*").in("session_id", sessionIds),
+    supabase.from("fit_measurements").select("*").in("session_id", sessionIds),
+    supabase.from("front_knee_measurements").select("*").in("session_id", sessionIds),
+    supabase.from("aero_scores").select("*").in("session_id", sessionIds),
+    supabase.from("recommendations").select("*").in("session_id", sessionIds)
+  ]);
+
+  if (summariesResult.error) {
+    throw summariesResult.error;
+  }
+
+  if (fitMeasurementsResult.error) {
+    throw fitMeasurementsResult.error;
+  }
+
+  if (frontKneeMeasurementsResult.error) {
+    throw frontKneeMeasurementsResult.error;
+  }
+
+  if (aeroScoresResult.error) {
+    throw aeroScoresResult.error;
+  }
+
+  if (recommendationsResult.error) {
+    throw recommendationsResult.error;
+  }
+
+  return sessions.map((session) => ({
+    aeroScore: findLatestBySessionId(aeroScoresResult.data, session.id),
+    fitMeasurement: findLatestBySessionId(fitMeasurementsResult.data, session.id),
+    frontKneeMeasurement: findLatestBySessionId(frontKneeMeasurementsResult.data, session.id),
+    recommendations: recommendationsResult.data.filter((recommendation) => recommendation.session_id === session.id),
+    session,
+    summary: findLatestBySessionId(summariesResult.data, session.id) as AnalysisSummary | null
+  }));
 }
 
 export async function createMediaAsset(input: {
@@ -198,4 +383,15 @@ export async function createSignedMediaUrl(storagePath: string, expiresInSeconds
   }
 
   return data.signedUrl;
+}
+
+function findLatestBySessionId<T extends { created_at: string; session_id: string }>(
+  rows: T[],
+  sessionId: string
+): T | null {
+  const [latest] = rows
+    .filter((row) => row.session_id === sessionId)
+    .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+
+  return latest ?? null;
 }

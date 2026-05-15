@@ -10,6 +10,7 @@
     "dev": "npm run dev -w @athmira/app",
     "web": "npm run web -w @athmira/app",
     "build": "npm run build -w @athmira/app",
+    "expo:check": "npm run expo:check -w @athmira/app",
     "lint": "npm run lint -w @athmira/app",
     "typecheck": "tsc --noEmit -p tsconfig.json"
   },

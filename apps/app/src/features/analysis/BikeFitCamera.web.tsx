@@ -11,6 +11,8 @@ import {
 } from "react";
 import { StyleSheet, Text, View } from "react-native";
 
+import type { BikeFitCameraHandle, BikeFitCameraProps } from "./BikeFitCamera.types";
+
 type PoseDetector = {
   dispose?: () => void;
   estimatePoses: (
@@ -27,17 +29,8 @@ type RecordingState = {
   startedAt: number;
 };
 
-export type WebBikeFitCameraHandle = {
-  captureSnapshot: () => Promise<string | null>;
-  startAnalysis: (durationMs?: number) => Promise<PoseFrameResult[]>;
-};
-
-type WebBikeFitCameraProps = {
-  onLiveResult?: (result: PoseFrameResult | null) => void;
-};
-
-export const WebBikeFitCamera = forwardRef<WebBikeFitCameraHandle, WebBikeFitCameraProps>(function WebBikeFitCamera(
-  { onLiveResult },
+export const BikeFitCamera = forwardRef<BikeFitCameraHandle, BikeFitCameraProps>(function BikeFitCamera(
+  { labels, onLiveResult, onReadyChange },
   ref
 ) {
   const videoRef = useRef<HTMLVideoElement | null>(null);
@@ -49,7 +42,7 @@ export const WebBikeFitCamera = forwardRef<WebBikeFitCameraHandle, WebBikeFitCam
   const animationRef = useRef<number | null>(null);
   const detectionBusyRef = useRef(false);
   const lastDetectionAtRef = useRef(0);
-  const [status, setStatus] = useState("Requesting camera permission...");
+  const [status, setStatus] = useState(labels.cameraPermissionRequesting);
   const [error, setError] = useState<string | null>(null);
   const [progress, setProgress] = useState<number | null>(null);
 
@@ -65,7 +58,7 @@ export const WebBikeFitCamera = forwardRef<WebBikeFitCameraHandle, WebBikeFitCam
     },
     async startAnalysis(durationMs = 8000) {
       if (!latestResultRef.current || latestResultRef.current.confidenceScore < 0.35) {
-        throw new Error("No reliable rider pose detected yet. Keep the full rider visible and try again.");
+        throw new Error(labels.poseNotReady);
       }
 
       return new Promise<PoseFrameResult[]>((resolve, reject) => {
@@ -87,7 +80,7 @@ export const WebBikeFitCamera = forwardRef<WebBikeFitCameraHandle, WebBikeFitCam
     async function bootCameraAndModel() {
       try {
         if (!navigator.mediaDevices?.getUserMedia) {
-          throw new Error("This browser does not support camera access.");
+          throw new Error(labels.cameraUnsupported);
         }
 
         const stream = await navigator.mediaDevices.getUserMedia({
@@ -111,7 +104,7 @@ export const WebBikeFitCamera = forwardRef<WebBikeFitCameraHandle, WebBikeFitCam
           await videoRef.current.play();
         }
 
-        setStatus("Loading pose detector...");
+        setStatus(labels.poseDetectorLoading);
 
         const [tf, poseDetection] = await Promise.all([
           import("@tensorflow/tfjs-core"),
@@ -140,13 +133,15 @@ export const WebBikeFitCamera = forwardRef<WebBikeFitCameraHandle, WebBikeFitCam
         }
 
         detectorRef.current = detector;
-        setStatus("Live pose detection active.");
+        setStatus(labels.poseDetectionActive);
+        onReadyChange?.(true);
         animationRef.current = requestAnimationFrame(detectLoop);
       } catch (cameraError) {
         if (!cancelled) {
-          const message = cameraError instanceof Error ? cameraError.message : "Unable to start camera analysis.";
+          const message = cameraError instanceof Error ? cameraError.message : labels.cameraAnalysisUnavailable;
           setError(message);
-          setStatus("Camera analysis unavailable.");
+          setStatus(labels.cameraAnalysisUnavailable);
+          onReadyChange?.(false);
         }
       }
     }
@@ -162,6 +157,7 @@ export const WebBikeFitCamera = forwardRef<WebBikeFitCameraHandle, WebBikeFitCam
 
       detectorRef.current?.dispose?.();
       stopStream(streamRef.current);
+      onReadyChange?.(false);
     };
   // The camera/model lifecycle should start once; the detection loop reads mutable refs.
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -183,7 +179,7 @@ export const WebBikeFitCamera = forwardRef<WebBikeFitCameraHandle, WebBikeFitCam
         handleRecording(result);
         drawOverlay(result);
       } catch (detectionError) {
-        setError(detectionError instanceof Error ? detectionError.message : "Pose detection failed.");
+        setError(detectionError instanceof Error ? detectionError.message : labels.poseDetectionFailed);
       } finally {
         detectionBusyRef.current = false;
       }
@@ -211,7 +207,7 @@ export const WebBikeFitCamera = forwardRef<WebBikeFitCameraHandle, WebBikeFitCam
       setProgress(null);
 
       if (recording.samples.length < 6) {
-        recording.reject(new Error("Not enough reliable pose samples. Improve lighting, show the whole rider, and retry."));
+        recording.reject(new Error(labels.insufficientPoseSamples));
       } else {
         recording.resolve(recording.samples);
       }
@@ -254,7 +250,9 @@ export const WebBikeFitCamera = forwardRef<WebBikeFitCameraHandle, WebBikeFitCam
       <video autoPlay muted playsInline ref={videoRef} style={videoStyle} />
       <canvas ref={canvasRef} style={canvasStyle} />
       <View style={[styles.statusPanel, styles.noPointerEvents]}>
-        <Text style={styles.statusText}>{progress === null ? status : `Analyzing ${(progress * 100).toFixed(0)}%`}</Text>
+        <Text style={styles.statusText}>
+          {progress === null ? status : `${labels.analyzing} ${(progress * 100).toFixed(0)}%`}
+        </Text>
         {error ? <Text style={styles.errorText}>{error}</Text> : null}
       </View>
     </View>
