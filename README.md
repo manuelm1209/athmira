@@ -103,6 +103,19 @@ Media should be stored in Supabase Storage, not directly in Postgres. The MVP in
 
 `analysis_summaries` stores comparable session-level scores for side bike-fit and front knee-tracking sessions. `front_knee_measurements` stores the detailed left/right knee path metrics used to compare changes across sessions.
 
+Migration `0003_security_hardening.sql` moves the privileged signup trigger into a private schema, locks down helper function execution, and pins trigger-function `search_path` values. Apply it after the initial schema migrations in existing Supabase projects.
+
+## Security
+
+Cybersecurity is a required product constraint for Athmira. User identity, bike profiles, camera/media data, fit analysis history, and future wearable data should be treated as sensitive user data.
+
+- Keep secret keys out of Expo and React Native Web. Only `EXPO_PUBLIC_*` values should be available to the client.
+- Keep `SUPABASE_SERVICE_ROLE_KEY`, `TURNSTILE_SECRET_KEY`, database URLs, JWT secrets, and provider secrets in server-side provider settings only.
+- Use Supabase RLS for all user-owned tables and private Storage buckets for media.
+- Use signed URLs for private media access.
+- Keep Cloudflare Turnstile enabled on auth forms in production and configure the Turnstile secret in Supabase Auth CAPTCHA/Bot Protection.
+- Review Vercel security headers in `vercel.json` when adding camera, media, worker, or third-party script behavior.
+
 ## Vercel Deployment
 
 Use this repository as a Vercel project with:
@@ -121,7 +134,7 @@ EXPO_PUBLIC_SITE_URL=https://athmira.com
 
 The web build is produced by Expo static export. The main product app does not use Next.js.
 
-`vercel.json` includes a filesystem-first fallback to `/index.html` so direct refreshes on Expo Router paths such as `/auth/login`, `/dashboard`, and `/auth/callback` load the app instead of returning a Vercel `404: NOT_FOUND`.
+`vercel.json` includes a filesystem-first fallback to `/index.html` so direct refreshes on Expo Router paths such as `/auth/login`, `/dashboard`, and `/auth/callback` load the app instead of returning a Vercel `404: NOT_FOUND`. It also sets baseline security headers for HTTPS, content sniffing, referrer behavior, iframe embedding, and browser permissions.
 
 ## Scripts
 

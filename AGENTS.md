@@ -75,6 +75,23 @@ Use modules/services for:
 - AI recommendations
 - Wearable integrations
 
+## Cybersecurity Requirements
+
+Cybersecurity is a must for every feature. Treat auth, user profile data, bike data, camera/media data, analysis history, and future wearable or AI data as sensitive user data.
+
+Security rules for all changes:
+
+- Never commit secrets or private keys.
+- Never expose service-role, database, JWT, Turnstile secret, or provider secret keys to Expo, React Native Web, or any `EXPO_PUBLIC_*` variable.
+- Keep Supabase access behind service modules and rely on Row Level Security as the server-side authorization boundary.
+- Enable and review RLS for every user-owned table in exposed schemas.
+- Store media in private Supabase Storage buckets and use signed URLs for private access.
+- Keep privileged database functions out of exposed schemas when possible, lock down executable privileges, and set explicit `search_path` values.
+- Validate and normalize user-controlled input before persistence.
+- Keep camera permissions scoped to the analysis flows and stop media tracks when analysis components unmount.
+- Use bot protection on auth forms and keep CAPTCHA secrets server-side.
+- Add or update security notes in README, migrations, and deployment config when introducing new auth, storage, AI, wearable, or external integration behavior.
+
 ## Suggested Structure
 
 ```text

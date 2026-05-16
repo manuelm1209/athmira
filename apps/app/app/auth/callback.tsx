@@ -29,6 +29,8 @@ export default function AuthCallbackRoute() {
         const accessToken = hashParams.get("access_token");
         const refreshToken = hashParams.get("refresh_token");
 
+        clearSensitiveCallbackUrl();
+
         if (errorDescription) {
           throw new Error(errorDescription);
         }
@@ -90,6 +92,14 @@ export default function AuthCallbackRoute() {
       </Card>
     </Screen>
   );
+}
+
+function clearSensitiveCallbackUrl() {
+  if (typeof window === "undefined" || (!window.location.search && !window.location.hash)) {
+    return;
+  }
+
+  window.history.replaceState(null, "", window.location.pathname);
 }
 
 const styles = StyleSheet.create({
