@@ -51,6 +51,7 @@ cp .env.example .env
 EXPO_PUBLIC_SUPABASE_URL=
 EXPO_PUBLIC_SUPABASE_ANON_KEY=
 EXPO_PUBLIC_SITE_URL=https://athmira.com
+EXPO_PUBLIC_TURNSTILE_SITE_KEY=
 ```
 
 In this monorepo, Expo runs from `apps/app`. The app config also reads `.env.local` from the repository root and accepts these public aliases:
@@ -61,8 +62,11 @@ In this monorepo, Expo runs from `apps/app`. The app config also reads `.env.loc
 - `SUPABASE_URL`
 - `SUPABASE_ANON_KEY`
 - `SUPABASE_PUBLISHABLE_KEY`
+- `TURNSTILE_SITE_KEY`
 
-Do not expose `SUPABASE_SERVICE_ROLE_KEY` or other secret keys to the client app.
+Do not expose `SUPABASE_SERVICE_ROLE_KEY`, `TURNSTILE_SECRET_KEY`, or other secret keys to the client app.
+
+For Cloudflare Turnstile, add the public site key to the app environment and configure the secret key in Supabase Auth CAPTCHA/Bot Protection. The app passes the Turnstile token to Supabase Auth during login and signup; the secret key should never be bundled into Expo.
 
 For Supabase email confirmation links, the app sends users to `/auth/callback`. Configure Supabase Auth URL settings:
 

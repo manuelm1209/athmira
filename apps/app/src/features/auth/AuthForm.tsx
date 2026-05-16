@@ -1,12 +1,15 @@
 import { signInWithEmail, signUpWithEmail } from "@athmira/supabase";
 import { Body, Button, Card, Field, Heading, Inline, Screen, colors, spacing } from "@athmira/ui";
+import Constants from "expo-constants";
 import { useRouter } from "expo-router";
 import { useState } from "react";
-import { StyleSheet, Text, View } from "react-native";
+import { Platform, StyleSheet, Text, View } from "react-native";
 
 import { LinkButton } from "@/components/LinkButton";
 import { useLanguage } from "@/providers/LanguageProvider";
 import { getErrorMessage } from "@/utils/form";
+
+import { TurnstileChallenge } from "../../components/TurnstileChallenge";
 
 type AuthFormProps = {
   mode: "login" | "signup";
@@ -15,9 +18,12 @@ type AuthFormProps = {
 export function AuthForm({ mode }: AuthFormProps) {
   const router = useRouter();
   const { language, t } = useLanguage();
+  const turnstileEnabled = isTurnstileEnabled();
   const [email, setEmail] = useState("");
   const [name, setName] = useState("");
   const [password, setPassword] = useState("");
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
+  const [challengeVersion, setChallengeVersion] = useState(0);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -25,14 +31,21 @@ export function AuthForm({ mode }: AuthFormProps) {
   async function submit() {
     setError(null);
     setMessage(null);
+
+    if (turnstileEnabled && !captchaToken) {
+      setError(t("turnstileRequired"));
+      return;
+    }
+
     setLoading(true);
 
     try {
       if (mode === "login") {
-        await signInWithEmail(email, password);
+        await signInWithEmail(email, password, captchaToken);
         router.replace("/dashboard");
       } else {
         const result = await signUpWithEmail({
+          captchaToken,
           email,
           name,
           password,
@@ -47,6 +60,8 @@ export function AuthForm({ mode }: AuthFormProps) {
       }
     } catch (submitError) {
       setError(getErrorMessage(submitError));
+      setCaptchaToken(null);
+      setChallengeVersion((version) => version + 1);
     } finally {
       setLoading(false);
     }
@@ -78,9 +93,17 @@ export function AuthForm({ mode }: AuthFormProps) {
           secureTextEntry
           value={password}
         />
+        {turnstileEnabled ? (
+          <TurnstileChallenge
+            errorLabel={t("turnstileError")}
+            key={challengeVersion}
+            loadingLabel={t("turnstileLoading")}
+            onTokenChange={setCaptchaToken}
+          />
+        ) : null}
         {error ? <Text style={styles.error}>{error}</Text> : null}
         {message ? <Text style={styles.message}>{message}</Text> : null}
-        <Button loading={loading} onPress={submit}>
+        <Button disabled={turnstileEnabled && !captchaToken} loading={loading} onPress={submit}>
           {mode === "login" ? t("login") : t("createAccount")}
         </Button>
         <Inline style={styles.footer}>
@@ -91,6 +114,23 @@ export function AuthForm({ mode }: AuthFormProps) {
         </Inline>
       </Card>
     </Screen>
+  );
+}
+
+type AppExtra = {
+  turnstileSiteKey?: string;
+};
+
+function isTurnstileEnabled() {
+  if (Platform.OS !== "web") {
+    return false;
+  }
+
+  const extra = Constants.expoConfig?.extra as AppExtra | undefined;
+  return Boolean(
+    process.env.EXPO_PUBLIC_TURNSTILE_SITE_KEY ||
+      process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY ||
+      extra?.turnstileSiteKey
   );
 }
 

@@ -42,6 +42,12 @@ const authRedirectUrl =
   process.env.NEXT_PUBLIC_AUTH_REDIRECT_URL ||
   `${siteUrl}/auth/callback`;
 
+const turnstileSiteKey =
+  process.env.EXPO_PUBLIC_TURNSTILE_SITE_KEY ||
+  process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY ||
+  process.env.TURNSTILE_SITE_KEY ||
+  "";
+
 module.exports = ({ config }) => ({
   ...config,
   ...appJson.expo,
@@ -51,7 +57,8 @@ module.exports = ({ config }) => ({
     authRedirectUrl,
     siteUrl,
     supabaseUrl,
-    supabaseAnonKey
+    supabaseAnonKey,
+    turnstileSiteKey
   }
 });
 

@@ -2,12 +2,13 @@ import type { LanguageCode, UserProfile } from "@athmira/types";
 
 import { assertSupabaseConfigured, getAuthRedirectUrl, supabase } from "./client";
 
-export async function signInWithEmail(email: string, password: string) {
+export async function signInWithEmail(email: string, password: string, captchaToken?: string | null) {
   assertSupabaseConfigured();
 
   const { data, error } = await supabase.auth.signInWithPassword({
     email: email.trim().toLowerCase(),
-    password
+    password,
+    options: captchaToken ? { captchaToken } : undefined
   });
 
   if (error) {
@@ -25,6 +26,7 @@ export async function signInWithEmail(email: string, password: string) {
 }
 
 export async function signUpWithEmail(input: {
+  captchaToken?: string | null;
   email: string;
   password: string;
   name?: string;
@@ -41,7 +43,8 @@ export async function signUpWithEmail(input: {
         name: input.name?.trim() || null,
         preferred_language: input.preferredLanguage ?? "en"
       },
-      emailRedirectTo: getAuthRedirectUrl()
+      emailRedirectTo: getAuthRedirectUrl(),
+      captchaToken: input.captchaToken ?? undefined
     }
   });
 
