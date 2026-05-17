@@ -12,6 +12,7 @@ export type TirePressureSettingInput = {
   riderWeightKg: number;
   surfaceRecommendations: TirePressureRecommendation["surfaceRecommendations"];
   tireSetup: TireSetup;
+  tireWidth: number;
   tireWidthMm: number;
   tireWidthUnit: TireWidthUnit;
 };
@@ -71,6 +72,7 @@ export async function saveTirePressureSetting(
     rider_weight_kg: input.riderWeightKg,
     surface_recommendations: input.surfaceRecommendations as unknown as Json,
     tire_setup: input.tireSetup,
+    tire_width_value: input.tireWidth,
     tire_width_mm: input.tireWidthMm,
     tire_width_unit: input.tireWidthUnit,
     user_id: userId

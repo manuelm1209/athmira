@@ -30,7 +30,7 @@ export function TirePressureScreen() {
   const [bikes, setBikes] = useState<Bike[]>([]);
   const [selectedBikeId, setSelectedBikeId] = useState(params.bikeId ?? "");
   const [bikeType, setBikeType] = useState<BikeType>("road");
-  const [tireSetup, setTireSetup] = useState<TireSetup>("inner_tube");
+  const [tireSetup, setTireSetup] = useState<TireSetup>("standard_tube");
   const [tireWidthUnit, setTireWidthUnit] = useState<TireWidthUnit>("mm");
   const [tireWidth, setTireWidth] = useState("28");
   const [riderWeightKg, setRiderWeightKg] = useState("");
@@ -108,17 +108,6 @@ export function TirePressureScreen() {
   }, [profile?.weight_kg, riderWeightKg]);
 
   useEffect(() => {
-    if (!selectedBike) {
-      return;
-    }
-
-    const nextUnit: TireWidthUnit = selectedBike.bike_type === "mountain" ? "in" : "mm";
-
-    setTireWidthUnit(nextUnit);
-    setTireWidth(String(defaultWidthsByBikeType[selectedBike.bike_type]));
-  }, [selectedBike]);
-
-  useEffect(() => {
     if (!user) {
       return;
     }
@@ -133,16 +122,26 @@ export function TirePressureScreen() {
           userId: currentUser.id
         });
 
-        if (!setting || cancelled) {
+        if (cancelled) {
           return;
         }
 
-        setBikeType(setting.bike_type);
-        setRiderWeightKg(numberToInput(setting.rider_weight_kg));
-        setTireSetup(setting.tire_setup ?? "inner_tube");
-        setTireWidth(numberToInput(setting.tire_width_unit === "in" ? setting.tire_width_mm / 25.4 : setting.tire_width_mm));
-        setTireWidthUnit(setting.tire_width_unit);
-        setNotes(setting.notes ?? "");
+        if (setting) {
+          setBikeType(setting.bike_type);
+          setRiderWeightKg(numberToInput(setting.rider_weight_kg));
+          setTireSetup(normalizeTireSetup(setting.tire_setup));
+          setTireWidth(numberToInput(getSavedTireWidthValue(setting)));
+          setTireWidthUnit(setting.tire_width_unit);
+          setNotes(setting.notes ?? "");
+          return;
+        }
+
+        const nextBikeType = selectedBike?.bike_type ?? "road";
+        setBikeType(nextBikeType);
+        setTireSetup("standard_tube");
+        setTireWidthUnit(getDefaultWidthUnit(nextBikeType));
+        setTireWidth(String(defaultWidthsByBikeType[nextBikeType]));
+        setNotes("");
       } catch {
         // Latest settings are optional; a failed lookup should not block calculator use.
       }
@@ -153,7 +152,7 @@ export function TirePressureScreen() {
     return () => {
       cancelled = true;
     };
-  }, [selectedBikeId, user]);
+  }, [selectedBike?.bike_type, selectedBikeId, user]);
 
   function handleBikeChange(nextBikeId: string) {
     setSelectedBikeId(nextBikeId);
@@ -162,10 +161,14 @@ export function TirePressureScreen() {
 
     if (nextBike) {
       setBikeType(nextBike.bike_type);
+      setTireWidthUnit(getDefaultWidthUnit(nextBike.bike_type));
+      setTireWidth(String(defaultWidthsByBikeType[nextBike.bike_type]));
       return;
     }
 
     setBikeType("road");
+    setTireWidthUnit("mm");
+    setTireWidth(String(defaultWidthsByBikeType.road));
   }
 
   function handleBikeTypeChange(nextBikeType: string) {
@@ -182,7 +185,7 @@ export function TirePressureScreen() {
   }
 
   async function saveCalculation() {
-    if (!user || !recommendation || !parsedWeight) {
+    if (!user || !recommendation || !parsedWeight || !parsedWidth) {
       setError(t("tirePressureMissingInputs"));
       return;
     }
@@ -205,6 +208,7 @@ export function TirePressureScreen() {
         riderWeightKg: parsedWeight,
         surfaceRecommendations: recommendation.surfaceRecommendations,
         tireSetup,
+        tireWidth: parsedWidth,
         tireWidthMm: recommendation.normalizedTireWidthMm,
         tireWidthUnit
       });
@@ -294,9 +298,10 @@ export function TirePressureScreen() {
             </Inline>
             <SelectField
               label={t("tireSetup")}
-              onValueChange={(value) => setTireSetup(value === "tubeless" ? "tubeless" : "inner_tube")}
+              onValueChange={(value) => setTireSetup(toTireSetup(value))}
               options={[
-                { label: t("tireSetupInnerTube"), value: "inner_tube" },
+                { label: t("tireSetupStandardTube"), value: "standard_tube" },
+                { label: t("tireSetupTpuTube"), value: "tpu_tube" },
                 { label: t("tireSetupTubeless"), value: "tubeless" }
               ]}
               value={tireSetup}
@@ -374,6 +379,34 @@ function toBikeType(value: string): BikeType {
   }
 
   return "road";
+}
+
+function toTireSetup(value: string): TireSetup {
+  if (value === "tpu_tube" || value === "tubeless") {
+    return value;
+  }
+
+  return "standard_tube";
+}
+
+function normalizeTireSetup(value: string | null | undefined): TireSetup {
+  if (value === "inner_tube") {
+    return "standard_tube";
+  }
+
+  return toTireSetup(value ?? "standard_tube");
+}
+
+function getDefaultWidthUnit(bikeType: BikeType): TireWidthUnit {
+  return bikeType === "mountain" ? "in" : "mm";
+}
+
+function getSavedTireWidthValue(setting: { tire_width_mm: number; tire_width_unit: TireWidthUnit; tire_width_value?: number }) {
+  if (typeof setting.tire_width_value === "number") {
+    return setting.tire_width_value;
+  }
+
+  return setting.tire_width_unit === "in" ? setting.tire_width_mm / 25.4 : setting.tire_width_mm;
 }
 
 function getSurfaceTitle(surface: TirePressureRecommendation["surfaceRecommendations"][number]["surface"], t: ReturnType<typeof useLanguage>["t"]) {

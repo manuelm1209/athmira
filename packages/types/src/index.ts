@@ -6,7 +6,7 @@ export type BikeType = "road" | "gravel" | "triathlon" | "mountain" | "hybrid";
 
 export type TireWidthUnit = "mm" | "in";
 
-export type TireSetup = "inner_tube" | "tubeless";
+export type TireSetup = "standard_tube" | "tpu_tube" | "tubeless";
 
 export type TireSurface = "smooth" | "rough" | "gravel" | "wet" | "loose";
 
@@ -91,6 +91,7 @@ export type TirePressureSetting = {
   bike_id: string | null;
   bike_type: BikeType;
   tire_setup: TireSetup;
+  tire_width_value: number;
   tire_width_mm: number;
   tire_width_unit: TireWidthUnit;
   rider_weight_kg: number;

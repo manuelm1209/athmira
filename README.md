@@ -119,6 +119,7 @@ Migration `0005_admin_role_management.sql` expands admin audit logging for admin
 
 Migration `0006_tire_pressure_settings.sql` adds editable tire pressure settings linked to users and optionally to bikes.
 Migration `0007_tire_pressure_setup.sql` adds tire setup storage so pressure history distinguishes inner-tube and tubeless recommendations.
+Migration `0008_tire_pressure_tpu_and_width_value.sql` adds TPU tube support and stores the exact tire-width value entered by the user.
 
 ## Security
 

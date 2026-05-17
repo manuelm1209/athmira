@@ -151,6 +151,7 @@ export type Database = {
           bike_id: string | null;
           bike_type: BikeType;
           tire_setup: TireSetup;
+          tire_width_value: number;
           tire_width_mm: number;
           tire_width_unit: TireWidthUnit;
           rider_weight_kg: number;
@@ -167,6 +168,7 @@ export type Database = {
           bike_id?: string | null;
           bike_type: BikeType;
           tire_setup?: TireSetup;
+          tire_width_value: number;
           tire_width_mm: number;
           tire_width_unit?: TireWidthUnit;
           rider_weight_kg: number;
@@ -181,6 +183,7 @@ export type Database = {
           bike_id?: string | null;
           bike_type?: BikeType;
           tire_setup?: TireSetup;
+          tire_width_value?: number;
           tire_width_mm?: number;
           tire_width_unit?: TireWidthUnit;
           rider_weight_kg?: number;

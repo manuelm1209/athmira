@@ -176,8 +176,22 @@ function getFrontRearSplit(bikeType: BikeType) {
 }
 
 function getSetupPressureAdjustment(bikeType: BikeType, tireSetup: TireSetup) {
-  if (tireSetup === "inner_tube") {
+  if (tireSetup === "standard_tube") {
     return 0;
+  }
+
+  if (tireSetup === "tpu_tube") {
+    switch (bikeType) {
+      case "road":
+      case "triathlon":
+        return -2;
+      case "gravel":
+      case "hybrid":
+        return -1;
+      case "mountain":
+      default:
+        return -1;
+    }
   }
 
   switch (bikeType) {
@@ -196,6 +210,20 @@ function getSetupPressureAdjustment(bikeType: BikeType, tireSetup: TireSetup) {
 function getSetupMinPsi(profileMinPsi: number, bikeType: BikeType, tireSetup: TireSetup) {
   if (tireSetup === "tubeless") {
     return profileMinPsi;
+  }
+
+  if (tireSetup === "tpu_tube") {
+    switch (bikeType) {
+      case "road":
+      case "triathlon":
+        return profileMinPsi + 3;
+      case "gravel":
+      case "hybrid":
+        return profileMinPsi + 2;
+      case "mountain":
+      default:
+        return profileMinPsi + 1;
+    }
   }
 
   switch (bikeType) {
