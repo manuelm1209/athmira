@@ -1,10 +1,14 @@
 import type { ChangeEvent, CSSProperties, PropsWithChildren, ReactNode } from "react";
+import { useEffect, useRef } from "react";
 import {
   ActivityIndicator,
+  Animated,
+  Easing,
   Platform,
   Pressable,
   ScrollView,
   StyleSheet,
+  type StyleProp,
   Text,
   TextInput,
   type TextInputProps,
@@ -13,14 +17,14 @@ import {
   type ViewStyle
 } from "react-native";
 
-import { colors, radii, spacing } from "./theme";
+import { colors, motion, radii, shadows, spacing, typography } from "./theme";
 
 type ButtonProps = PropsWithChildren<{
   onPress?: () => void;
   variant?: "primary" | "secondary" | "ghost" | "danger";
   disabled?: boolean;
   loading?: boolean;
-  style?: ViewStyle;
+  style?: StyleProp<ViewStyle>;
 }>;
 
 export function Button({ children, onPress, variant = "primary", disabled, loading, style }: ButtonProps) {
@@ -44,7 +48,7 @@ export function Button({ children, onPress, variant = "primary", disabled, loadi
 }
 
 type CardProps = PropsWithChildren<{
-  style?: ViewStyle;
+  style?: StyleProp<ViewStyle>;
 }>;
 
 export function Card({ children, style }: CardProps) {
@@ -175,11 +179,11 @@ export function DateField({ helper, label, max, min, onValueChange, value }: Dat
   return <Field helper={helper ?? "YYYY-MM-DD"} label={label} onChangeText={onValueChange} value={value} />;
 }
 
-export function Heading({ children, style }: PropsWithChildren<{ style?: TextStyle }>) {
+export function Heading({ children, style }: PropsWithChildren<{ style?: StyleProp<TextStyle> }>) {
   return <Text style={[styles.heading, style]}>{children}</Text>;
 }
 
-export function Body({ children, style }: PropsWithChildren<{ style?: TextStyle }>) {
+export function Body({ children, style }: PropsWithChildren<{ style?: StyleProp<TextStyle> }>) {
   return <Text style={[styles.body, style]}>{children}</Text>;
 }
 
@@ -187,21 +191,64 @@ export function Eyebrow({ children }: PropsWithChildren) {
   return <Text style={styles.eyebrow}>{children}</Text>;
 }
 
-export function Inline({ children, style }: { children: ReactNode; style?: ViewStyle }) {
+export function Inline({ children, style }: { children: ReactNode; style?: StyleProp<ViewStyle> }) {
   return <View style={[styles.inline, style]}>{children}</View>;
 }
+
+type FadeInViewProps = PropsWithChildren<{
+  delayMs?: number;
+  distance?: number;
+  style?: StyleProp<ViewStyle>;
+}>;
+
+export function FadeInView({ children, delayMs = 0, distance = 16, style }: FadeInViewProps) {
+  const progress = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    Animated.timing(progress, {
+      delay: delayMs,
+      duration: motion.slowMs,
+      easing: Easing.out(Easing.cubic),
+      toValue: 1,
+      useNativeDriver: true
+    }).start();
+  }, [delayMs, progress]);
+
+  return (
+    <Animated.View
+      style={[
+        style,
+        {
+          opacity: progress,
+          transform: [
+            {
+              translateY: progress.interpolate({
+                inputRange: [0, 1],
+                outputRange: [distance, 0]
+              })
+            }
+          ]
+        }
+      ]}
+    >
+      {children}
+    </Animated.View>
+  );
+}
+
+const fontFamily = Platform.select({ default: undefined, web: typography.fontFamily });
 
 const styles = StyleSheet.create({
   screen: {
     backgroundColor: colors.background,
-    flexGrow: 1,
-    padding: spacing.lg
+    flexGrow: 1
   },
   centeredScreen: {
     justifyContent: "center"
   },
   screenInner: {
     alignSelf: "center",
+    padding: spacing.lg,
     width: "100%"
   },
   card: {
@@ -209,29 +256,33 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     borderRadius: radii.md,
     borderWidth: 1,
-    padding: spacing.lg
+    padding: spacing.lg,
+    ...shadows.soft
   },
   heading: {
     color: colors.ink,
-    fontSize: 34,
-    fontWeight: "800",
-    lineHeight: 40
+    fontFamily,
+    fontSize: typography.sizes.heading,
+    fontWeight: typography.weights.black,
+    lineHeight: typography.lineHeights.heading
   },
   body: {
     color: colors.inkMuted,
-    fontSize: 16,
-    lineHeight: 24
+    fontFamily,
+    fontSize: typography.sizes.body,
+    lineHeight: typography.lineHeights.body
   },
   eyebrow: {
     color: colors.primary,
-    fontSize: 13,
-    fontWeight: "800",
+    fontFamily,
+    fontSize: typography.sizes.label,
+    fontWeight: typography.weights.black,
     letterSpacing: 0,
     textTransform: "uppercase"
   },
   button: {
     alignItems: "center",
-    borderRadius: radii.sm,
+    borderRadius: radii.md,
     borderWidth: 1,
     flexDirection: "row",
     gap: spacing.sm,
@@ -242,11 +293,12 @@ const styles = StyleSheet.create({
   },
   primaryButton: {
     backgroundColor: colors.primary,
-    borderColor: colors.primary
+    borderColor: colors.primary,
+    ...shadows.soft
   },
   secondaryButton: {
     backgroundColor: colors.surface,
-    borderColor: colors.primary
+    borderColor: colors.borderStrong
   },
   ghostButton: {
     backgroundColor: "transparent",
@@ -260,11 +312,13 @@ const styles = StyleSheet.create({
     opacity: 0.6
   },
   pressed: {
-    opacity: 0.86
+    opacity: 0.86,
+    transform: [{ translateY: 1 }, { scale: 0.99 }]
   },
   buttonText: {
+    fontFamily,
     fontSize: 15,
-    fontWeight: "800"
+    fontWeight: typography.weights.black
   },
   primaryButtonText: {
     color: "#ffffff"
@@ -283,15 +337,17 @@ const styles = StyleSheet.create({
   },
   label: {
     color: colors.ink,
+    fontFamily,
     fontSize: 14,
-    fontWeight: "700"
+    fontWeight: typography.weights.bold
   },
   field: {
     backgroundColor: colors.surface,
     borderColor: colors.border,
-    borderRadius: radii.sm,
+    borderRadius: radii.md,
     borderWidth: 1,
     color: colors.ink,
+    fontFamily,
     fontSize: 16,
     minHeight: 46,
     paddingHorizontal: spacing.md,
@@ -299,6 +355,7 @@ const styles = StyleSheet.create({
   },
   helper: {
     color: colors.inkMuted,
+    fontFamily,
     fontSize: 12,
     lineHeight: 16
   },
@@ -309,7 +366,7 @@ const styles = StyleSheet.create({
   },
   optionButton: {
     borderColor: colors.border,
-    borderRadius: radii.sm,
+    borderRadius: radii.md,
     borderWidth: 1,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm
@@ -320,8 +377,9 @@ const styles = StyleSheet.create({
   },
   optionButtonText: {
     color: colors.ink,
+    fontFamily,
     fontSize: 14,
-    fontWeight: "700"
+    fontWeight: typography.weights.bold
   },
   optionButtonTextSelected: {
     color: "#ffffff"

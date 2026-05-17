@@ -1,7 +1,7 @@
 import { Link, type Href, usePathname } from "expo-router";
 import type { PropsWithChildren } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
-import { colors, spacing } from "@athmira/ui";
+import { Platform, Pressable, StyleSheet, Text, View } from "react-native";
+import { colors, radii, shadows, spacing, typography } from "@athmira/ui";
 
 import { useAuth } from "@/providers/AuthProvider";
 import { useLanguage } from "@/providers/LanguageProvider";
@@ -39,8 +39,13 @@ export function AppShell({ children }: PropsWithChildren) {
       <View style={styles.header}>
         <Link href={session ? "/dashboard" : "/"} asChild>
           <Pressable accessibilityRole="link" style={styles.brand}>
-            <Text style={styles.brandName}>Athmira</Text>
-            <Text style={styles.brandTagline}>{t("tagline")}</Text>
+            <View style={styles.brandMark}>
+              <Text style={styles.brandMarkText}>A</Text>
+            </View>
+            <View>
+              <Text style={styles.brandName}>Athmira</Text>
+              <Text style={styles.brandTagline}>{t("tagline")}</Text>
+            </View>
           </Pressable>
         </Link>
         <View style={styles.nav}>
@@ -67,6 +72,8 @@ export function AppShell({ children }: PropsWithChildren) {
   );
 }
 
+const fontFamily = Platform.select({ default: undefined, web: typography.fontFamily });
+
 const styles = StyleSheet.create({
   root: {
     backgroundColor: colors.background,
@@ -82,20 +89,39 @@ const styles = StyleSheet.create({
     gap: spacing.md,
     justifyContent: "space-between",
     paddingHorizontal: spacing.xl,
-    paddingVertical: spacing.md
+    paddingVertical: spacing.md,
+    ...shadows.soft
   },
   brand: {
-    gap: 2
+    alignItems: "center",
+    flexDirection: "row",
+    gap: spacing.sm
+  },
+  brandMark: {
+    alignItems: "center",
+    backgroundColor: colors.primaryDark,
+    borderRadius: radii.md,
+    height: 38,
+    justifyContent: "center",
+    width: 38
+  },
+  brandMarkText: {
+    color: colors.accent,
+    fontFamily,
+    fontSize: 20,
+    fontWeight: typography.weights.black
   },
   brandName: {
     color: colors.ink,
+    fontFamily,
     fontSize: 21,
-    fontWeight: "900"
+    fontWeight: typography.weights.black
   },
   brandTagline: {
     color: colors.inkMuted,
+    fontFamily,
     fontSize: 12,
-    fontWeight: "700"
+    fontWeight: typography.weights.bold
   },
   nav: {
     alignItems: "center",
@@ -104,7 +130,7 @@ const styles = StyleSheet.create({
     gap: spacing.sm
   },
   navLink: {
-    borderRadius: 6,
+    borderRadius: radii.round,
     paddingHorizontal: spacing.sm,
     paddingVertical: spacing.xs
   },
@@ -113,8 +139,9 @@ const styles = StyleSheet.create({
   },
   navText: {
     color: colors.inkMuted,
+    fontFamily,
     fontSize: 14,
-    fontWeight: "800"
+    fontWeight: typography.weights.black
   },
   activeText: {
     color: colors.primaryDark

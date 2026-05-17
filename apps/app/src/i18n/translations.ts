@@ -225,6 +225,43 @@ export const en = {
   userProfile: "User profile",
   wearables: "Wearables",
   weight: "Weight (kg)",
+  homeAeroBody:
+    "Review torso, head, and arm position with estimated visual aero guidance that stays educational and honest.",
+  homeAeroTitle: "Aero posture without wind-tunnel claims",
+  homeBikeFitBody:
+    "Use the camera flow to capture rider posture, key angles, confidence, and practical fit recommendations.",
+  homeBikeFitTitle: "Camera-based bike fit guidance",
+  homeDashboardBody:
+    "Athmira keeps bikes, analyses, recommendations, and pressure planning together so progress is easy to read.",
+  homeDashboardTitle: "A calm performance cockpit",
+  homeFinalBody:
+    "Start with bike fit, aero posture, and pressure planning today. Training, nutrition, and wearable intelligence can build on the same foundation.",
+  homeFinalTitle: "Build your endurance system from the first ride",
+  homeHeroBody:
+    "Athmira helps cyclists and future triathletes understand fit, posture, tire pressure, and preparation with clear camera-based guidance.",
+  homeHowCameraBody: "Set the camera, keep the full rider visible, and capture a guided side or front analysis.",
+  homeHowCameraTitle: "Capture posture",
+  homeHowProfileBody: "Create your profile and bike setup so recommendations have useful context.",
+  homeHowProfileTitle: "Add your setup",
+  homeHowResultsBody: "Review estimated scores, angle trends, and next steps you can actually apply.",
+  homeHowResultsTitle: "Act on the results",
+  homeHowTitle: "From setup to useful guidance",
+  homeNutritionBody:
+    "Plan tire pressure now, then expand into carbohydrate, hydration, and race-day fueling workflows.",
+  homeNutritionTitle: "Pressure, fueling, and preparation",
+  homeProofCamera: "Camera-guided analysis",
+  homeProofPrivate: "Built around private athlete data",
+  homeProofProgress: "Progress-ready history",
+  homeSafetyBody:
+    "Athmira is guidance for training and education. It does not replace a doctor, physical therapist, coach, or professional bike fitter.",
+  homeSafetyTitle: "Useful guidance, careful claims",
+  dashboardAeroTrend: "Aero posture trend",
+  dashboardFitReadiness: "Fit readiness",
+  dashboardNextBestAction: "Next best action",
+  dashboardPressurePlan: "Pressure plan",
+  dashboardProgressSnapshot: "Progress snapshot",
+  dashboardQuickStart: "Quick start",
+  dashboardWeeklyLoad: "Analysis momentum",
   welcomeBody:
     "Camera-based bike fit, estimated aero analysis, nutrition calculators, and future AI coaching for cyclists and triathletes.",
   welcomeTitle: "Athmira",
@@ -458,6 +495,43 @@ export const es: Record<keyof typeof en, string> = {
   userProfile: "Perfil de usuario",
   wearables: "Wearables",
   weight: "Peso (kg)",
+  homeAeroBody:
+    "Revisa torso, cabeza y brazos con guia aero visual estimada, educativa y honesta.",
+  homeAeroTitle: "Postura aero sin promesas de tunel de viento",
+  homeBikeFitBody:
+    "Usa el flujo de camara para capturar postura, angulos clave, confianza y recomendaciones practicas.",
+  homeBikeFitTitle: "Guia de bike fit basada en camara",
+  homeDashboardBody:
+    "Athmira mantiene bicis, analisis, recomendaciones y presion de llantas en un solo lugar facil de leer.",
+  homeDashboardTitle: "Un cockpit de rendimiento claro",
+  homeFinalBody:
+    "Empieza hoy con bike fit, postura aero y presion de llantas. Entrenamiento, nutricion y wearables pueden crecer sobre la misma base.",
+  homeFinalTitle: "Construye tu sistema de resistencia desde la primera rodada",
+  homeHeroBody:
+    "Athmira ayuda a ciclistas y futuros triatletas a entender fit, postura, presion de llantas y preparacion con guia clara basada en camara.",
+  homeHowCameraBody: "Ubica la camara, manten visible al ciclista completo y captura un analisis lateral o frontal guiado.",
+  homeHowCameraTitle: "Captura la postura",
+  homeHowProfileBody: "Crea tu perfil y configuracion de bici para que las recomendaciones tengan contexto.",
+  homeHowProfileTitle: "Agrega tu setup",
+  homeHowResultsBody: "Revisa puntajes estimados, tendencias de angulos y siguientes pasos aplicables.",
+  homeHowResultsTitle: "Actua sobre resultados",
+  homeHowTitle: "Del setup a una guia util",
+  homeNutritionBody:
+    "Planifica presion de llantas ahora y luego expande a carbohidratos, hidratacion y fueling de carrera.",
+  homeNutritionTitle: "Presion, fueling y preparacion",
+  homeProofCamera: "Analisis guiado por camara",
+  homeProofPrivate: "Pensado para datos privados",
+  homeProofProgress: "Historial listo para progreso",
+  homeSafetyBody:
+    "Athmira es guia para entrenamiento y educacion. No reemplaza a un medico, fisioterapeuta, entrenador o bike fitter profesional.",
+  homeSafetyTitle: "Guia util, promesas cuidadosas",
+  dashboardAeroTrend: "Tendencia aero",
+  dashboardFitReadiness: "Preparacion de fit",
+  dashboardNextBestAction: "Siguiente accion",
+  dashboardPressurePlan: "Plan de presion",
+  dashboardProgressSnapshot: "Resumen de progreso",
+  dashboardQuickStart: "Inicio rapido",
+  dashboardWeeklyLoad: "Impulso de analisis",
   welcomeBody:
     "Bike fit con camara, analisis aero estimado, calculadoras de nutricion y futuro coaching con IA para ciclistas y triatletas.",
   welcomeTitle: "Athmira",

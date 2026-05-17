@@ -1,8 +1,8 @@
 import type { Href } from "expo-router";
 import { Link } from "expo-router";
 import type { ReactNode } from "react";
-import { Pressable, StyleSheet, Text } from "react-native";
-import { colors, radii, spacing } from "@athmira/ui";
+import { Platform, Pressable, StyleSheet, Text } from "react-native";
+import { colors, radii, shadows, spacing, typography } from "@athmira/ui";
 
 type LinkButtonProps = {
   children: ReactNode;
@@ -20,10 +20,12 @@ export function LinkButton({ children, href, variant = "primary" }: LinkButtonPr
   );
 }
 
+const fontFamily = Platform.select({ default: undefined, web: typography.fontFamily });
+
 const styles = StyleSheet.create({
   button: {
     alignItems: "center",
-    borderRadius: radii.sm,
+    borderRadius: radii.md,
     borderWidth: 1,
     justifyContent: "center",
     minHeight: 46,
@@ -32,19 +34,21 @@ const styles = StyleSheet.create({
   },
   primary: {
     backgroundColor: colors.primary,
-    borderColor: colors.primary
+    borderColor: colors.primary,
+    ...shadows.soft
   },
   secondary: {
     backgroundColor: colors.surface,
-    borderColor: colors.primary
+    borderColor: colors.borderStrong
   },
   ghost: {
     backgroundColor: "transparent",
     borderColor: "transparent"
   },
   text: {
+    fontFamily,
     fontSize: 15,
-    fontWeight: "800"
+    fontWeight: typography.weights.black
   },
   primaryText: {
     color: "#ffffff"
