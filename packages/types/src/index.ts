@@ -1,5 +1,7 @@
 export type LanguageCode = "en" | "es";
 
+export type UserRole = "athlete" | "admin";
+
 export type BikeType = "road" | "gravel" | "triathlon" | "mountain" | "hybrid";
 
 export type FitSessionType = "bike_fit" | "aero_analysis";
@@ -37,6 +39,14 @@ export type UserProfile = {
   date_of_birth: string | null;
   created_at: string;
   updated_at: string;
+};
+
+export type AdminAuthUser = {
+  id: string;
+  email: string | null;
+  created_at: string;
+  last_sign_in_at: string | null;
+  email_confirmed_at: string | null;
 };
 
 export type Bike = {
@@ -246,6 +256,29 @@ export type FrontKneeTrackingResult = {
   right: FrontKneeSideMetrics;
   sampleCount: number;
 };
+
+export type AdminUserOverview = {
+  authUser: AdminAuthUser;
+  profile: UserProfile | null;
+  isAdmin: boolean;
+  bikesCount: number;
+  analysesCount: number;
+  latestAnalysisAt: string | null;
+};
+
+export type AdminUserDetail = AdminUserOverview & {
+  aeroScores: AeroScore[];
+  bikes: Bike[];
+  fitMeasurements: FitMeasurement[];
+  frontKneeMeasurements: FrontKneeMeasurement[];
+  recommendations: Recommendation[];
+  sessions: FitSession[];
+  summaries: AnalysisSummary[];
+};
+
+export type AdminProfileUpdate = Partial<
+  Pick<UserProfile, "email" | "name" | "preferred_language" | "gender" | "height_cm" | "weight_kg" | "date_of_birth">
+>;
 
 export type FitScore = {
   comfortScore: number;

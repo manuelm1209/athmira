@@ -38,6 +38,7 @@ The current MVP focuses on:
 7. Supabase database structure
 8. Vercel web deployment
 9. Mobile-ready architecture
+10. Secure platform administration for authorized admins
 
 ## Tech Stack
 
@@ -90,6 +91,8 @@ Security rules for all changes:
 - Validate and normalize user-controlled input before persistence.
 - Keep camera permissions scoped to the analysis flows and stop media tracks when analysis components unmount.
 - Use bot protection on auth forms and keep CAPTCHA secrets server-side.
+- Keep platform-admin operations behind trusted server endpoints; never call Supabase Admin Auth APIs from the Expo client.
+- Store admin grants separately from editable profile data so users cannot self-promote.
 - Add or update security notes in README, migrations, and deployment config when introducing new auth, storage, AI, wearable, or external integration behavior.
 
 ## Suggested Structure
@@ -248,6 +251,7 @@ Store media files in Supabase Storage. Do not store video or image blobs directl
 Initial tables:
 
 - profiles
+- admin_roles
 - bikes
 - fit_sessions
 - fit_measurements

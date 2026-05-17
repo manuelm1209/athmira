@@ -53,6 +53,47 @@ export type Database = {
         };
         Relationships: [];
       };
+      admin_roles: {
+        Row: {
+          user_id: string;
+          role: "admin";
+          granted_by: string | null;
+          created_at: string;
+        };
+        Insert: {
+          user_id: string;
+          role?: "admin";
+          granted_by?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          role?: "admin";
+          granted_by?: string | null;
+        };
+        Relationships: [];
+      };
+      admin_audit_logs: {
+        Row: {
+          id: string;
+          admin_user_id: string | null;
+          target_user_id: string | null;
+          action: "create_user" | "set_temporary_password" | "update_user_profile";
+          metadata: Json;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          admin_user_id?: string | null;
+          target_user_id?: string | null;
+          action: "create_user" | "set_temporary_password" | "update_user_profile";
+          metadata?: Json;
+          created_at?: string;
+        };
+        Update: {
+          metadata?: Json;
+        };
+        Relationships: [];
+      };
       bikes: {
         Row: {
           id: string;

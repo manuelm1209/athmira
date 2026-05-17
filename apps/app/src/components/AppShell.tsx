@@ -16,7 +16,7 @@ type NavItem = {
 
 export function AppShell({ children }: PropsWithChildren) {
   const pathname = usePathname();
-  const { session, signOut } = useAuth();
+  const { isAdmin, session, signOut } = useAuth();
   const { t } = useLanguage();
 
   const navItems: NavItem[] = session
@@ -25,7 +25,8 @@ export function AppShell({ children }: PropsWithChildren) {
         { href: "/bikes", key: "bikes", label: t("bikes") },
         { href: "/analysis", key: "analysis", label: t("camera") },
         { href: "/profile", key: "profile", label: t("profile") },
-        { href: "/settings", key: "settings", label: t("settings") }
+        { href: "/settings", key: "settings", label: t("settings") },
+        ...(isAdmin ? [{ href: "/admin" as const, key: "admin", label: t("admin") }] : [])
       ]
     : [
         { href: "/auth/login", key: "login", label: t("login") },

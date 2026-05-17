@@ -36,10 +36,21 @@ Server-only values include:
 
 - Enable RLS on every user-owned table in exposed schemas.
 - Add ownership policies for select, insert, update, and delete paths that the app needs.
+- Keep admin grants separate from editable profile data.
+- Never allow users to mutate their own admin role through client-accessible profile updates.
 - Keep privileged functions in private schemas when possible.
 - Set explicit `search_path` values on trigger/helper functions.
 - Store media in private Supabase Storage buckets.
 - Use signed URLs for private media access.
+
+## Admin API Requirements
+
+- Keep Supabase Admin Auth calls on trusted server endpoints only.
+- Verify the requester's Supabase access token before each admin action.
+- Check `public.admin_roles` before using `SUPABASE_SERVICE_ROLE_KEY`.
+- Write an audit log for user creation, profile edits, and password resets.
+- Keep `SUPABASE_SERVICE_ROLE_KEY` server-only in Vercel/Supabase secrets.
+- Do not log temporary passwords, access tokens, refresh tokens, or service keys.
 
 ## Web Deployment Requirements
 

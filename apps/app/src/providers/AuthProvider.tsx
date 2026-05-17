@@ -3,6 +3,7 @@ import type { Session, User } from "@supabase/supabase-js";
 
 import {
   ensureProfile,
+  getAdminSession,
   getProfile,
   signOut as signOutFromSupabase,
   supabase,
@@ -11,7 +12,9 @@ import {
 import type { UserProfile } from "@athmira/types";
 
 type AuthContextValue = {
+  adminLoading: boolean;
   error: string | null;
+  isAdmin: boolean;
   loading: boolean;
   profile: UserProfile | null;
   refreshProfile: () => Promise<void>;
@@ -30,6 +33,8 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 export function AuthProvider({ children }: PropsWithChildren) {
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [adminLoading, setAdminLoading] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -66,6 +71,8 @@ export function AuthProvider({ children }: PropsWithChildren) {
 
     if (!user) {
       setProfile(null);
+      setIsAdmin(false);
+      setAdminLoading(false);
       return;
     }
 
@@ -103,6 +110,38 @@ export function AuthProvider({ children }: PropsWithChildren) {
     };
   }, [session?.user]);
 
+  useEffect(() => {
+    if (!session?.user) {
+      setIsAdmin(false);
+      setAdminLoading(false);
+      return;
+    }
+
+    let cancelled = false;
+    setAdminLoading(true);
+
+    getAdminSession()
+      .then((adminSession) => {
+        if (!cancelled) {
+          setIsAdmin(adminSession.isAdmin);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setIsAdmin(false);
+        }
+      })
+      .finally(() => {
+        if (!cancelled) {
+          setAdminLoading(false);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [session?.user]);
+
   const value = useMemo<AuthContextValue>(() => {
     async function refreshProfile() {
       if (!session?.user) {
@@ -131,7 +170,9 @@ export function AuthProvider({ children }: PropsWithChildren) {
     }
 
     return {
+      adminLoading,
       error,
+      isAdmin,
       loading,
       profile,
       refreshProfile,
@@ -140,7 +181,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
       updateProfile,
       user: session?.user ?? null
     };
-  }, [error, loading, profile, session]);
+  }, [adminLoading, error, isAdmin, loading, profile, session]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

@@ -95,6 +95,8 @@ Run the SQL migrations in `supabase/migrations` against your Supabase project in
 - `media_assets`
 - `analysis_summaries`
 - `front_knee_measurements`
+- `admin_roles`
+- `admin_audit_logs`
 - private `fit-media` storage bucket
 
 Row Level Security is enabled so authenticated users can only access their own data.
@@ -104,6 +106,13 @@ Media should be stored in Supabase Storage, not directly in Postgres. The MVP in
 `analysis_summaries` stores comparable session-level scores for side bike-fit and front knee-tracking sessions. `front_knee_measurements` stores the detailed left/right knee path metrics used to compare changes across sessions.
 
 Migration `0003_security_hardening.sql` moves the privileged signup trigger into a private schema, locks down helper function execution, and pins trigger-function `search_path` values. Apply it after the initial schema migrations in existing Supabase projects.
+
+Migration `0004_admin_platform.sql` adds `admin_roles`. It is intentionally separate from `profiles` so users cannot self-promote through profile updates. Bootstrap the first platform admin manually in Supabase SQL after creating that user's account:
+
+```sql
+insert into public.admin_roles (user_id)
+values ('YOUR_AUTH_USER_ID');
+```
 
 ## Security
 
@@ -115,6 +124,30 @@ Cybersecurity is a required product constraint for Athmira. User identity, bike 
 - Use signed URLs for private media access.
 - Keep Cloudflare Turnstile enabled on auth forms in production and configure the Turnstile secret in Supabase Auth CAPTCHA/Bot Protection.
 - Review Vercel security headers in `vercel.json` when adding camera, media, worker, or third-party script behavior.
+
+## Admin Platform
+
+The admin panel is available at `/admin` for users listed in `public.admin_roles`.
+
+Admin capabilities:
+
+- List platform users.
+- Create users with a temporary password.
+- Set a temporary password for an existing user.
+- Review and edit user profile/preferences.
+- Review each user's bikes.
+- Review saved camera analysis sessions and measurements.
+
+Admin Auth operations run through Vercel serverless endpoints in `/api/admin/*`. These endpoints verify the signed-in user's Supabase access token, check `admin_roles`, and only then use `SUPABASE_SERVICE_ROLE_KEY` server-side.
+
+Set these server-only Vercel environment variables:
+
+```bash
+SUPABASE_URL=
+SUPABASE_SERVICE_ROLE_KEY=
+```
+
+Do not prefix the service-role key with `EXPO_PUBLIC_`.
 
 ## Vercel Deployment
 
