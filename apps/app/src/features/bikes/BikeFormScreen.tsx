@@ -5,6 +5,7 @@ import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import { Alert, StyleSheet, Text, View } from "react-native";
 
+import { LinkButton } from "@/components/LinkButton";
 import { useAuth } from "@/providers/AuthProvider";
 import { useLanguage } from "@/providers/LanguageProvider";
 import { getErrorMessage, parseOptionalNumber } from "@/utils/form";
@@ -187,6 +188,15 @@ export function BikeFormScreen({ bikeId }: BikeFormScreenProps) {
           <Button loading={saving} onPress={saveBike}>
             {t("save")}
           </Button>
+          {bikeId ? (
+            <LinkButton href={{ pathname: "/tire-pressure", params: { bikeId } }} variant="secondary">
+              {t("tirePressureConfigure")}
+            </LinkButton>
+          ) : (
+            <LinkButton href="/tire-pressure" variant="secondary">
+              {t("tirePressureTitle")}
+            </LinkButton>
+          )}
           {bikeId ? (
             <Button loading={deleting} onPress={confirmDelete} variant="danger">
               {t("deleteBike")}

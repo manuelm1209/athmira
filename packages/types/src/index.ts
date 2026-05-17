@@ -4,6 +4,10 @@ export type UserRole = "athlete" | "admin";
 
 export type BikeType = "road" | "gravel" | "triathlon" | "mountain" | "hybrid";
 
+export type TireWidthUnit = "mm" | "in";
+
+export type TireSurface = "smooth" | "rough" | "gravel" | "wet" | "loose";
+
 export type FitSessionType = "bike_fit" | "aero_analysis";
 
 export type DeviceType = "web" | "ios" | "android";
@@ -77,6 +81,46 @@ export type BikeInput = {
   stem_length_mm?: number | null;
   crank_length_mm?: number | null;
   handlebar_width_mm?: number | null;
+};
+
+export type TirePressureSetting = {
+  id: string;
+  user_id: string;
+  bike_id: string | null;
+  bike_type: BikeType;
+  tire_width_mm: number;
+  tire_width_unit: TireWidthUnit;
+  rider_weight_kg: number;
+  front_pressure_psi: number;
+  rear_pressure_psi: number;
+  surface_recommendations: Record<string, unknown>;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type TirePressureInput = {
+  bikeType: BikeType;
+  riderWeightKg: number;
+  tireWidth: number;
+  tireWidthUnit: TireWidthUnit;
+};
+
+export type TireSurfaceRecommendation = {
+  label: string;
+  surface: TireSurface;
+  frontPsi: number;
+  rearPsi: number;
+  note: string;
+};
+
+export type TirePressureRecommendation = {
+  frontPsi: number;
+  rearPsi: number;
+  maxPsi: number;
+  minPsi: number;
+  normalizedTireWidthMm: number;
+  surfaceRecommendations: TireSurfaceRecommendation[];
 };
 
 export type FitSession = {

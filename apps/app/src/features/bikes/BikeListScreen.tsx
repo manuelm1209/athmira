@@ -52,6 +52,9 @@ export function BikeListScreen() {
           <Body>{t("bikeProfile")}</Body>
           <Inline>
             <LinkButton href="/bikes/new">{t("addBike")}</LinkButton>
+            <LinkButton href="/tire-pressure" variant="secondary">
+              {t("tirePressureTitle")}
+            </LinkButton>
           </Inline>
         </View>
         {error ? <Text style={styles.error}>{error}</Text> : null}
@@ -71,6 +74,9 @@ export function BikeListScreen() {
               </View>
               <LinkButton href={{ pathname: "/bikes/[id]", params: { id: bike.id } }} variant="secondary">
                 {t("editBike")}
+              </LinkButton>
+              <LinkButton href={{ pathname: "/tire-pressure", params: { bikeId: bike.id } }} variant="ghost">
+                {t("tirePressureConfigure")}
               </LinkButton>
             </Card>
           ))}

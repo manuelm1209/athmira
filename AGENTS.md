@@ -16,6 +16,7 @@ The app will eventually include:
 - Visual wind tunnel-style simulation
 - Nutrition calculators
 - Carbohydrate and hydration planning
+- Tire pressure calculator
 - Training guidance
 - Wearable integrations
 - Garmin, Strava, Apple Health, and Google Fit integrations
@@ -194,6 +195,7 @@ The nutrition module should eventually include:
 - Carbohydrate calculator
 - Hydration calculator
 - Sodium/electrolyte calculator
+- Tire pressure calculator based on bike type, rider weight, tire width, and riding surface
 - Pre-workout meal suggestions
 - Long ride fueling plans
 - Race day fueling plan

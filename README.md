@@ -97,6 +97,7 @@ Run the SQL migrations in `supabase/migrations` against your Supabase project in
 - `front_knee_measurements`
 - `admin_roles`
 - `admin_audit_logs`
+- `tire_pressure_settings`
 - private `fit-media` storage bucket
 
 Row Level Security is enabled so authenticated users can only access their own data.
@@ -115,6 +116,8 @@ values ('YOUR_AUTH_USER_ID');
 ```
 
 Migration `0005_admin_role_management.sql` expands admin audit logging for admin-role grants and revocations.
+
+Migration `0006_tire_pressure_settings.sql` adds editable tire pressure settings linked to users and optionally to bikes.
 
 ## Security
 

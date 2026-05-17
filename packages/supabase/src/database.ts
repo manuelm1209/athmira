@@ -8,7 +8,8 @@ import type {
   LanguageCode,
   MediaAssetType,
   RecommendationCategory,
-  RecommendationPriority
+  RecommendationPriority,
+  TireWidthUnit
 } from "@athmira/types";
 
 export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[];
@@ -138,6 +139,51 @@ export type Database = {
           stem_length_mm?: number | null;
           crank_length_mm?: number | null;
           handlebar_width_mm?: number | null;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      tire_pressure_settings: {
+        Row: {
+          id: string;
+          user_id: string;
+          bike_id: string | null;
+          bike_type: BikeType;
+          tire_width_mm: number;
+          tire_width_unit: TireWidthUnit;
+          rider_weight_kg: number;
+          front_pressure_psi: number;
+          rear_pressure_psi: number;
+          surface_recommendations: Json;
+          notes: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          bike_id?: string | null;
+          bike_type: BikeType;
+          tire_width_mm: number;
+          tire_width_unit?: TireWidthUnit;
+          rider_weight_kg: number;
+          front_pressure_psi: number;
+          rear_pressure_psi: number;
+          surface_recommendations?: Json;
+          notes?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          bike_id?: string | null;
+          bike_type?: BikeType;
+          tire_width_mm?: number;
+          tire_width_unit?: TireWidthUnit;
+          rider_weight_kg?: number;
+          front_pressure_psi?: number;
+          rear_pressure_psi?: number;
+          surface_recommendations?: Json;
+          notes?: string | null;
           updated_at?: string;
         };
         Relationships: [];
