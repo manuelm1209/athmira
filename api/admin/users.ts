@@ -58,6 +58,12 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
         return;
       }
 
+      if (body.action === "setAdminRole") {
+        const user = await setAdminRole(supabase, adminUser.id, body);
+        res.status(200).json({ user });
+        return;
+      }
+
       const user = await createUser(supabase, adminUser.id, body);
       res.status(201).json({ user });
       return;
@@ -173,6 +179,7 @@ async function createUser(
   const password = normalizePassword(body.password);
   const name = normalizeOptionalString(body.name);
   const preferredLanguage = normalizeLanguage(body.preferredLanguage ?? body.preferred_language);
+  const isAdmin = body.isAdmin === true;
 
   const { data, error } = await supabase.auth.admin.createUser({
     email,
@@ -195,8 +202,13 @@ async function createUser(
   });
   await logAdminAction(supabase, adminUserId, data.user.id, "create_user", {
     email,
+    is_admin: isAdmin,
     preferred_language: preferredLanguage
   });
+
+  if (isAdmin) {
+    await grantAdminRole(supabase, adminUserId, data.user.id);
+  }
 
   return getUserDetail(supabase, data.user.id);
 }
@@ -245,11 +257,54 @@ async function setTemporaryPassword(supabase: SupabaseAdminClient, adminUserId: 
   await logAdminAction(supabase, adminUserId, userId, "set_temporary_password");
 }
 
+async function setAdminRole(
+  supabase: SupabaseAdminClient,
+  adminUserId: string,
+  body: Record<string, unknown>
+): Promise<AdminUserDetail> {
+  const userId = getBodyString(body, "userId");
+  const isAdmin = body.isAdmin === true;
+
+  if (!userId) {
+    throw new ApiError(400, "User id is required.");
+  }
+
+  if (!isAdmin && userId === adminUserId) {
+    throw new ApiError(400, "You cannot remove your own admin role.");
+  }
+
+  if (isAdmin) {
+    await grantAdminRole(supabase, adminUserId, userId);
+  } else {
+    await revokeAdminRole(supabase, adminUserId, userId);
+  }
+
+  return getUserDetail(supabase, userId);
+}
+
+async function grantAdminRole(supabase: SupabaseAdminClient, adminUserId: string, targetUserId: string) {
+  const { error } = await supabase.from("admin_roles").upsert({
+    granted_by: adminUserId,
+    role: "admin",
+    user_id: targetUserId
+  });
+
+  assertNoQueryError(error, "Unable to grant admin role.");
+  await logAdminAction(supabase, adminUserId, targetUserId, "grant_admin");
+}
+
+async function revokeAdminRole(supabase: SupabaseAdminClient, adminUserId: string, targetUserId: string) {
+  const { error } = await supabase.from("admin_roles").delete().eq("user_id", targetUserId);
+
+  assertNoQueryError(error, "Unable to revoke admin role.");
+  await logAdminAction(supabase, adminUserId, targetUserId, "revoke_admin");
+}
+
 async function logAdminAction(
   supabase: SupabaseAdminClient,
   adminUserId: string,
   targetUserId: string,
-  action: "create_user" | "set_temporary_password" | "update_user_profile",
+  action: "create_user" | "grant_admin" | "revoke_admin" | "set_temporary_password" | "update_user_profile",
   metadata: Record<string, unknown> = {}
 ) {
   const { error } = await supabase.from("admin_audit_logs").insert({

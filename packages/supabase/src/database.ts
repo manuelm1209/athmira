@@ -77,7 +77,7 @@ export type Database = {
           id: string;
           admin_user_id: string | null;
           target_user_id: string | null;
-          action: "create_user" | "set_temporary_password" | "update_user_profile";
+          action: "create_user" | "grant_admin" | "revoke_admin" | "set_temporary_password" | "update_user_profile";
           metadata: Json;
           created_at: string;
         };
@@ -85,7 +85,7 @@ export type Database = {
           id?: string;
           admin_user_id?: string | null;
           target_user_id?: string | null;
-          action: "create_user" | "set_temporary_password" | "update_user_profile";
+          action: "create_user" | "grant_admin" | "revoke_admin" | "set_temporary_password" | "update_user_profile";
           metadata?: Json;
           created_at?: string;
         };

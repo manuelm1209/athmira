@@ -114,6 +114,8 @@ insert into public.admin_roles (user_id)
 values ('YOUR_AUTH_USER_ID');
 ```
 
+Migration `0005_admin_role_management.sql` expands admin audit logging for admin-role grants and revocations.
+
 ## Security
 
 Cybersecurity is a required product constraint for Athmira. User identity, bike profiles, camera/media data, fit analysis history, and future wearable data should be treated as sensitive user data.
@@ -133,7 +135,9 @@ Admin capabilities:
 
 - List platform users.
 - Create users with a temporary password.
+- Create users directly as admins when needed.
 - Set a temporary password for an existing user.
+- Grant or remove admin access for other users.
 - Review and edit user profile/preferences.
 - Review each user's bikes.
 - Review saved camera analysis sessions and measurements.

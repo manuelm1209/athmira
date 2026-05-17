@@ -34,12 +34,25 @@ export async function getAdminUserDetail(userId: string): Promise<AdminUserDetai
 
 export async function createAdminManagedUser(input: {
   email: string;
+  isAdmin?: boolean;
   name?: string | null;
   password: string;
   preferredLanguage: LanguageCode;
 }): Promise<AdminUserDetail> {
   const response = await adminRequest<{ user: AdminUserDetail }>("/api/admin/users", {
     body: JSON.stringify(input),
+    method: "POST"
+  });
+  return response.user;
+}
+
+export async function setAdminManagedUserRole(userId: string, isAdmin: boolean): Promise<AdminUserDetail> {
+  const response = await adminRequest<{ user: AdminUserDetail }>("/api/admin/users", {
+    body: JSON.stringify({
+      action: "setAdminRole",
+      isAdmin,
+      userId
+    }),
     method: "POST"
   });
   return response.user;

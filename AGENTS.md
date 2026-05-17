@@ -93,6 +93,7 @@ Security rules for all changes:
 - Use bot protection on auth forms and keep CAPTCHA secrets server-side.
 - Keep platform-admin operations behind trusted server endpoints; never call Supabase Admin Auth APIs from the Expo client.
 - Store admin grants separately from editable profile data so users cannot self-promote.
+- Audit admin grants, revocations, user creation, profile edits, and password resets.
 - Add or update security notes in README, migrations, and deployment config when introducing new auth, storage, AI, wearable, or external integration behavior.
 
 ## Suggested Structure

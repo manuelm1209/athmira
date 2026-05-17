@@ -2,6 +2,7 @@ import {
   createAdminManagedUser,
   getAdminUserDetail,
   listAdminUsers,
+  setAdminManagedUserRole,
   setAdminManagedUserTemporaryPassword,
   updateAdminManagedUserProfile
 } from "@athmira/supabase";
@@ -25,10 +26,15 @@ type ProfileDraft = {
 
 type CreateUserDraft = {
   email: string;
+  isAdmin: boolean;
   name: string;
   password: string;
   preferredLanguage: LanguageCode;
 };
+
+type AdminDetailTab = "account" | "bikes" | "tests";
+type RoleFilter = "all" | "admin" | "athlete";
+type UserSort = "recent_analysis" | "name" | "created_at" | "analyses";
 
 const emptyProfileDraft: ProfileDraft = {
   dateOfBirth: "",
@@ -48,10 +54,15 @@ export function AdminScreen() {
   const [profileDraft, setProfileDraft] = useState<ProfileDraft>(emptyProfileDraft);
   const [createDraft, setCreateDraft] = useState<CreateUserDraft>({
     email: "",
+    isAdmin: false,
     name: "",
     password: "",
     preferredLanguage: "en"
   });
+  const [searchQuery, setSearchQuery] = useState("");
+  const [roleFilter, setRoleFilter] = useState<RoleFilter>("all");
+  const [userSort, setUserSort] = useState<UserSort>("recent_analysis");
+  const [detailTab, setDetailTab] = useState<AdminDetailTab>("account");
   const [temporaryPassword, setTemporaryPassword] = useState("");
   const [loadingUsers, setLoadingUsers] = useState(true);
   const [loadingDetail, setLoadingDetail] = useState(false);
@@ -69,6 +80,30 @@ export function AdminScreen() {
     }),
     [users]
   );
+
+  const filteredUsers = useMemo(() => {
+    const normalizedSearch = searchQuery.trim().toLowerCase();
+
+    return [...users]
+      .filter((user) => {
+        if (roleFilter === "admin" && !user.isAdmin) {
+          return false;
+        }
+
+        if (roleFilter === "athlete" && user.isAdmin) {
+          return false;
+        }
+
+        if (!normalizedSearch) {
+          return true;
+        }
+
+        return [user.profile?.name, user.authUser.email, user.authUser.id]
+          .filter(Boolean)
+          .some((value) => value?.toLowerCase().includes(normalizedSearch));
+      })
+      .sort((a, b) => compareUsers(a, b, userSort));
+  }, [roleFilter, searchQuery, userSort, users]);
 
   useEffect(() => {
     loadUsers();
@@ -120,7 +155,7 @@ export function AdminScreen() {
 
     try {
       const created = await createAdminManagedUser(createDraft);
-      setCreateDraft({ email: "", name: "", password: "", preferredLanguage: "en" });
+      setCreateDraft({ email: "", isAdmin: false, name: "", password: "", preferredLanguage: "en" });
       setMessage(t("adminUserCreated"));
       await loadUsers(created.authUser.id);
     } catch (createError) {
@@ -180,6 +215,27 @@ export function AdminScreen() {
     }
   }
 
+  async function updateSelectedUserRole(nextIsAdmin: boolean) {
+    if (!selectedUser || selectedUser.isAdmin === nextIsAdmin) {
+      return;
+    }
+
+    setSavingProfile(true);
+    setError(null);
+    setMessage(null);
+
+    try {
+      const updated = await setAdminManagedUserRole(selectedUser.authUser.id, nextIsAdmin);
+      setSelectedUser(updated);
+      setMessage(nextIsAdmin ? t("adminRoleGranted") : t("adminRoleRevoked"));
+      await loadUsers(updated.authUser.id);
+    } catch (roleError) {
+      setError(getErrorMessage(roleError));
+    } finally {
+      setSavingProfile(false);
+    }
+  }
+
   return (
     <Screen maxWidth={1240}>
       <View style={styles.page}>
@@ -231,15 +287,61 @@ export function AdminScreen() {
                 ]}
                 value={createDraft.preferredLanguage}
               />
+              <SelectField
+                helper={t("adminRoleHelp")}
+                label={t("adminRole")}
+                onValueChange={(role) => setCreateDraft((draft) => ({ ...draft, isAdmin: role === "admin" }))}
+                options={[
+                  { label: t("adminRoleAthlete"), value: "athlete" },
+                  { label: t("adminRoleAdmin"), value: "admin" }
+                ]}
+                value={createDraft.isAdmin ? "admin" : "athlete"}
+              />
               <Button loading={creatingUser} onPress={createUser}>
                 {t("adminCreateUser")}
               </Button>
             </Card>
 
             <Card style={styles.card}>
-              <Text style={styles.sectionTitle}>{t("adminUsers")}</Text>
+              <View style={styles.sectionHeader}>
+                <Text style={styles.sectionTitle}>{t("adminUsers")}</Text>
+                <Text style={styles.countBadge}>{filteredUsers.length}</Text>
+              </View>
+              <Field
+                autoCapitalize="none"
+                label={t("adminSearchUsers")}
+                onChangeText={setSearchQuery}
+                value={searchQuery}
+              />
+              <Inline>
+                <View style={styles.filterField}>
+                  <SelectField
+                    label={t("adminRoleFilter")}
+                    onValueChange={(value) => setRoleFilter(toRoleFilter(value))}
+                    options={[
+                      { label: t("adminFilterAll"), value: "all" },
+                      { label: t("adminRoleAdmin"), value: "admin" },
+                      { label: t("adminRoleAthlete"), value: "athlete" }
+                    ]}
+                    value={roleFilter}
+                  />
+                </View>
+                <View style={styles.filterField}>
+                  <SelectField
+                    label={t("adminSortBy")}
+                    onValueChange={(value) => setUserSort(toUserSort(value))}
+                    options={[
+                      { label: t("adminSortRecentAnalysis"), value: "recent_analysis" },
+                      { label: t("adminSortName"), value: "name" },
+                      { label: t("adminSortCreated"), value: "created_at" },
+                      { label: t("adminSortAnalyses"), value: "analyses" }
+                    ]}
+                    value={userSort}
+                  />
+                </View>
+              </Inline>
               {loadingUsers ? <Body>Loading...</Body> : null}
-              {users.map((user) => (
+              {filteredUsers.map((user) => (
                 <Pressable
                   accessibilityRole="button"
                   key={user.authUser.id}
@@ -252,9 +354,11 @@ export function AdminScreen() {
                     {user.bikesCount} {t("adminBikes").toLowerCase()} · {user.analysesCount}{" "}
                     {t("adminAnalyses").toLowerCase()}
                   </Text>
+                  <Text style={styles.userMeta}>{t("adminLatestAnalysis")}: {formatDateTime(user.latestAnalysisAt)}</Text>
                   {user.isAdmin ? <Text style={styles.adminBadge}>{t("adminRoleAdmin")}</Text> : null}
                 </Pressable>
               ))}
+              {!loadingUsers && !filteredUsers.length ? <Body>{t("adminNoUsersMatch")}</Body> : null}
             </Card>
           </View>
 
@@ -270,111 +374,139 @@ export function AdminScreen() {
                     <Meta label={t("adminLastSignIn")} value={formatDateTime(selectedUser.authUser.last_sign_in_at)} />
                   </Inline>
 
-                  <View style={styles.formGrid}>
-                    <Field
-                      autoCapitalize="none"
-                      inputMode="email"
-                      label={t("authEmail")}
-                      onChangeText={(email) => setProfileDraft((draft) => ({ ...draft, email }))}
-                      value={profileDraft.email}
-                    />
-                    <Field
-                      label={t("authName")}
-                      onChangeText={(name) => setProfileDraft((draft) => ({ ...draft, name }))}
-                      value={profileDraft.name}
-                    />
-                    <SelectField
-                      label={t("gender")}
-                      onValueChange={(gender) => setProfileDraft((draft) => ({ ...draft, gender }))}
-                      options={[
-                        { label: t("genderFemale"), value: "female" },
-                        { label: t("genderMale"), value: "male" },
-                        { label: t("genderNonBinary"), value: "non_binary" },
-                        { label: t("genderPreferNotToSay"), value: "prefer_not_to_say" }
-                      ]}
-                      placeholder={t("genderSelectPlaceholder")}
-                      value={profileDraft.gender}
-                    />
-                    <SelectField
-                      label={t("language")}
-                      onValueChange={(preferredLanguage) =>
-                        setProfileDraft((draft) => ({ ...draft, preferredLanguage: toLanguageCode(preferredLanguage) }))
-                      }
-                      options={[
-                        { label: "English", value: "en" },
-                        { label: "Español", value: "es" }
-                      ]}
-                      value={profileDraft.preferredLanguage}
-                    />
-                    <Field
-                      inputMode="numeric"
-                      label={t("height")}
-                      onChangeText={(heightCm) => setProfileDraft((draft) => ({ ...draft, heightCm }))}
-                      value={profileDraft.heightCm}
-                    />
-                    <Field
-                      inputMode="numeric"
-                      label={t("weight")}
-                      onChangeText={(weightKg) => setProfileDraft((draft) => ({ ...draft, weightKg }))}
-                      value={profileDraft.weightKg}
-                    />
-                    <DateField
-                      helper={t("dateOfBirthHelp")}
-                      label={t("dateOfBirth")}
-                      max={new Date().toISOString().slice(0, 10)}
-                      min="1900-01-01"
-                      onValueChange={(dateOfBirth) => setProfileDraft((draft) => ({ ...draft, dateOfBirth }))}
-                      value={profileDraft.dateOfBirth}
-                    />
-                  </View>
-
-                  <Inline>
-                    <Button loading={savingProfile} onPress={saveProfile}>
-                      {t("adminSaveUser")}
-                    </Button>
+                  <Inline style={styles.tabs}>
+                    <TabButton active={detailTab === "account"} label={t("adminAccountTab")} onPress={() => setDetailTab("account")} />
+                    <TabButton active={detailTab === "bikes"} label={`${t("adminUserBikes")} (${selectedUser.bikes.length})`} onPress={() => setDetailTab("bikes")} />
+                    <TabButton active={detailTab === "tests"} label={`${t("adminCameraTests")} (${selectedUser.sessions.length})`} onPress={() => setDetailTab("tests")} />
                   </Inline>
 
-                  <View style={styles.passwordPanel}>
-                    <Field
-                      helper={t("adminTemporaryPasswordHelp")}
-                      label={t("adminTemporaryPassword")}
-                      onChangeText={setTemporaryPassword}
-                      secureTextEntry
-                      value={temporaryPassword}
-                    />
-                    <Button loading={resettingPassword} onPress={resetPassword} variant="secondary">
-                      {t("adminSetPassword")}
-                    </Button>
-                  </View>
-
-                  <Section title={t("adminUserBikes")}>
-                    {selectedUser.bikes.length ? (
-                      selectedUser.bikes.map((bike) => (
-                        <View key={bike.id} style={styles.dataRow}>
-                          <Text style={styles.dataTitle}>{bike.name}</Text>
-                          <Text style={styles.dataText}>
-                            {[bike.bike_type, bike.brand, bike.model, bike.size].filter(Boolean).join(" · ")}
-                          </Text>
-                          <Text style={styles.dataText}>
-                            {t("saddleHeight")}: {formatMetric(bike.saddle_height_mm, "mm")} · {t("stemLength")}:{" "}
-                            {formatMetric(bike.stem_length_mm, "mm")}
-                          </Text>
+                  {detailTab === "account" ? (
+                    <View style={styles.detailStack}>
+                      <View style={styles.rolePanel}>
+                        <View style={styles.roleCopy}>
+                          <Text style={styles.subsectionTitle}>{t("adminRoleManagement")}</Text>
+                          <Body>{t("adminRoleHelp")}</Body>
                         </View>
-                      ))
-                    ) : (
-                      <Body>{t("adminNoBikes")}</Body>
-                    )}
-                  </Section>
+                        <Button
+                          loading={savingProfile}
+                          onPress={() => updateSelectedUserRole(!selectedUser.isAdmin)}
+                          variant={selectedUser.isAdmin ? "danger" : "secondary"}
+                        >
+                          {selectedUser.isAdmin ? t("adminRevokeAdmin") : t("adminGrantAdmin")}
+                        </Button>
+                      </View>
 
-                  <Section title={t("adminCameraTests")}>
-                    {selectedUser.sessions.length ? (
-                      selectedUser.sessions.map((session) => (
-                        <CameraTestRow key={session.id} selectedUser={selectedUser} sessionId={session.id} />
-                      ))
-                    ) : (
-                      <Body>{t("adminNoCameraTests")}</Body>
-                    )}
-                  </Section>
+                      <View style={styles.formGrid}>
+                        <Field
+                          autoCapitalize="none"
+                          inputMode="email"
+                          label={t("authEmail")}
+                          onChangeText={(email) => setProfileDraft((draft) => ({ ...draft, email }))}
+                          value={profileDraft.email}
+                        />
+                        <Field
+                          label={t("authName")}
+                          onChangeText={(name) => setProfileDraft((draft) => ({ ...draft, name }))}
+                          value={profileDraft.name}
+                        />
+                        <SelectField
+                          label={t("gender")}
+                          onValueChange={(gender) => setProfileDraft((draft) => ({ ...draft, gender }))}
+                          options={[
+                            { label: t("genderFemale"), value: "female" },
+                            { label: t("genderMale"), value: "male" },
+                            { label: t("genderNonBinary"), value: "non_binary" },
+                            { label: t("genderPreferNotToSay"), value: "prefer_not_to_say" }
+                          ]}
+                          placeholder={t("genderSelectPlaceholder")}
+                          value={profileDraft.gender}
+                        />
+                        <SelectField
+                          label={t("language")}
+                          onValueChange={(preferredLanguage) =>
+                            setProfileDraft((draft) => ({ ...draft, preferredLanguage: toLanguageCode(preferredLanguage) }))
+                          }
+                          options={[
+                            { label: "English", value: "en" },
+                            { label: "Español", value: "es" }
+                          ]}
+                          value={profileDraft.preferredLanguage}
+                        />
+                        <Field
+                          inputMode="numeric"
+                          label={t("height")}
+                          onChangeText={(heightCm) => setProfileDraft((draft) => ({ ...draft, heightCm }))}
+                          value={profileDraft.heightCm}
+                        />
+                        <Field
+                          inputMode="numeric"
+                          label={t("weight")}
+                          onChangeText={(weightKg) => setProfileDraft((draft) => ({ ...draft, weightKg }))}
+                          value={profileDraft.weightKg}
+                        />
+                        <DateField
+                          helper={t("dateOfBirthHelp")}
+                          label={t("dateOfBirth")}
+                          max={new Date().toISOString().slice(0, 10)}
+                          min="1900-01-01"
+                          onValueChange={(dateOfBirth) => setProfileDraft((draft) => ({ ...draft, dateOfBirth }))}
+                          value={profileDraft.dateOfBirth}
+                        />
+                      </View>
+
+                      <Inline>
+                        <Button loading={savingProfile} onPress={saveProfile}>
+                          {t("adminSaveUser")}
+                        </Button>
+                      </Inline>
+
+                      <View style={styles.passwordPanel}>
+                        <Field
+                          helper={t("adminTemporaryPasswordHelp")}
+                          label={t("adminTemporaryPassword")}
+                          onChangeText={setTemporaryPassword}
+                          secureTextEntry
+                          value={temporaryPassword}
+                        />
+                        <Button loading={resettingPassword} onPress={resetPassword} variant="secondary">
+                          {t("adminSetPassword")}
+                        </Button>
+                      </View>
+                    </View>
+                  ) : null}
+
+                  {detailTab === "bikes" ? (
+                    <Section title={t("adminUserBikes")}>
+                      {selectedUser.bikes.length ? (
+                        selectedUser.bikes.map((bike) => (
+                          <View key={bike.id} style={styles.dataRow}>
+                            <Text style={styles.dataTitle}>{bike.name}</Text>
+                            <Text style={styles.dataText}>
+                              {[bike.bike_type, bike.brand, bike.model, bike.size].filter(Boolean).join(" · ")}
+                            </Text>
+                            <Text style={styles.dataText}>
+                              {t("saddleHeight")}: {formatMetric(bike.saddle_height_mm, "mm")} · {t("stemLength")}:{" "}
+                              {formatMetric(bike.stem_length_mm, "mm")}
+                            </Text>
+                          </View>
+                        ))
+                      ) : (
+                        <Body>{t("adminNoBikes")}</Body>
+                      )}
+                    </Section>
+                  ) : null}
+
+                  {detailTab === "tests" ? (
+                    <Section title={t("adminCameraTests")}>
+                      {selectedUser.sessions.length ? (
+                        selectedUser.sessions.map((session) => (
+                          <CameraTestRow key={session.id} selectedUser={selectedUser} sessionId={session.id} />
+                        ))
+                      ) : (
+                        <Body>{t("adminNoCameraTests")}</Body>
+                      )}
+                    </Section>
+                  ) : null}
                 </View>
               ) : (
                 <Body>{t("adminSelectUser")}</Body>
@@ -455,6 +587,14 @@ function Meta({ label, value }: { label: string; value: string }) {
   );
 }
 
+function TabButton({ active, label, onPress }: { active: boolean; label: string; onPress: () => void }) {
+  return (
+    <Pressable accessibilityRole="button" onPress={onPress} style={[styles.tabButton, active && styles.tabButtonActive]}>
+      <Text style={[styles.tabButtonText, active && styles.tabButtonTextActive]}>{label}</Text>
+    </Pressable>
+  );
+}
+
 function toProfileDraft(user: AdminUserDetail): ProfileDraft {
   return {
     dateOfBirth: user.profile?.date_of_birth ?? "",
@@ -469,6 +609,40 @@ function toProfileDraft(user: AdminUserDetail): ProfileDraft {
 
 function getUserDisplayName(user: AdminUserOverview) {
   return user.profile?.name || user.authUser.email || user.authUser.id;
+}
+
+function compareUsers(a: AdminUserOverview, b: AdminUserOverview, sort: UserSort) {
+  switch (sort) {
+    case "name":
+      return getUserDisplayName(a).localeCompare(getUserDisplayName(b));
+    case "created_at":
+      return new Date(b.authUser.created_at).getTime() - new Date(a.authUser.created_at).getTime();
+    case "analyses":
+      return b.analysesCount - a.analysesCount;
+    case "recent_analysis":
+    default:
+      return dateValue(b.latestAnalysisAt) - dateValue(a.latestAnalysisAt);
+  }
+}
+
+function dateValue(value: string | null) {
+  return value ? new Date(value).getTime() : 0;
+}
+
+function toRoleFilter(value: string): RoleFilter {
+  if (value === "admin" || value === "athlete") {
+    return value;
+  }
+
+  return "all";
+}
+
+function toUserSort(value: string): UserSort {
+  if (value === "name" || value === "created_at" || value === "analyses") {
+    return value;
+  }
+
+  return "recent_analysis";
 }
 
 function toLanguageCode(value: string): LanguageCode {
@@ -516,6 +690,12 @@ const styles = StyleSheet.create({
   card: {
     gap: spacing.lg
   },
+  sectionHeader: {
+    alignItems: "center",
+    flexDirection: "row",
+    gap: spacing.sm,
+    justifyContent: "space-between"
+  },
   sectionTitle: {
     color: colors.ink,
     fontSize: 20,
@@ -525,6 +705,21 @@ const styles = StyleSheet.create({
     color: colors.ink,
     fontSize: 16,
     fontWeight: "900"
+  },
+  countBadge: {
+    backgroundColor: colors.surfaceMuted,
+    borderRadius: 6,
+    color: colors.inkMuted,
+    fontSize: 12,
+    fontWeight: "900",
+    minWidth: 32,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+    textAlign: "center"
+  },
+  filterField: {
+    flexBasis: 150,
+    flexGrow: 1
   },
   metric: {
     backgroundColor: colors.surface,
@@ -578,6 +773,43 @@ const styles = StyleSheet.create({
   },
   detailStack: {
     gap: spacing.lg
+  },
+  tabs: {
+    backgroundColor: colors.surfaceMuted,
+    borderRadius: 8,
+    padding: spacing.xs
+  },
+  tabButton: {
+    borderRadius: 6,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm
+  },
+  tabButtonActive: {
+    backgroundColor: colors.surface
+  },
+  tabButtonText: {
+    color: colors.inkMuted,
+    fontSize: 13,
+    fontWeight: "900"
+  },
+  tabButtonTextActive: {
+    color: colors.primaryDark
+  },
+  rolePanel: {
+    alignItems: "center",
+    borderColor: colors.border,
+    borderRadius: 8,
+    borderWidth: 1,
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: spacing.md,
+    justifyContent: "space-between",
+    padding: spacing.md
+  },
+  roleCopy: {
+    flexBasis: 260,
+    flexGrow: 1,
+    gap: spacing.xs
   },
   formGrid: {
     flexDirection: "row",

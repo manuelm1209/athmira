@@ -48,7 +48,7 @@ Server-only values include:
 - Keep Supabase Admin Auth calls on trusted server endpoints only.
 - Verify the requester's Supabase access token before each admin action.
 - Check `public.admin_roles` before using `SUPABASE_SERVICE_ROLE_KEY`.
-- Write an audit log for user creation, profile edits, and password resets.
+- Write an audit log for user creation, profile edits, password resets, admin grants, and admin revocations.
 - Keep `SUPABASE_SERVICE_ROLE_KEY` server-only in Vercel/Supabase secrets.
 - Do not log temporary passwords, access tokens, refresh tokens, or service keys.
 
