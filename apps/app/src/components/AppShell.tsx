@@ -1,12 +1,14 @@
 import { Link, type Href, usePathname } from "expo-router";
 import type { PropsWithChildren } from "react";
-import { Platform, Pressable, StyleSheet, Text, View } from "react-native";
+import { Image, Platform, Pressable, StyleSheet, Text, View } from "react-native";
 import { colors, radii, shadows, spacing, typography } from "@athmira/ui";
 
 import { useAuth } from "@/providers/AuthProvider";
 import { useLanguage } from "@/providers/LanguageProvider";
 
 import { LanguageToggle } from "./LanguageToggle";
+
+const brandMarkSource = require("../../assets/brand/athmira-mark-solid-128.png");
 
 type NavItem = {
   href: Href;
@@ -39,9 +41,12 @@ export function AppShell({ children }: PropsWithChildren) {
       <View style={styles.header}>
         <Link href={session ? "/dashboard" : "/"} asChild>
           <Pressable accessibilityRole="link" style={styles.brand}>
-            <View style={styles.brandMark}>
-              <Text style={styles.brandMarkText}>A</Text>
-            </View>
+            <Image
+              accessibilityIgnoresInvertColors
+              accessibilityLabel="Athmira logo"
+              source={brandMarkSource}
+              style={styles.brandMark}
+            />
             <View>
               <Text style={styles.brandName}>Athmira</Text>
               <Text style={styles.brandTagline}>{t("tagline")}</Text>
@@ -98,18 +103,9 @@ const styles = StyleSheet.create({
     gap: spacing.sm
   },
   brandMark: {
-    alignItems: "center",
-    backgroundColor: colors.primaryDark,
     borderRadius: radii.md,
     height: 38,
-    justifyContent: "center",
     width: 38
-  },
-  brandMarkText: {
-    color: colors.accent,
-    fontFamily,
-    fontSize: 20,
-    fontWeight: typography.weights.black
   },
   brandName: {
     color: colors.ink,
