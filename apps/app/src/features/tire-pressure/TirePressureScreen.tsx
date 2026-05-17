@@ -262,9 +262,8 @@ export function TirePressureScreen() {
             <Inline>
               <View style={styles.splitField}>
                 <Field
-                  helper={!profile?.weight_kg ? t("tirePressureWeightSavedHelp") : undefined}
                   inputMode="numeric"
-                  label={t("weight")}
+                  label={t("tirePressureRiderWeight")}
                   onChangeText={setRiderWeightKg}
                   value={riderWeightKg}
                 />
@@ -289,7 +288,13 @@ export function TirePressureScreen() {
                 />
               </View>
             </Inline>
-            <Field label={t("fieldOptional")} onChangeText={setNotes} value={notes} />
+            <Field
+              helper={t("tirePressureNotesHelp")}
+              label={t("tirePressureNotes")}
+              onChangeText={setNotes}
+              placeholder={t("tirePressureNotesPlaceholder")}
+              value={notes}
+            />
             {error ? <Text style={styles.error}>{error}</Text> : null}
             {message ? <Text style={styles.message}>{message}</Text> : null}
             <Button disabled={!recommendation} loading={saving} onPress={saveCalculation}>
