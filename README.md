@@ -118,6 +118,7 @@ values ('YOUR_AUTH_USER_ID');
 Migration `0005_admin_role_management.sql` expands admin audit logging for admin-role grants and revocations.
 
 Migration `0006_tire_pressure_settings.sql` adds editable tire pressure settings linked to users and optionally to bikes.
+Migration `0007_tire_pressure_setup.sql` adds tire setup storage so pressure history distinguishes inner-tube and tubeless recommendations.
 
 ## Security
 

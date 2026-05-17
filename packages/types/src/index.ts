@@ -6,6 +6,8 @@ export type BikeType = "road" | "gravel" | "triathlon" | "mountain" | "hybrid";
 
 export type TireWidthUnit = "mm" | "in";
 
+export type TireSetup = "inner_tube" | "tubeless";
+
 export type TireSurface = "smooth" | "rough" | "gravel" | "wet" | "loose";
 
 export type FitSessionType = "bike_fit" | "aero_analysis";
@@ -88,6 +90,7 @@ export type TirePressureSetting = {
   user_id: string;
   bike_id: string | null;
   bike_type: BikeType;
+  tire_setup: TireSetup;
   tire_width_mm: number;
   tire_width_unit: TireWidthUnit;
   rider_weight_kg: number;
@@ -102,6 +105,7 @@ export type TirePressureSetting = {
 export type TirePressureInput = {
   bikeType: BikeType;
   riderWeightKg: number;
+  tireSetup: TireSetup;
   tireWidth: number;
   tireWidthUnit: TireWidthUnit;
 };

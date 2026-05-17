@@ -1,4 +1,4 @@
-import type { BikeType, TirePressureInput, TirePressureRecommendation, TireSurface } from "@athmira/types";
+import type { BikeType, TirePressureInput, TirePressureRecommendation, TireSetup, TireSurface } from "@athmira/types";
 
 export type FuelingPlanInput = {
   durationMinutes: number;
@@ -70,21 +70,27 @@ const pressureProfiles: Record<BikeType, BikePressureProfile> = {
 export function calculateTirePressure(input: TirePressureInput): TirePressureRecommendation {
   const widthMm = normalizeTireWidthMm(input.tireWidth, input.tireWidthUnit);
   const profile = pressureProfiles[input.bikeType];
+  const minPsi = getSetupMinPsi(profile.minPsi, input.bikeType, input.tireSetup);
   const riderWeightKg = clamp(input.riderWeightKg, 30, 250);
   const weightAdjustment = (riderWeightKg - 75) * 0.32;
   const widthAdjustment = (profile.referenceWidthMm - widthMm) * getWidthSensitivity(input.bikeType);
-  const baseRear = clamp(profile.referencePsi + weightAdjustment + widthAdjustment, profile.minPsi, profile.maxPsi);
+  const setupAdjustment = getSetupPressureAdjustment(input.bikeType, input.tireSetup);
+  const baseRear = clamp(
+    profile.referencePsi + weightAdjustment + widthAdjustment + setupAdjustment,
+    minPsi,
+    profile.maxPsi
+  );
   const frontRearSplit = getFrontRearSplit(input.bikeType);
   const rearPsi = roundPressure(baseRear);
-  const frontPsi = roundPressure(clamp(baseRear - frontRearSplit, profile.minPsi, profile.maxPsi));
+  const frontPsi = roundPressure(clamp(baseRear - frontRearSplit, minPsi, profile.maxPsi));
 
   return {
     frontPsi,
     rearPsi,
     maxPsi: profile.maxPsi,
-    minPsi: profile.minPsi,
+    minPsi,
     normalizedTireWidthMm: round(widthMm, 1),
-    surfaceRecommendations: buildSurfaceRecommendations(profile, frontPsi, rearPsi)
+    surfaceRecommendations: buildSurfaceRecommendations(profile, frontPsi, rearPsi, minPsi)
   };
 }
 
@@ -93,14 +99,19 @@ export function normalizeTireWidthMm(width: number, unit: "in" | "mm") {
   return clamp(normalized, 18, 90);
 }
 
-function buildSurfaceRecommendations(profile: BikePressureProfile, frontPsi: number, rearPsi: number) {
+function buildSurfaceRecommendations(
+  profile: BikePressureProfile,
+  frontPsi: number,
+  rearPsi: number,
+  minPsi: number
+) {
   return (Object.entries(profile.surfaceAdjustments) as Array<
     [TireSurface, { front: number; rear: number; note: string }]
   >).map(([surface, adjustment]) => ({
-    frontPsi: roundPressure(clamp(frontPsi + adjustment.front, profile.minPsi, profile.maxPsi)),
+    frontPsi: roundPressure(clamp(frontPsi + adjustment.front, minPsi, profile.maxPsi)),
     label: getSurfaceLabel(surface),
     note: adjustment.note,
-    rearPsi: roundPressure(clamp(rearPsi + adjustment.rear, profile.minPsi, profile.maxPsi)),
+    rearPsi: roundPressure(clamp(rearPsi + adjustment.rear, minPsi, profile.maxPsi)),
     surface
   }));
 }
@@ -161,6 +172,42 @@ function getFrontRearSplit(bikeType: BikeType) {
     case "triathlon":
     default:
       return 4;
+  }
+}
+
+function getSetupPressureAdjustment(bikeType: BikeType, tireSetup: TireSetup) {
+  if (tireSetup === "inner_tube") {
+    return 0;
+  }
+
+  switch (bikeType) {
+    case "road":
+    case "triathlon":
+      return -5;
+    case "gravel":
+    case "hybrid":
+      return -3;
+    case "mountain":
+    default:
+      return -2;
+  }
+}
+
+function getSetupMinPsi(profileMinPsi: number, bikeType: BikeType, tireSetup: TireSetup) {
+  if (tireSetup === "tubeless") {
+    return profileMinPsi;
+  }
+
+  switch (bikeType) {
+    case "road":
+    case "triathlon":
+      return profileMinPsi + 5;
+    case "gravel":
+    case "hybrid":
+      return profileMinPsi + 3;
+    case "mountain":
+    default:
+      return profileMinPsi + 2;
   }
 }
 

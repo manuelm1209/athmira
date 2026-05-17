@@ -1,4 +1,4 @@
-import type { BikeType, TirePressureRecommendation, TirePressureSetting, TireWidthUnit } from "@athmira/types";
+import type { BikeType, TirePressureRecommendation, TirePressureSetting, TireSetup, TireWidthUnit } from "@athmira/types";
 
 import type { Json } from "./database";
 import { assertSupabaseConfigured, supabase } from "./client";
@@ -11,6 +11,7 @@ export type TirePressureSettingInput = {
   rearPressurePsi: number;
   riderWeightKg: number;
   surfaceRecommendations: TirePressureRecommendation["surfaceRecommendations"];
+  tireSetup: TireSetup;
   tireWidthMm: number;
   tireWidthUnit: TireWidthUnit;
 };
@@ -69,6 +70,7 @@ export async function saveTirePressureSetting(
     rear_pressure_psi: input.rearPressurePsi,
     rider_weight_kg: input.riderWeightKg,
     surface_recommendations: input.surfaceRecommendations as unknown as Json,
+    tire_setup: input.tireSetup,
     tire_width_mm: input.tireWidthMm,
     tire_width_unit: input.tireWidthUnit,
     user_id: userId

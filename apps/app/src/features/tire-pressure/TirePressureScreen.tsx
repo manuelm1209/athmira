@@ -4,7 +4,7 @@ import {
   listBikes,
   saveTirePressureSetting
 } from "@athmira/supabase";
-import type { Bike, BikeType, TirePressureRecommendation, TireWidthUnit } from "@athmira/types";
+import type { Bike, BikeType, TirePressureRecommendation, TireSetup, TireWidthUnit } from "@athmira/types";
 import { Body, Button, Card, Field, Heading, Inline, Screen, SelectField, colors, spacing } from "@athmira/ui";
 import { useLocalSearchParams } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
@@ -30,6 +30,7 @@ export function TirePressureScreen() {
   const [bikes, setBikes] = useState<Bike[]>([]);
   const [selectedBikeId, setSelectedBikeId] = useState(params.bikeId ?? "");
   const [bikeType, setBikeType] = useState<BikeType>("road");
+  const [tireSetup, setTireSetup] = useState<TireSetup>("inner_tube");
   const [tireWidthUnit, setTireWidthUnit] = useState<TireWidthUnit>("mm");
   const [tireWidth, setTireWidth] = useState("28");
   const [riderWeightKg, setRiderWeightKg] = useState("");
@@ -50,10 +51,11 @@ export function TirePressureScreen() {
     return calculateTirePressure({
       bikeType: selectedBike?.bike_type ?? bikeType,
       riderWeightKg: parsedWeight,
+      tireSetup,
       tireWidth: parsedWidth,
       tireWidthUnit
     });
-  }, [bikeType, parsedWeight, parsedWidth, selectedBike?.bike_type, tireWidthUnit]);
+  }, [bikeType, parsedWeight, parsedWidth, selectedBike?.bike_type, tireSetup, tireWidthUnit]);
 
   useEffect(() => {
     if (!user) {
@@ -137,6 +139,7 @@ export function TirePressureScreen() {
 
         setBikeType(setting.bike_type);
         setRiderWeightKg(numberToInput(setting.rider_weight_kg));
+        setTireSetup(setting.tire_setup ?? "inner_tube");
         setTireWidth(numberToInput(setting.tire_width_unit === "in" ? setting.tire_width_mm / 25.4 : setting.tire_width_mm));
         setTireWidthUnit(setting.tire_width_unit);
         setNotes(setting.notes ?? "");
@@ -201,6 +204,7 @@ export function TirePressureScreen() {
         rearPressurePsi: recommendation.rearPsi,
         riderWeightKg: parsedWeight,
         surfaceRecommendations: recommendation.surfaceRecommendations,
+        tireSetup,
         tireWidthMm: recommendation.normalizedTireWidthMm,
         tireWidthUnit
       });
@@ -288,6 +292,15 @@ export function TirePressureScreen() {
                 />
               </View>
             </Inline>
+            <SelectField
+              label={t("tireSetup")}
+              onValueChange={(value) => setTireSetup(value === "tubeless" ? "tubeless" : "inner_tube")}
+              options={[
+                { label: t("tireSetupInnerTube"), value: "inner_tube" },
+                { label: t("tireSetupTubeless"), value: "tubeless" }
+              ]}
+              value={tireSetup}
+            />
             <Field
               helper={t("tirePressureNotesHelp")}
               label={t("tirePressureNotes")}

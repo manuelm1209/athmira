@@ -9,6 +9,7 @@ import type {
   MediaAssetType,
   RecommendationCategory,
   RecommendationPriority,
+  TireSetup,
   TireWidthUnit
 } from "@athmira/types";
 
@@ -149,6 +150,7 @@ export type Database = {
           user_id: string;
           bike_id: string | null;
           bike_type: BikeType;
+          tire_setup: TireSetup;
           tire_width_mm: number;
           tire_width_unit: TireWidthUnit;
           rider_weight_kg: number;
@@ -164,6 +166,7 @@ export type Database = {
           user_id: string;
           bike_id?: string | null;
           bike_type: BikeType;
+          tire_setup?: TireSetup;
           tire_width_mm: number;
           tire_width_unit?: TireWidthUnit;
           rider_weight_kg: number;
@@ -177,6 +180,7 @@ export type Database = {
         Update: {
           bike_id?: string | null;
           bike_type?: BikeType;
+          tire_setup?: TireSetup;
           tire_width_mm?: number;
           tire_width_unit?: TireWidthUnit;
           rider_weight_kg?: number;
