@@ -1,5 +1,5 @@
 import { Link, type Href, usePathname } from "expo-router";
-import type { PropsWithChildren } from "react";
+import { useEffect, useState, type PropsWithChildren } from "react";
 import { Image, Platform, Pressable, StyleSheet, Text, View, useWindowDimensions } from "react-native";
 import { colors, radii, shadows, spacing, typography } from "@athmira/ui";
 
@@ -9,6 +9,16 @@ import { useLanguage } from "@/providers/LanguageProvider";
 import { LanguageToggle } from "./LanguageToggle";
 
 const brandMarkSource = require("../../assets/brand/athmira-mark-solid-128.png");
+const headerMotionStyle = Platform.select({
+  default: undefined,
+  web: {
+    backdropFilter: "blur(18px)",
+    transitionDuration: "260ms",
+    transitionProperty:
+      "background-color, border-color, border-radius, box-shadow, margin, padding, transform",
+    transitionTimingFunction: "cubic-bezier(0.2, 0.8, 0.2, 1)"
+  } as never
+});
 
 type NavItem = {
   href: Href;
@@ -22,6 +32,43 @@ export function AppShell({ children }: PropsWithChildren) {
   const { t } = useLanguage();
   const { width } = useWindowDimensions();
   const compact = width < 760;
+  const [headerDocked, setHeaderDocked] = useState(false);
+
+  useEffect(() => {
+    if (Platform.OS !== "web") {
+      return undefined;
+    }
+
+    let animationFrame: number | null = null;
+
+    function handleScroll(event: Event) {
+      if (animationFrame !== null) {
+        cancelAnimationFrame(animationFrame);
+      }
+
+      animationFrame = requestAnimationFrame(() => {
+        const target = event.target as HTMLElement | Document | null;
+        const scrollTop =
+          target && "scrollingElement" in target
+            ? target.scrollingElement?.scrollTop ?? 0
+            : target && "scrollTop" in target
+              ? target.scrollTop
+              : 0;
+
+        setHeaderDocked(scrollTop > 12);
+      });
+    }
+
+    window.addEventListener("scroll", handleScroll, true);
+
+    return () => {
+      if (animationFrame !== null) {
+        cancelAnimationFrame(animationFrame);
+      }
+
+      window.removeEventListener("scroll", handleScroll, true);
+    };
+  }, []);
 
   const navItems: NavItem[] = session
     ? [
@@ -40,7 +87,10 @@ export function AppShell({ children }: PropsWithChildren) {
 
   return (
     <View style={styles.root}>
-      <View style={styles.header}>
+      <View
+        accessibilityLabel="Main navigation"
+        style={[styles.header, headerMotionStyle, headerDocked && styles.headerDocked]}
+      >
         <Link href={session ? "/dashboard" : "/"} asChild>
           <Pressable accessibilityRole="link" style={styles.brand}>
             <Image
@@ -121,6 +171,18 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.xl,
     paddingVertical: spacing.md,
     ...shadows.soft
+  },
+  headerDocked: {
+    backgroundColor: "rgba(255,255,255,0.86)",
+    borderBottomColor: "rgba(184,206,209,0.78)",
+    borderColor: "rgba(184,206,209,0.34)",
+    borderRadius: 0,
+    borderTopColor: "transparent",
+    marginHorizontal: 0,
+    marginTop: 0,
+    paddingVertical: spacing.sm,
+    transform: [{ translateY: -1 }],
+    ...shadows.medium
   },
   brand: {
     alignItems: "center",
