@@ -58,10 +58,10 @@ export function AppShell({ children }: PropsWithChildren) {
         <View style={styles.nav}>
           {session || compact ? null : (
             <View style={styles.marketingNav}>
-              <Text style={styles.marketingNavText}>Features</Text>
-              <Text style={styles.marketingNavText}>How it works</Text>
-              <Text style={styles.marketingNavText}>Science</Text>
-              <Text style={styles.marketingNavText}>Resources</Text>
+              <Text style={styles.marketingNavText}>{t("homeNavFeatures")}</Text>
+              <Text style={styles.marketingNavText}>{t("homeNavHowItWorks")}</Text>
+              <Text style={styles.marketingNavText}>{t("homeNavScience")}</Text>
+              <Text style={styles.marketingNavText}>{t("homeNavResources")}</Text>
             </View>
           )}
           {navItems.map((item) => (

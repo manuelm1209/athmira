@@ -28,21 +28,21 @@ export default function WelcomeRoute() {
     {
       body: t("homeBikeFitBody"),
       image: visualAssets.cyclistHero,
-      link: "Learn more",
+      link: t("homeLearnMore"),
       stat: "146 deg",
       title: t("homeBikeFitTitle")
     },
     {
       body: t("homeAeroBody"),
       image: visualAssets.aeroTrack,
-      link: "Learn more",
+      link: t("homeLearnMore"),
       stat: "Aero 76",
       title: t("homeAeroTitle")
     },
     {
       body: t("homeNutritionBody"),
       image: visualAssets.tireGauge,
-      link: "Learn more",
+      link: t("homeLearnMore"),
       stat: "73 PSI",
       title: t("homeNutritionTitle")
     }
@@ -67,8 +67,9 @@ export default function WelcomeRoute() {
         <FadeInView style={[styles.hero, mobile && styles.heroMobile]}>
           <View style={[styles.heroCopy, mobile && styles.heroCopyMobile]}>
             <Heading style={[styles.heroTitle, mobile && styles.heroTitleMobile]}>
-              Fit. Fuel. Perform.{"\n"}
-              <Text style={styles.heroTitleAccent}>All in one ride.</Text>
+              {t("homeHeroTitleLine1")}
+              {"\n"}
+              <Text style={styles.heroTitleAccent}>{t("homeHeroTitleLine2")}</Text>
             </Heading>
             <Body style={[styles.heroBody, mobile && styles.mobileBody]}>{t("homeHeroBody")}</Body>
             <Inline style={styles.heroActions}>
@@ -109,7 +110,7 @@ export default function WelcomeRoute() {
         </FadeInView>
 
         <FadeInView delayMs={100} style={styles.brandStrip}>
-          <Text style={styles.brandStripTitle}>TRUSTED BY ATHLETES WHO WANT MORE</Text>
+          <Text style={styles.brandStripTitle}>{t("homeTrustedBy")}</Text>
           <View style={styles.logoRow}>
             {brandLogos.map((logo) => (
               <Text key={logo} style={styles.logoText}>
@@ -121,7 +122,7 @@ export default function WelcomeRoute() {
 
         <FadeInView delayMs={160} style={styles.featureSection}>
           <View style={styles.centerHeader}>
-            <Text style={styles.sectionTitle}>See what's possible with Athmira</Text>
+            <Text style={styles.sectionTitle}>{t("homePossibilitiesTitle")}</Text>
             <Text style={styles.sectionBody}>{t("homeDashboardBody")}</Text>
           </View>
           <View style={styles.featureGrid}>
@@ -175,9 +176,14 @@ export default function WelcomeRoute() {
               </View>
             </View>
             <View style={styles.mockGrid}>
-              <MockMetric trend="+6%" label="FTP" value="278 w" />
-              <MockMetric trend="+4%" label="VO2max" value="58" />
-              <MockMetric trend="Optimal" label={t("tirePressureNav")} value="73 psi" />
+              <MockMetric trend="+6%" trendSuffix={t("homeMetricTrendSuffix")} label="FTP" value="278 w" />
+              <MockMetric trend="+4%" trendSuffix={t("homeMetricTrendSuffix")} label="VO2max" value="58" />
+              <MockMetric
+                trend={t("homeStatusOptimal")}
+                trendSuffix={t("homeMetricTrendSuffix")}
+                label={t("tirePressureNav")}
+                value="73 psi"
+              />
             </View>
             <View style={styles.analysisPreview}>
               <Image
@@ -189,7 +195,7 @@ export default function WelcomeRoute() {
               <View style={styles.analysisStats}>
                 <Text style={styles.analysisLabel}>{t("kneeAngle")}</Text>
                 <Text style={styles.analysisValue}>146 deg</Text>
-                <Text style={styles.analysisGood}>Good</Text>
+                <Text style={styles.analysisGood}>{t("homeStatusGood")}</Text>
                 <Text style={styles.analysisLabel}>{t("aeroScore")}</Text>
                 <Text style={styles.analysisValue}>76</Text>
               </View>
@@ -211,7 +217,7 @@ export default function WelcomeRoute() {
           />
           <View style={styles.finalOverlay} />
           <View style={styles.finalCopy}>
-            <Text style={styles.finalTitle}>Ready to ride smarter?</Text>
+            <Text style={styles.finalTitle}>{t("homeReadyTitle")}</Text>
             <Text style={styles.finalBody}>{t("homeFinalBody")}</Text>
           </View>
           <Inline style={styles.finalActions}>
@@ -242,12 +248,22 @@ export default function WelcomeRoute() {
   );
 }
 
-function MockMetric({ label, trend, value }: { label: string; trend: string; value: string }) {
+function MockMetric({
+  label,
+  trend,
+  trendSuffix,
+  value
+}: {
+  label: string;
+  trend: string;
+  trendSuffix: string;
+  value: string;
+}) {
   return (
     <View style={styles.mockMetric}>
       <Text style={styles.mockMetricLabel}>{label}</Text>
       <Text style={styles.mockMetricValue}>{value}</Text>
-      <Text style={styles.mockMetricTrend}>{trend} vs last block</Text>
+      <Text style={styles.mockMetricTrend}>{`${trend} ${trendSuffix}`}</Text>
       <View style={styles.sparkline}>
         {[8, 14, 10, 18, 15, 24].map((height, index) => (
           <View key={`${label}-${height}-${index}`} style={[styles.sparkBar, { height }]} />
