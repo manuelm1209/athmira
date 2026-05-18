@@ -6,48 +6,72 @@ import { useAuth } from "@/providers/AuthProvider";
 import { useLanguage } from "@/providers/LanguageProvider";
 import { visualAssets } from "@/lib/visual-assets";
 
+const homeHeroImage = require("../assets/home/image-home-athmira.png");
+
+const brandLogos = ["GIANT", "cervelo", "TREK", "SPECIALIZED", "wahoo", "GARMIN"];
+const heroFadeWebStyle = Platform.select({
+  default: undefined,
+  web: {
+    backgroundImage:
+      "linear-gradient(90deg, #f3f8fa 0%, rgba(243,248,250,0.74) 38%, rgba(243,248,250,0) 100%)"
+  } as never
+});
+
 export default function WelcomeRoute() {
   const { session } = useAuth();
   const { t } = useLanguage();
   const { width } = useWindowDimensions();
-  const mobile = width < 640;
+  const mobile = width < 720;
+  const heroMediaMobileSize = Math.max(300, width - spacing.xxl);
 
-  const proofItems = [t("homeProofCamera"), t("homeProofPrivate"), t("homeProofProgress")];
   const featureCards = [
     {
       body: t("homeBikeFitBody"),
       image: visualAssets.cyclistHero,
-      stat: "145 deg",
+      link: "Learn more",
+      stat: "146 deg",
       title: t("homeBikeFitTitle")
     },
     {
       body: t("homeAeroBody"),
       image: visualAssets.aeroTrack,
-      stat: "76",
+      link: "Learn more",
+      stat: "Aero 76",
       title: t("homeAeroTitle")
     },
     {
       body: t("homeNutritionBody"),
       image: visualAssets.tireGauge,
-      stat: "82 PSI",
+      link: "Learn more",
+      stat: "73 PSI",
       title: t("homeNutritionTitle")
     }
   ];
+
+  const proofItems = [
+    { icon: "CV", title: t("homeProofCamera") },
+    { icon: "AI", title: t("homeProofPrivate") },
+    { icon: "UP", title: t("homeProofProgress") }
+  ];
+
   const steps = [
-    { body: t("homeHowProfileBody"), number: "01", title: t("homeHowProfileTitle") },
-    { body: t("homeHowCameraBody"), number: "02", title: t("homeHowCameraTitle") },
-    { body: t("homeHowResultsBody"), number: "03", title: t("homeHowResultsTitle") }
+    { body: t("homeHowCameraBody"), icon: "01", title: t("homeHowCameraTitle") },
+    { body: t("homeHowResultsBody"), icon: "02", title: t("homeHowResultsTitle") },
+    { body: t("homeHowProfileBody"), icon: "03", title: t("homeHowProfileTitle") },
+    { body: t("homeFinalBody"), icon: "04", title: t("homeFinalTitle") }
   ];
 
   return (
-    <Screen maxWidth={1240}>
+    <Screen maxWidth={1280}>
       <View style={styles.page}>
         <FadeInView style={[styles.hero, mobile && styles.heroMobile]}>
           <View style={[styles.heroCopy, mobile && styles.heroCopyMobile]}>
-            <Heading style={[styles.heroTitle, mobile && styles.heroTitleMobile]}>{t("welcomeTitle")}</Heading>
-            <Text style={styles.heroTagline}>{t("tagline")}</Text>
-            <Body style={[styles.heroBody, mobile && styles.fullWidthText]}>{t("homeHeroBody")}</Body>
-            <Inline>
+            <Heading style={[styles.heroTitle, mobile && styles.heroTitleMobile]}>
+              Fit. Fuel. Perform.{"\n"}
+              <Text style={styles.heroTitleAccent}>All in one ride.</Text>
+            </Heading>
+            <Body style={[styles.heroBody, mobile && styles.mobileBody]}>{t("homeHeroBody")}</Body>
+            <Inline style={styles.heroActions}>
               {session ? (
                 <LinkButton href="/dashboard">{t("dashboard")}</LinkButton>
               ) : (
@@ -60,47 +84,45 @@ export default function WelcomeRoute() {
               )}
             </Inline>
             {mobile ? null : (
-              <View style={styles.proofRow}>
+              <View style={styles.proofGrid}>
                 {proofItems.map((item) => (
-                  <View key={item} style={styles.proofItem}>
-                    <View style={styles.proofDot} />
-                    <Text style={styles.proofText}>{item}</Text>
+                  <View key={item.title} style={styles.proofCard}>
+                    <View style={styles.iconCircle}>
+                      <Text style={styles.iconText}>{item.icon}</Text>
+                    </View>
+                    <Text style={styles.proofTitle}>{item.title}</Text>
                   </View>
                 ))}
               </View>
             )}
           </View>
 
-          <View style={[styles.heroVisual, mobile && styles.heroVisualMobile]}>
+          <View style={[styles.heroMedia, mobile && styles.heroMediaMobile, mobile && { height: heroMediaMobileSize }]}>
             <Image
-              accessibilityLabel="Cyclist in aero road posture"
+              accessibilityLabel="Cyclist with Athmira posture intelligence dashboard"
               resizeMode="cover"
-              source={{ uri: visualAssets.cyclistHero }}
+              source={homeHeroImage}
               style={styles.heroImage}
             />
-            <View style={styles.scanFrame}>
-              <View style={styles.scanLineLong} />
-              <View style={styles.scanLineShort} />
-              <View style={styles.scanJoint} />
-            </View>
-            <View style={styles.heroMetric}>
-              <Text style={styles.metricLabel}>{t("kneeAngle")}</Text>
-              <Text style={styles.metricValue}>145 deg</Text>
-              <Text style={styles.metricHint}>{t("fitConfidence")} 91%</Text>
-            </View>
-            {mobile ? null : (
-              <View style={styles.heroMetricSecondary}>
-                <Text style={styles.metricLabel}>{t("aeroScore")}</Text>
-                <Text style={styles.metricValueSmall}>76</Text>
-              </View>
-            )}
+            <View style={[styles.heroFade, heroFadeWebStyle]} />
           </View>
         </FadeInView>
 
-        <FadeInView delayMs={120} style={styles.featureSection}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>{t("homeDashboardTitle")}</Text>
-            <Body style={[styles.sectionBody, mobile && styles.fullWidthText]}>{t("homeDashboardBody")}</Body>
+        <FadeInView delayMs={100} style={styles.brandStrip}>
+          <Text style={styles.brandStripTitle}>TRUSTED BY ATHLETES WHO WANT MORE</Text>
+          <View style={styles.logoRow}>
+            {brandLogos.map((logo) => (
+              <Text key={logo} style={styles.logoText}>
+                {logo}
+              </Text>
+            ))}
+          </View>
+        </FadeInView>
+
+        <FadeInView delayMs={160} style={styles.featureSection}>
+          <View style={styles.centerHeader}>
+            <Text style={styles.sectionTitle}>See what's possible with Athmira</Text>
+            <Text style={styles.sectionBody}>{t("homeDashboardBody")}</Text>
           </View>
           <View style={styles.featureGrid}>
             {featureCards.map((feature) => (
@@ -112,26 +134,26 @@ export default function WelcomeRoute() {
                   style={styles.featureImage}
                 />
                 <View style={styles.featureCopy}>
-                  <View style={styles.featureStat}>
+                  <View style={styles.featureTopline}>
+                    <Text style={styles.featureTitle}>{feature.title}</Text>
                     <Text style={styles.featureStatText}>{feature.stat}</Text>
                   </View>
-                  <Text style={styles.featureTitle}>{feature.title}</Text>
                   <Text style={styles.featureBody}>{feature.body}</Text>
+                  <Text style={styles.featureLink}>{feature.link} -&gt;</Text>
                 </View>
               </View>
             ))}
           </View>
         </FadeInView>
 
-        <FadeInView delayMs={180} style={styles.workflowSection}>
-          <View style={styles.workflowCopy}>
-            <Text style={[styles.sectionTitle, styles.inverseTitle]}>{t("homeHowTitle")}</Text>
-            <Body style={[styles.sectionBody, styles.inverseBody, mobile && styles.fullWidthText]}>{t("analysisIntro")}</Body>
-          </View>
-          <View style={styles.stepList}>
+        <FadeInView delayMs={220} style={styles.workflowSection}>
+          <Text style={styles.sectionTitle}>{t("homeHowTitle")}</Text>
+          <View style={styles.stepRail}>
             {steps.map((step) => (
-              <View key={step.number} style={styles.stepRow}>
-                <Text style={styles.stepNumber}>{step.number}</Text>
+              <View key={step.icon} style={styles.stepItem}>
+                <View style={styles.stepIcon}>
+                  <Text style={styles.stepIconText}>{step.icon}</Text>
+                </View>
                 <View style={styles.stepCopy}>
                   <Text style={styles.stepTitle}>{step.title}</Text>
                   <Text style={styles.stepBody}>{step.body}</Text>
@@ -141,7 +163,7 @@ export default function WelcomeRoute() {
           </View>
         </FadeInView>
 
-        <FadeInView delayMs={240} style={styles.previewSection}>
+        <FadeInView delayMs={280} style={[styles.scienceSection, mobile && styles.scienceSectionMobile]}>
           <View style={styles.dashboardMock}>
             <View style={styles.mockHeader}>
               <View>
@@ -149,35 +171,50 @@ export default function WelcomeRoute() {
                 <Text style={styles.mockSubtitle}>{t("dashboardProgressSnapshot")}</Text>
               </View>
               <View style={styles.mockStatus}>
-                <Text style={styles.mockStatusText}>91%</Text>
+                <Text style={styles.mockStatusText}>92</Text>
               </View>
             </View>
             <View style={styles.mockGrid}>
-              <MockMetric label={t("comfortScore")} value="82" />
-              <MockMetric label={t("aeroScore")} value="76" />
-              <MockMetric label={t("confidenceScore")} value="91%" />
+              <MockMetric trend="+6%" label="FTP" value="278 w" />
+              <MockMetric trend="+4%" label="VO2max" value="58" />
+              <MockMetric trend="Optimal" label={t("tirePressureNav")} value="73 psi" />
             </View>
-            <View style={styles.chart}>
-              {[38, 58, 48, 72, 64, 86].map((height, index) => (
-                <View key={`${height}-${index}`} style={styles.chartColumn}>
-                  <View style={[styles.chartBar, { height }]} />
-                </View>
-              ))}
+            <View style={styles.analysisPreview}>
+              <Image
+                accessibilityLabel="Bike fit analysis preview"
+                resizeMode="cover"
+                source={{ uri: visualAssets.cyclistHero }}
+                style={styles.analysisImage}
+              />
+              <View style={styles.analysisStats}>
+                <Text style={styles.analysisLabel}>{t("kneeAngle")}</Text>
+                <Text style={styles.analysisValue}>146 deg</Text>
+                <Text style={styles.analysisGood}>Good</Text>
+                <Text style={styles.analysisLabel}>{t("aeroScore")}</Text>
+                <Text style={styles.analysisValue}>76</Text>
+              </View>
             </View>
           </View>
-          <View style={styles.previewCopy}>
+          <View style={styles.scienceCopy}>
             <Text style={styles.sectionTitle}>{t("homeDashboardTitle")}</Text>
-            <Body style={[styles.sectionBody, mobile && styles.fullWidthText]}>{t("homeDashboardBody")}</Body>
+            <Body style={[styles.sectionBody, mobile && styles.mobileBody]}>{t("homeDashboardBody")}</Body>
             <Text style={styles.safetyNote}>{t("homeSafetyBody")}</Text>
           </View>
         </FadeInView>
 
-        <FadeInView delayMs={300} style={styles.finalCta}>
+        <FadeInView delayMs={340} style={styles.finalCta}>
+          <Image
+            accessibilityLabel="Cyclist training outdoors"
+            resizeMode="cover"
+            source={{ uri: visualAssets.aeroTrack }}
+            style={styles.finalImage}
+          />
+          <View style={styles.finalOverlay} />
           <View style={styles.finalCopy}>
-            <Text style={styles.finalTitle}>{t("homeFinalTitle")}</Text>
+            <Text style={styles.finalTitle}>Ready to ride smarter?</Text>
             <Text style={styles.finalBody}>{t("homeFinalBody")}</Text>
           </View>
-          <Inline>
+          <Inline style={styles.finalActions}>
             {session ? (
               <LinkButton href="/dashboard">{t("dashboard")}</LinkButton>
             ) : (
@@ -190,16 +227,32 @@ export default function WelcomeRoute() {
             )}
           </Inline>
         </FadeInView>
+
+        <View style={styles.disclaimer}>
+          <View style={styles.disclaimerIcon}>
+            <Text style={styles.disclaimerIconText}>OK</Text>
+          </View>
+          <View style={styles.disclaimerCopy}>
+            <Text style={styles.disclaimerTitle}>{t("homeSafetyTitle")}</Text>
+            <Text style={styles.disclaimerText}>{t("homeSafetyBody")}</Text>
+          </View>
+        </View>
       </View>
     </Screen>
   );
 }
 
-function MockMetric({ label, value }: { label: string; value: string }) {
+function MockMetric({ label, trend, value }: { label: string; trend: string; value: string }) {
   return (
     <View style={styles.mockMetric}>
-      <Text style={styles.mockMetricValue}>{value}</Text>
       <Text style={styles.mockMetricLabel}>{label}</Text>
+      <Text style={styles.mockMetricValue}>{value}</Text>
+      <Text style={styles.mockMetricTrend}>{trend} vs last block</Text>
+      <View style={styles.sparkline}>
+        {[8, 14, 10, 18, 15, 24].map((height, index) => (
+          <View key={`${label}-${height}-${index}`} style={[styles.sparkBar, { height }]} />
+        ))}
+      </View>
     </View>
   );
 }
@@ -208,219 +261,192 @@ const fontFamily = Platform.select({ default: undefined, web: typography.fontFam
 
 const styles = StyleSheet.create({
   page: {
-    gap: spacing.xxxl
+    gap: 54,
+    paddingBottom: spacing.xxxl
   },
   hero: {
     alignItems: "center",
     flexDirection: "row",
-    flexWrap: "wrap",
-    gap: spacing.xxxl,
-    justifyContent: "space-between",
-    paddingVertical: spacing.xxl
+    gap: 0,
+    minHeight: 520,
+    overflow: "hidden",
+    paddingVertical: spacing.lg
   },
   heroMobile: {
     alignItems: "stretch",
     flexDirection: "column",
-    gap: spacing.xxl
+    minHeight: 0,
+    overflow: "visible",
+    paddingVertical: 0
   },
   heroCopy: {
-    flex: 1,
+    flex: 0.82,
     gap: spacing.lg,
-    maxWidth: 640,
-    minWidth: 280
+    maxWidth: 520,
+    minWidth: 300,
+    paddingLeft: spacing.md,
+    zIndex: 2
   },
   heroCopyMobile: {
     maxWidth: "100%",
     minWidth: 0,
-    paddingBottom: spacing.xxl,
+    paddingLeft: 0,
     width: "100%"
   },
   heroTitle: {
-    fontSize: typography.sizes.hero,
-    lineHeight: typography.lineHeights.hero,
-    maxWidth: 620
+    color: colors.ink,
+    fontFamily,
+    fontSize: 66,
+    fontWeight: typography.weights.black,
+    letterSpacing: 0,
+    lineHeight: 70,
+    maxWidth: 560
+  },
+  heroTitleAccent: {
+    color: colors.primary
   },
   heroTitleMobile: {
-    fontSize: 44,
-    lineHeight: 48
-  },
-  heroTagline: {
-    color: colors.primaryDark,
-    fontFamily,
-    fontSize: 24,
-    fontWeight: typography.weights.black,
-    lineHeight: 30
+    fontSize: 39,
+    lineHeight: 43
   },
   heroBody: {
-    maxWidth: 600
+    color: colors.inkMuted,
+    fontSize: 18,
+    lineHeight: 28,
+    maxWidth: 470
   },
-  fullWidthText: {
-    maxWidth: 330,
+  mobileBody: {
+    maxWidth: 340,
     width: "100%"
   },
-  proofRow: {
-    flexDirection: "row",
-    flexWrap: "wrap",
+  heroActions: {
     gap: spacing.md,
     paddingTop: spacing.sm
   },
-  proofItem: {
+  proofGrid: {
+    borderTopColor: colors.border,
+    borderTopWidth: 1,
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: spacing.md,
+    marginTop: spacing.lg,
+    paddingTop: spacing.lg
+  },
+  proofCard: {
     alignItems: "center",
-    backgroundColor: colors.primaryMist,
-    borderColor: colors.border,
+    flexBasis: 96,
+    flexGrow: 1,
+    gap: spacing.sm,
+    justifyContent: "center",
+    maxWidth: 150
+  },
+  iconCircle: {
+    alignItems: "center",
+    borderColor: colors.primary,
     borderRadius: radii.round,
     borderWidth: 1,
-    flexDirection: "row",
-    flexShrink: 1,
-    gap: spacing.sm,
-    maxWidth: "100%",
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm
+    height: 34,
+    justifyContent: "center",
+    width: 34
   },
-  proofDot: {
-    backgroundColor: colors.accent,
-    borderRadius: radii.round,
-    height: 8,
-    width: 8
+  iconText: {
+    color: colors.primary,
+    fontFamily,
+    fontSize: 12,
+    fontWeight: typography.weights.black
   },
-  proofText: {
+  proofTitle: {
     color: colors.ink,
     fontFamily,
-    flexShrink: 1,
-    fontSize: 13,
-    fontWeight: typography.weights.bold
+    fontSize: 11,
+    fontWeight: typography.weights.black,
+    lineHeight: 16,
+    textAlign: "center"
   },
-  heroVisual: {
-    backgroundColor: colors.graphite,
-    borderRadius: radii.xl,
-    flex: 1,
+  heroMedia: {
+    borderRadius: 0,
+    flex: 1.14,
     height: 520,
-    maxWidth: 560,
-    minWidth: 280,
+    minWidth: 420,
     overflow: "hidden",
-    position: "relative",
-    ...shadows.medium
+    position: "relative"
   },
-  heroVisualMobile: {
-    marginTop: spacing.huge + spacing.xl,
-    maxWidth: "100%",
+  heroMediaMobile: {
+    borderRadius: radii.xl,
+    flexBasis: "auto",
+    flexGrow: 0,
+    flexShrink: 0,
+    marginTop: spacing.huge,
     minWidth: 0,
     width: "100%"
   },
   heroImage: {
     height: "100%",
-    opacity: 0.94,
     width: "100%"
   },
-  scanFrame: {
-    bottom: "19%",
-    height: "46%",
-    left: "15%",
+  heroFade: {
+    backgroundColor: "rgba(244,248,250,0.18)",
+    bottom: 0,
+    left: 0,
     position: "absolute",
-    right: "12%"
+    top: 0,
+    width: "18%"
   },
-  scanLineLong: {
-    backgroundColor: colors.aqua,
-    borderRadius: radii.round,
-    height: 4,
-    left: 10,
-    position: "absolute",
-    top: "42%",
-    transform: [{ rotate: "-18deg" }],
-    width: "78%"
-  },
-  scanLineShort: {
-    backgroundColor: colors.accent,
-    borderRadius: radii.round,
-    height: 4,
-    position: "absolute",
-    right: 4,
-    top: "55%",
-    transform: [{ rotate: "26deg" }],
-    width: "48%"
-  },
-  scanJoint: {
-    backgroundColor: colors.accent,
-    borderColor: colors.white,
-    borderRadius: radii.round,
-    borderWidth: 3,
-    height: 18,
-    left: "47%",
-    position: "absolute",
-    top: "47%",
-    width: 18
-  },
-  heroMetric: {
-    backgroundColor: "rgba(255,255,255,0.94)",
-    borderRadius: radii.lg,
-    bottom: spacing.lg,
-    gap: spacing.xs,
-    left: spacing.lg,
-    padding: spacing.md,
-    position: "absolute",
-    width: 176
-  },
-  heroMetricSecondary: {
+  brandStrip: {
     alignItems: "center",
-    backgroundColor: colors.primaryDark,
-    borderColor: "rgba(255,255,255,0.22)",
-    borderRadius: radii.lg,
-    borderWidth: 1,
-    gap: spacing.xs,
-    padding: spacing.md,
-    position: "absolute",
-    right: spacing.lg,
-    top: spacing.lg
+    gap: spacing.lg
   },
-  metricLabel: {
-    color: colors.inkMuted,
+  brandStripTitle: {
+    color: colors.inkSubtle,
     fontFamily,
     fontSize: 12,
     fontWeight: typography.weights.black,
-    textTransform: "uppercase"
+    letterSpacing: 4,
+    textAlign: "center"
   },
-  metricValue: {
-    color: colors.primaryDark,
+  logoRow: {
+    alignItems: "center",
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: spacing.xxxl,
+    justifyContent: "center"
+  },
+  logoText: {
+    color: "#8b969a",
     fontFamily,
-    fontSize: 34,
+    fontSize: 19,
+    fontStyle: "italic",
     fontWeight: typography.weights.black,
-    lineHeight: 38
-  },
-  metricValueSmall: {
-    color: colors.accent,
-    fontFamily,
-    fontSize: 30,
-    fontWeight: typography.weights.black,
-    lineHeight: 34
-  },
-  metricHint: {
-    color: colors.inkMuted,
-    fontFamily,
-    fontSize: 12,
-    fontWeight: typography.weights.bold
+    letterSpacing: 1
   },
   featureSection: {
-    gap: spacing.xl
+    backgroundColor: "#eef5f7",
+    borderColor: "rgba(184,206,209,0.36)",
+    borderRadius: radii.xl,
+    borderWidth: 1,
+    gap: spacing.xl,
+    padding: spacing.xl,
+    ...shadows.soft
   },
-  sectionHeader: {
-    gap: spacing.sm,
-    maxWidth: 720
+  centerHeader: {
+    alignItems: "center",
+    gap: spacing.sm
   },
   sectionTitle: {
     color: colors.ink,
     fontFamily,
     fontSize: 34,
     fontWeight: typography.weights.black,
-    lineHeight: 40
+    lineHeight: 40,
+    textAlign: "center"
   },
   sectionBody: {
-    maxWidth: 720
-  },
-  inverseTitle: {
-    color: colors.white
-  },
-  inverseBody: {
-    color: "#cfe2e1"
+    color: colors.inkMuted,
+    fontFamily,
+    fontSize: 16,
+    lineHeight: 24,
+    maxWidth: 720,
+    textAlign: "center"
   },
   featureGrid: {
     flexDirection: "row",
@@ -429,81 +455,83 @@ const styles = StyleSheet.create({
   },
   featureCard: {
     backgroundColor: colors.surface,
-    borderColor: colors.border,
+    borderColor: "rgba(184,206,209,0.62)",
     borderRadius: radii.lg,
     borderWidth: 1,
-    flexBasis: 280,
+    flexBasis: 260,
     flexGrow: 1,
     overflow: "hidden",
     ...shadows.soft
   },
   featureImage: {
-    aspectRatio: 1.65,
+    aspectRatio: 1.48,
     width: "100%"
   },
   featureCopy: {
     gap: spacing.sm,
     padding: spacing.lg
   },
-  featureStat: {
-    alignSelf: "flex-start",
-    backgroundColor: colors.accentSoft,
-    borderRadius: radii.round,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.xs
+  featureTopline: {
+    alignItems: "flex-start",
+    flexDirection: "row",
+    gap: spacing.md,
+    justifyContent: "space-between"
+  },
+  featureTitle: {
+    color: colors.ink,
+    flex: 1,
+    fontFamily,
+    fontSize: 18,
+    fontWeight: typography.weights.black,
+    lineHeight: 24
   },
   featureStatText: {
-    color: colors.primaryDark,
+    color: colors.primary,
     fontFamily,
     fontSize: 13,
     fontWeight: typography.weights.black
   },
-  featureTitle: {
-    color: colors.ink,
-    fontFamily,
-    fontSize: 20,
-    fontWeight: typography.weights.black,
-    lineHeight: 26
-  },
   featureBody: {
     color: colors.inkMuted,
     fontFamily,
-    fontSize: 15,
-    lineHeight: 22
+    fontSize: 14,
+    lineHeight: 21
+  },
+  featureLink: {
+    color: colors.primary,
+    fontFamily,
+    fontSize: 13,
+    fontWeight: typography.weights.black,
+    marginTop: spacing.xs
   },
   workflowSection: {
-    alignItems: "flex-start",
-    backgroundColor: colors.primaryDark,
-    borderRadius: radii.xl,
+    gap: spacing.xl
+  },
+  stepRail: {
     flexDirection: "row",
     flexWrap: "wrap",
-    gap: spacing.xxxl,
-    padding: spacing.xxl,
-    ...shadows.medium
+    gap: spacing.lg
   },
-  workflowCopy: {
-    flexBasis: 320,
-    flexGrow: 1,
-    gap: spacing.sm
-  },
-  stepList: {
-    flexBasis: 460,
+  stepItem: {
+    alignItems: "flex-start",
+    flexBasis: 250,
+    flexDirection: "row",
     flexGrow: 1,
     gap: spacing.md
   },
-  stepRow: {
-    backgroundColor: "rgba(255,255,255,0.08)",
-    borderColor: "rgba(255,255,255,0.14)",
-    borderRadius: radii.lg,
+  stepIcon: {
+    alignItems: "center",
+    borderColor: colors.primary,
+    borderRadius: radii.round,
     borderWidth: 1,
-    flexDirection: "row",
-    gap: spacing.md,
-    padding: spacing.lg
+    height: 52,
+    justifyContent: "center",
+    width: 52
   },
-  stepNumber: {
-    color: colors.accent,
+  stepIconText: {
+    color: colors.primary,
     fontFamily,
-    fontSize: 18,
+    fontSize: 15,
     fontWeight: typography.weights.black
   },
   stepCopy: {
@@ -511,29 +539,32 @@ const styles = StyleSheet.create({
     gap: spacing.xs
   },
   stepTitle: {
-    color: colors.white,
+    color: colors.ink,
     fontFamily,
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: typography.weights.black
   },
   stepBody: {
-    color: "#cfe2e1",
+    color: colors.inkMuted,
     fontFamily,
-    fontSize: 14,
-    lineHeight: 20
+    fontSize: 13,
+    lineHeight: 19
   },
-  previewSection: {
+  scienceSection: {
     alignItems: "center",
     flexDirection: "row",
-    flexWrap: "wrap",
     gap: spacing.xxxl
+  },
+  scienceSectionMobile: {
+    alignItems: "stretch",
+    flexDirection: "column"
   },
   dashboardMock: {
     backgroundColor: colors.surface,
-    borderColor: colors.border,
+    borderColor: "rgba(184,206,209,0.72)",
     borderRadius: radii.xl,
     borderWidth: 1,
-    flexBasis: 440,
+    flexBasis: 620,
     flexGrow: 1,
     gap: spacing.lg,
     minWidth: 300,
@@ -560,62 +591,108 @@ const styles = StyleSheet.create({
   mockStatus: {
     alignItems: "center",
     backgroundColor: colors.primarySoft,
+    borderColor: colors.primary,
     borderRadius: radii.round,
-    height: 58,
+    borderWidth: 5,
+    height: 74,
     justifyContent: "center",
-    width: 58
+    width: 74
   },
   mockStatusText: {
-    color: colors.primaryDark,
+    color: colors.ink,
     fontFamily,
-    fontSize: 18,
+    fontSize: 28,
     fontWeight: typography.weights.black
   },
   mockGrid: {
     flexDirection: "row",
     flexWrap: "wrap",
-    gap: spacing.sm
+    gap: spacing.md
   },
   mockMetric: {
-    backgroundColor: colors.surfaceMuted,
+    backgroundColor: colors.surface,
+    borderColor: colors.border,
     borderRadius: radii.lg,
-    flexBasis: 120,
+    borderWidth: 1,
+    flexBasis: 150,
     flexGrow: 1,
     gap: spacing.xs,
     padding: spacing.md
   },
+  mockMetricLabel: {
+    color: colors.ink,
+    fontFamily,
+    fontSize: 13,
+    fontWeight: typography.weights.black
+  },
   mockMetricValue: {
     color: colors.ink,
     fontFamily,
-    fontSize: 26,
+    fontSize: 25,
     fontWeight: typography.weights.black
   },
-  mockMetricLabel: {
+  mockMetricTrend: {
+    color: colors.primary,
+    fontFamily,
+    fontSize: 11,
+    fontWeight: typography.weights.bold
+  },
+  sparkline: {
+    alignItems: "flex-end",
+    flexDirection: "row",
+    gap: 5,
+    height: 28,
+    marginTop: spacing.xs
+  },
+  sparkBar: {
+    backgroundColor: colors.aqua,
+    borderRadius: radii.round,
+    flex: 1,
+    minHeight: 6
+  },
+  analysisPreview: {
+    borderColor: colors.border,
+    borderRadius: radii.lg,
+    borderWidth: 1,
+    flexDirection: "row",
+    gap: spacing.lg,
+    overflow: "hidden"
+  },
+  analysisImage: {
+    flex: 1.5,
+    minHeight: 210
+  },
+  analysisStats: {
+    flex: 0.8,
+    gap: spacing.xs,
+    justifyContent: "center",
+    padding: spacing.lg
+  },
+  analysisLabel: {
     color: colors.inkMuted,
     fontFamily,
     fontSize: 12,
-    fontWeight: typography.weights.bold
+    fontWeight: typography.weights.black,
+    textTransform: "uppercase"
   },
-  chart: {
-    alignItems: "flex-end",
-    backgroundColor: colors.primaryMist,
-    borderRadius: radii.lg,
-    flexDirection: "row",
-    gap: spacing.md,
-    height: 150,
-    justifyContent: "space-between",
-    padding: spacing.lg
+  analysisValue: {
+    color: colors.ink,
+    fontFamily,
+    fontSize: 28,
+    fontWeight: typography.weights.black
   },
-  chartColumn: {
-    flex: 1,
-    justifyContent: "flex-end"
-  },
-  chartBar: {
-    backgroundColor: colors.primary,
+  analysisGood: {
+    alignSelf: "flex-start",
+    backgroundColor: colors.accentSoft,
     borderRadius: radii.round,
-    minHeight: 24
+    color: colors.primaryDark,
+    fontFamily,
+    fontSize: 12,
+    fontWeight: typography.weights.black,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs
   },
-  previewCopy: {
+  scienceCopy: {
     flexBasis: 360,
     flexGrow: 1,
     gap: spacing.md
@@ -634,34 +711,93 @@ const styles = StyleSheet.create({
   },
   finalCta: {
     alignItems: "center",
-    backgroundColor: colors.surface,
-    borderColor: colors.border,
+    backgroundColor: colors.primaryDark,
     borderRadius: radii.xl,
-    borderWidth: 1,
     flexDirection: "row",
     flexWrap: "wrap",
     gap: spacing.xl,
     justifyContent: "space-between",
+    minHeight: 150,
+    overflow: "hidden",
     padding: spacing.xxl,
-    ...shadows.soft
+    position: "relative",
+    ...shadows.medium
+  },
+  finalImage: {
+    bottom: 0,
+    left: 0,
+    opacity: 0.44,
+    position: "absolute",
+    top: 0,
+    width: 320
+  },
+  finalOverlay: {
+    backgroundColor: "rgba(6,63,61,0.72)",
+    bottom: 0,
+    left: 0,
+    position: "absolute",
+    right: 0,
+    top: 0
   },
   finalCopy: {
     flex: 1,
     gap: spacing.sm,
-    minWidth: 260
+    minWidth: 260,
+    zIndex: 2
   },
   finalTitle: {
-    color: colors.ink,
+    color: colors.white,
     fontFamily,
-    fontSize: 28,
+    fontSize: 30,
     fontWeight: typography.weights.black,
-    lineHeight: 34
+    lineHeight: 36
   },
   finalBody: {
-    color: colors.inkMuted,
+    color: "#d9efed",
     fontFamily,
     fontSize: 16,
     lineHeight: 24,
-    maxWidth: 720
+    maxWidth: 620
+  },
+  finalActions: {
+    zIndex: 2
+  },
+  disclaimer: {
+    alignItems: "flex-start",
+    flexDirection: "row",
+    gap: spacing.md,
+    justifyContent: "center",
+    marginTop: -spacing.xl
+  },
+  disclaimerIcon: {
+    alignItems: "center",
+    borderColor: colors.primary,
+    borderRadius: radii.round,
+    borderWidth: 1,
+    height: 32,
+    justifyContent: "center",
+    width: 32
+  },
+  disclaimerIconText: {
+    color: colors.primary,
+    fontFamily,
+    fontSize: 15,
+    fontWeight: typography.weights.black
+  },
+  disclaimerCopy: {
+    flex: 1,
+    maxWidth: 860
+  },
+  disclaimerTitle: {
+    color: colors.ink,
+    fontFamily,
+    fontSize: 14,
+    fontWeight: typography.weights.black
+  },
+  disclaimerText: {
+    color: colors.inkMuted,
+    fontFamily,
+    fontSize: 12,
+    lineHeight: 18
   }
 });

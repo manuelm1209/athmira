@@ -1,6 +1,6 @@
 import { Link, type Href, usePathname } from "expo-router";
 import type { PropsWithChildren } from "react";
-import { Image, Platform, Pressable, StyleSheet, Text, View } from "react-native";
+import { Image, Platform, Pressable, StyleSheet, Text, View, useWindowDimensions } from "react-native";
 import { colors, radii, shadows, spacing, typography } from "@athmira/ui";
 
 import { useAuth } from "@/providers/AuthProvider";
@@ -20,6 +20,8 @@ export function AppShell({ children }: PropsWithChildren) {
   const pathname = usePathname();
   const { isAdmin, session, signOut } = useAuth();
   const { t } = useLanguage();
+  const { width } = useWindowDimensions();
+  const compact = width < 760;
 
   const navItems: NavItem[] = session
     ? [
@@ -54,13 +56,33 @@ export function AppShell({ children }: PropsWithChildren) {
           </Pressable>
         </Link>
         <View style={styles.nav}>
+          {session || compact ? null : (
+            <View style={styles.marketingNav}>
+              <Text style={styles.marketingNavText}>Features</Text>
+              <Text style={styles.marketingNavText}>How it works</Text>
+              <Text style={styles.marketingNavText}>Science</Text>
+              <Text style={styles.marketingNavText}>Resources</Text>
+            </View>
+          )}
           {navItems.map((item) => (
             <Link href={item.href} asChild key={item.key}>
               <Pressable
                 accessibilityRole="link"
-                style={StyleSheet.flatten([styles.navLink, pathname === item.href && styles.activeLink])}
+                style={StyleSheet.flatten([
+                  styles.navLink,
+                  item.key === "signup" && styles.primaryNavLink,
+                  pathname === item.href && styles.activeLink
+                ])}
               >
-                <Text style={[styles.navText, pathname === item.href && styles.activeText]}>{item.label}</Text>
+                <Text
+                  style={[
+                    styles.navText,
+                    item.key === "signup" && styles.primaryNavText,
+                    pathname === item.href && styles.activeText
+                  ]}
+                >
+                  {item.label}
+                </Text>
               </Pressable>
             </Link>
           ))}
@@ -81,18 +103,21 @@ const fontFamily = Platform.select({ default: undefined, web: typography.fontFam
 
 const styles = StyleSheet.create({
   root: {
-    backgroundColor: colors.background,
+    backgroundColor: "#f3f8fa",
     flex: 1
   },
   header: {
     alignItems: "center",
-    backgroundColor: colors.surface,
-    borderBottomColor: colors.border,
-    borderBottomWidth: 1,
+    backgroundColor: "rgba(255,255,255,0.94)",
+    borderColor: "rgba(184,206,209,0.72)",
+    borderRadius: 18,
+    borderWidth: 1,
     flexDirection: "row",
     flexWrap: "wrap",
-    gap: spacing.md,
+    gap: spacing.xl,
     justifyContent: "space-between",
+    marginHorizontal: spacing.md,
+    marginTop: spacing.sm,
     paddingHorizontal: spacing.xl,
     paddingVertical: spacing.md,
     ...shadows.soft
@@ -108,10 +133,12 @@ const styles = StyleSheet.create({
     width: 38
   },
   brandName: {
-    color: colors.ink,
+    color: colors.primary,
     fontFamily,
     fontSize: 21,
-    fontWeight: typography.weights.black
+    fontWeight: typography.weights.black,
+    letterSpacing: 1.2,
+    textTransform: "uppercase"
   },
   brandTagline: {
     color: colors.inkMuted,
@@ -123,24 +150,47 @@ const styles = StyleSheet.create({
     alignItems: "center",
     flexDirection: "row",
     flexWrap: "wrap",
-    gap: spacing.sm
+    gap: spacing.xl
+  },
+  marketingNav: {
+    alignItems: "center",
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: spacing.xl,
+    justifyContent: "center"
+  },
+  marketingNavText: {
+    color: colors.ink,
+    fontFamily,
+    fontSize: 12,
+    fontWeight: typography.weights.black
   },
   navLink: {
-    borderRadius: radii.round,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: spacing.xs
+    borderColor: "transparent",
+    borderRadius: radii.md,
+    borderWidth: 1,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm
   },
   activeLink: {
-    backgroundColor: colors.primarySoft
+    backgroundColor: colors.primary,
+    borderColor: colors.primary
+  },
+  primaryNavLink: {
+    backgroundColor: colors.primary,
+    borderColor: colors.primary
   },
   navText: {
-    color: colors.inkMuted,
+    color: colors.ink,
     fontFamily,
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: typography.weights.black
   },
   activeText: {
-    color: colors.primaryDark
+    color: colors.white
+  },
+  primaryNavText: {
+    color: colors.white
   },
   content: {
     flex: 1
