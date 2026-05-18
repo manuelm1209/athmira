@@ -34,6 +34,55 @@ export type RecommendationCategory =
 
 export type MediaAssetType = "image" | "video" | "best_posture_snapshot";
 
+export type NutritionActivityType =
+  | "cycling"
+  | "running"
+  | "triathlon"
+  | "gravel"
+  | "mountain_biking"
+  | "indoor_cycling"
+  | "hiking"
+  | "other";
+
+export type NutritionIntensity = "easy" | "moderate" | "hard" | "race_effort";
+
+export type NutritionProductCategory =
+  | "bottle_ingredient"
+  | "gel"
+  | "bar"
+  | "solid_food"
+  | "drink"
+  | "powder"
+  | "fruit"
+  | "candy"
+  | "sandwich"
+  | "custom";
+
+export type NutritionProductScope = "global" | "user";
+
+export type NutritionPlanItemLocation = "bottle" | "carried" | "before" | "during" | "after";
+
+export type NutritionTimingType = "start" | "every_30" | "every_45" | "hourly" | "custom";
+
+export type NutritionIconKey =
+  | "bottle"
+  | "gel"
+  | "bar"
+  | "banana"
+  | "candy"
+  | "sandwich"
+  | "powder"
+  | "salt"
+  | "sugar"
+  | "honey"
+  | "water"
+  | "drink"
+  | "rice"
+  | "dates"
+  | "raisins"
+  | "pretzel"
+  | "custom_food";
+
 export type UserProfile = {
   id: string;
   email: string;
@@ -109,6 +158,153 @@ export type TirePressureInput = {
   tireSetup: TireSetup;
   tireWidth: number;
   tireWidthUnit: TireWidthUnit;
+};
+
+export type NutritionPlan = {
+  id: string;
+  user_id: string;
+  title: string;
+  description: string | null;
+  activity_type: NutritionActivityType;
+  duration_minutes: number;
+  intensity: NutritionIntensity;
+  body_weight_kg: number | null;
+  target_carbs_per_hour: number | null;
+  target_fluids_ml_per_hour: number | null;
+  target_sodium_mg_per_hour: number | null;
+  estimated_calories_burned: number | null;
+  total_planned_carbs: number;
+  total_planned_fluids_ml: number;
+  total_planned_sodium_mg: number;
+  total_planned_calories: number;
+  created_at: string;
+  updated_at: string;
+};
+
+export type NutritionProduct = {
+  id: string;
+  name: string;
+  category: NutritionProductCategory;
+  product_scope: NutritionProductScope;
+  user_id: string | null;
+  default_serving_size: number | null;
+  default_serving_unit: string | null;
+  carbs_per_serving: number;
+  calories_per_serving: number;
+  sodium_mg_per_serving: number;
+  liquid_volume_ml_per_serving: number;
+  weight_g_per_serving: number;
+  icon_key: NutritionIconKey | null;
+  notes: string | null;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+};
+
+export type NutritionPlanBottle = {
+  id: string;
+  plan_id: string;
+  user_id: string;
+  name: string | null;
+  bottle_size_ml: number;
+  bottle_size_label: string | null;
+  display_order: number;
+  total_used_volume_ml: number;
+  remaining_water_ml: number;
+  total_carbs: number;
+  total_sodium_mg: number;
+  total_calories: number;
+  created_at: string;
+  updated_at: string;
+};
+
+export type NutritionPlanItem = {
+  id: string;
+  plan_id: string;
+  bottle_id: string | null;
+  user_id: string;
+  product_id: string;
+  quantity: number;
+  unit: string | null;
+  serving_multiplier: number;
+  location: NutritionPlanItemLocation;
+  timing_type: NutritionTimingType | null;
+  timing_minute: number | null;
+  calculated_carbs: number;
+  calculated_calories: number;
+  calculated_sodium_mg: number;
+  calculated_volume_ml: number;
+  created_at: string;
+  updated_at: string;
+};
+
+export type NutritionPlanItemWithProduct = NutritionPlanItem & {
+  product: NutritionProduct | null;
+};
+
+export type NutritionPlanDetail = NutritionPlan & {
+  bottles: NutritionPlanBottle[];
+  items: NutritionPlanItemWithProduct[];
+};
+
+export type NutritionPlanInput = {
+  title: string;
+  description?: string | null;
+  activity_type: NutritionActivityType;
+  duration_minutes: number;
+  intensity: NutritionIntensity;
+  body_weight_kg?: number | null;
+  target_carbs_per_hour?: number | null;
+  target_fluids_ml_per_hour?: number | null;
+  target_sodium_mg_per_hour?: number | null;
+  estimated_calories_burned?: number | null;
+  total_planned_carbs?: number;
+  total_planned_fluids_ml?: number;
+  total_planned_sodium_mg?: number;
+  total_planned_calories?: number;
+};
+
+export type NutritionPlanBottleInput = {
+  id?: string;
+  name?: string | null;
+  bottle_size_ml: number;
+  bottle_size_label?: string | null;
+  display_order?: number;
+  total_used_volume_ml?: number;
+  remaining_water_ml?: number;
+  total_carbs?: number;
+  total_sodium_mg?: number;
+  total_calories?: number;
+};
+
+export type NutritionPlanItemInput = {
+  id?: string;
+  bottle_id?: string | null;
+  product_id: string;
+  quantity: number;
+  unit?: string | null;
+  serving_multiplier?: number;
+  location: NutritionPlanItemLocation;
+  timing_type?: NutritionTimingType | null;
+  timing_minute?: number | null;
+  calculated_carbs?: number;
+  calculated_calories?: number;
+  calculated_sodium_mg?: number;
+  calculated_volume_ml?: number;
+};
+
+export type NutritionProductInput = {
+  name: string;
+  category: NutritionProductCategory;
+  default_serving_size?: number | null;
+  default_serving_unit?: string | null;
+  carbs_per_serving?: number;
+  calories_per_serving?: number;
+  sodium_mg_per_serving?: number;
+  liquid_volume_ml_per_serving?: number;
+  weight_g_per_serving?: number;
+  icon_key?: NutritionIconKey | null;
+  notes?: string | null;
 };
 
 export type TireSurfaceRecommendation = {

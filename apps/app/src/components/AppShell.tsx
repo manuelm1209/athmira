@@ -75,6 +75,7 @@ export function AppShell({ children }: PropsWithChildren) {
         { href: "/dashboard", key: "dashboard", label: t("dashboard") },
         { href: "/bikes", key: "bikes", label: t("bikes") },
         { href: "/analysis", key: "analysis", label: t("camera") },
+        { href: "/nutrition", key: "nutrition", label: t("nutritionPlanningNav") },
         { href: "/tire-pressure", key: "tirePressure", label: t("tirePressureNav") },
         { href: "/profile", key: "profile", label: t("profile") },
         { href: "/settings", key: "settings", label: t("settings") },

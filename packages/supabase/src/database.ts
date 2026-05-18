@@ -7,6 +7,13 @@ import type {
   FitSessionType,
   LanguageCode,
   MediaAssetType,
+  NutritionActivityType,
+  NutritionIconKey,
+  NutritionIntensity,
+  NutritionPlanItemLocation,
+  NutritionProductCategory,
+  NutritionProductScope,
+  NutritionTimingType,
   RecommendationCategory,
   RecommendationPriority,
   TireSetup,
@@ -191,6 +198,227 @@ export type Database = {
           rear_pressure_psi?: number;
           surface_recommendations?: Json;
           notes?: string | null;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      nutrition_plans: {
+        Row: {
+          id: string;
+          user_id: string;
+          title: string;
+          description: string | null;
+          activity_type: NutritionActivityType;
+          duration_minutes: number;
+          intensity: NutritionIntensity;
+          body_weight_kg: number | null;
+          target_carbs_per_hour: number | null;
+          target_fluids_ml_per_hour: number | null;
+          target_sodium_mg_per_hour: number | null;
+          estimated_calories_burned: number | null;
+          total_planned_carbs: number;
+          total_planned_fluids_ml: number;
+          total_planned_sodium_mg: number;
+          total_planned_calories: number;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          title: string;
+          description?: string | null;
+          activity_type: NutritionActivityType;
+          duration_minutes: number;
+          intensity?: NutritionIntensity;
+          body_weight_kg?: number | null;
+          target_carbs_per_hour?: number | null;
+          target_fluids_ml_per_hour?: number | null;
+          target_sodium_mg_per_hour?: number | null;
+          estimated_calories_burned?: number | null;
+          total_planned_carbs?: number;
+          total_planned_fluids_ml?: number;
+          total_planned_sodium_mg?: number;
+          total_planned_calories?: number;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          title?: string;
+          description?: string | null;
+          activity_type?: NutritionActivityType;
+          duration_minutes?: number;
+          intensity?: NutritionIntensity;
+          body_weight_kg?: number | null;
+          target_carbs_per_hour?: number | null;
+          target_fluids_ml_per_hour?: number | null;
+          target_sodium_mg_per_hour?: number | null;
+          estimated_calories_burned?: number | null;
+          total_planned_carbs?: number;
+          total_planned_fluids_ml?: number;
+          total_planned_sodium_mg?: number;
+          total_planned_calories?: number;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      nutrition_products: {
+        Row: {
+          id: string;
+          name: string;
+          category: NutritionProductCategory;
+          product_scope: NutritionProductScope;
+          user_id: string | null;
+          default_serving_size: number | null;
+          default_serving_unit: string | null;
+          carbs_per_serving: number;
+          calories_per_serving: number;
+          sodium_mg_per_serving: number;
+          liquid_volume_ml_per_serving: number;
+          weight_g_per_serving: number;
+          icon_key: NutritionIconKey | null;
+          notes: string | null;
+          is_active: boolean;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          name: string;
+          category: NutritionProductCategory;
+          product_scope: NutritionProductScope;
+          user_id?: string | null;
+          default_serving_size?: number | null;
+          default_serving_unit?: string | null;
+          carbs_per_serving?: number;
+          calories_per_serving?: number;
+          sodium_mg_per_serving?: number;
+          liquid_volume_ml_per_serving?: number;
+          weight_g_per_serving?: number;
+          icon_key?: NutritionIconKey | null;
+          notes?: string | null;
+          is_active?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          name?: string;
+          category?: NutritionProductCategory;
+          product_scope?: NutritionProductScope;
+          user_id?: string | null;
+          default_serving_size?: number | null;
+          default_serving_unit?: string | null;
+          carbs_per_serving?: number;
+          calories_per_serving?: number;
+          sodium_mg_per_serving?: number;
+          liquid_volume_ml_per_serving?: number;
+          weight_g_per_serving?: number;
+          icon_key?: NutritionIconKey | null;
+          notes?: string | null;
+          is_active?: boolean;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      nutrition_plan_bottles: {
+        Row: {
+          id: string;
+          plan_id: string;
+          user_id: string;
+          name: string | null;
+          bottle_size_ml: number;
+          bottle_size_label: string | null;
+          display_order: number;
+          total_used_volume_ml: number;
+          remaining_water_ml: number;
+          total_carbs: number;
+          total_sodium_mg: number;
+          total_calories: number;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          plan_id: string;
+          user_id: string;
+          name?: string | null;
+          bottle_size_ml: number;
+          bottle_size_label?: string | null;
+          display_order?: number;
+          total_used_volume_ml?: number;
+          remaining_water_ml?: number;
+          total_carbs?: number;
+          total_sodium_mg?: number;
+          total_calories?: number;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          name?: string | null;
+          bottle_size_ml?: number;
+          bottle_size_label?: string | null;
+          display_order?: number;
+          total_used_volume_ml?: number;
+          remaining_water_ml?: number;
+          total_carbs?: number;
+          total_sodium_mg?: number;
+          total_calories?: number;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      nutrition_plan_items: {
+        Row: {
+          id: string;
+          plan_id: string;
+          bottle_id: string | null;
+          user_id: string;
+          product_id: string;
+          quantity: number;
+          unit: string | null;
+          serving_multiplier: number;
+          location: NutritionPlanItemLocation;
+          timing_type: NutritionTimingType | null;
+          timing_minute: number | null;
+          calculated_carbs: number;
+          calculated_calories: number;
+          calculated_sodium_mg: number;
+          calculated_volume_ml: number;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          plan_id: string;
+          bottle_id?: string | null;
+          user_id: string;
+          product_id: string;
+          quantity: number;
+          unit?: string | null;
+          serving_multiplier?: number;
+          location: NutritionPlanItemLocation;
+          timing_type?: NutritionTimingType | null;
+          timing_minute?: number | null;
+          calculated_carbs?: number;
+          calculated_calories?: number;
+          calculated_sodium_mg?: number;
+          calculated_volume_ml?: number;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          bottle_id?: string | null;
+          product_id?: string;
+          quantity?: number;
+          unit?: string | null;
+          serving_multiplier?: number;
+          location?: NutritionPlanItemLocation;
+          timing_type?: NutritionTimingType | null;
+          timing_minute?: number | null;
+          calculated_carbs?: number;
+          calculated_calories?: number;
+          calculated_sodium_mg?: number;
+          calculated_volume_ml?: number;
           updated_at?: string;
         };
         Relationships: [];

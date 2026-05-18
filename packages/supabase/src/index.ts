@@ -4,4 +4,5 @@ export * from "./bikes";
 export * from "./client";
 export * from "./database";
 export * from "./fit-sessions";
+export * from "./nutrition";
 export * from "./tire-pressure";

@@ -149,6 +149,9 @@ export function DashboardScreen() {
               <Text style={styles.actionBody}>{t("educationalNote")}</Text>
               <Inline>
                 <LinkButton href="/analysis">{t("dashboardQuickStart")}</LinkButton>
+                <LinkButton href="/nutrition" variant="secondary">
+                  {t("nutrition")}
+                </LinkButton>
                 <LinkButton href="/tire-pressure" variant="ghost">
                   {t("tirePressureNav")}
                 </LinkButton>

@@ -16,7 +16,7 @@ The first MVP focuses on account creation, user profiles, bike profiles, a camer
   /aero-engine         Mock aero scoring interfaces
   /ai-engine           Placeholder AI coaching interfaces
   /fit-engine          Mock fit scoring and recommendation logic
-  /nutrition-engine    Placeholder nutrition calculators
+  /nutrition-engine    Fueling, hydration, bottle, and tire pressure calculators
   /pose-engine         Mock pose interfaces and angle calculations
   /supabase            Supabase client and data services
   /types               Shared domain types
@@ -98,6 +98,10 @@ Run the SQL migrations in `supabase/migrations` against your Supabase project in
 - `admin_roles`
 - `admin_audit_logs`
 - `tire_pressure_settings`
+- `nutrition_plans`
+- `nutrition_products`
+- `nutrition_plan_bottles`
+- `nutrition_plan_items`
 - private `fit-media` storage bucket
 
 Row Level Security is enabled so authenticated users can only access their own data.
@@ -120,6 +124,12 @@ Migration `0005_admin_role_management.sql` expands admin audit logging for admin
 Migration `0006_tire_pressure_settings.sql` adds editable tire pressure settings linked to users and optionally to bikes.
 Migration `0007_tire_pressure_setup.sql` adds tire setup storage so pressure history distinguishes inner-tube and tubeless recommendations.
 Migration `0008_tire_pressure_tpu_and_width_value.sql` adds TPU tube support and stores the exact tire-width value entered by the user.
+Migration `0009_nutrition_planning.sql` adds the Nutrition Planning module tables, global product seed data, RLS policies, explicit authenticated grants for the Supabase Data API, and a database trigger limiting each user to 15 custom nutrition products.
+
+Nutrition products use two scopes:
+
+- `global`: seeded system/admin products that all authenticated users can read.
+- `user`: custom products owned by one authenticated user. Users can create, edit, and soft-delete their own custom products only.
 
 ## Security
 
@@ -128,6 +138,7 @@ Cybersecurity is a required product constraint for Athmira. User identity, bike 
 - Keep secret keys out of Expo and React Native Web. Only `EXPO_PUBLIC_*` values should be available to the client.
 - Keep `SUPABASE_SERVICE_ROLE_KEY`, `TURNSTILE_SECRET_KEY`, database URLs, JWT secrets, and provider secrets in server-side provider settings only.
 - Use Supabase RLS for all user-owned tables and private Storage buckets for media.
+- Keep nutrition plans, bottles, plan items, and custom products user-owned through RLS. Global nutrition products should only be changed by trusted admins or controlled seed migrations.
 - Use signed URLs for private media access.
 - Keep Cloudflare Turnstile enabled on auth forms in production and configure the Turnstile secret in Supabase Auth CAPTCHA/Bot Protection.
 - Review Vercel security headers in `vercel.json` when adding camera, media, worker, or third-party script behavior.
