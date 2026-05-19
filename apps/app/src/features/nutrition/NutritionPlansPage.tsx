@@ -58,8 +58,6 @@ import { useAuth } from "@/providers/AuthProvider";
 import { useLanguage } from "@/providers/LanguageProvider";
 import { getErrorMessage, numberToInput, parseOptionalNumber } from "@/utils/form";
 
-import { NutritionIcon, NutritionIconPicker } from "./NutritionIcons";
-
 type DraftBottle = NutritionPlanBottleInput & {
   id: string;
   name: string;
@@ -143,6 +141,25 @@ const bottleSizes = [
   { label: "750 ml", value: 750 },
   { label: "950 ml / 32 oz", value: 950 },
   { label: "1000 ml", value: 1000 }
+];
+
+const iconOptions: NutritionIconKey[] = [
+  "bottle",
+  "gel",
+  "bar",
+  "banana",
+  "candy",
+  "sandwich",
+  "powder",
+  "salt",
+  "sugar",
+  "honey",
+  "drink",
+  "rice",
+  "dates",
+  "raisins",
+  "pretzel",
+  "custom_food"
 ];
 
 const bottleFillMotionStyle = Platform.select({
@@ -3145,8 +3162,15 @@ export function CustomProductForm({
             value={category}
           />
         </View>
+        <View style={styles.splitField}>
+          <SelectField
+            label={copy.icon}
+            onValueChange={(value) => setIconKey(toIconKey(value))}
+            options={iconOptions.map((icon) => ({ label: getIconLabel(icon), value: icon }))}
+            value={iconKey}
+          />
+        </View>
       </Inline>
-      <NutritionIconPicker label={copy.icon} onChange={setIconKey} value={iconKey} />
       <Inline>
         <View style={styles.splitField}>
           <Field inputMode="numeric" label={copy.servingSize} onChangeText={setServingSize} value={servingSize} />
@@ -3375,6 +3399,14 @@ function Pill({ label, tone = "primary" }: { label: string; tone?: "amber" | "bl
       <Text style={[styles.pillText, tone === "amber" && styles.pillTextAmber, tone === "blue" && styles.pillTextBlue]}>
         {label}
       </Text>
+    </View>
+  );
+}
+
+function NutritionIcon({ iconKey }: { iconKey: NutritionIconKey }) {
+  return (
+    <View style={[styles.nutritionIcon, getIconTone(iconKey)]}>
+      <Text style={styles.nutritionIconText}>{getIconGlyph(iconKey)}</Text>
     </View>
   );
 }
@@ -3785,6 +3817,77 @@ function getActivityIcon(activityType: NutritionActivityType): NutritionIconKey 
   }
 }
 
+function getIconGlyph(iconKey: NutritionIconKey) {
+  switch (iconKey) {
+    case "bottle":
+      return "BT";
+    case "gel":
+      return "GL";
+    case "bar":
+      return "BR";
+    case "banana":
+      return "BN";
+    case "candy":
+      return "CY";
+    case "sandwich":
+      return "SW";
+    case "powder":
+      return "PW";
+    case "salt":
+      return "Na";
+    case "sugar":
+      return "CH";
+    case "honey":
+      return "HN";
+    case "water":
+      return "H2";
+    case "drink":
+      return "DR";
+    case "rice":
+      return "RC";
+    case "dates":
+      return "DT";
+    case "raisins":
+      return "RS";
+    case "pretzel":
+      return "PZ";
+    case "custom_food":
+    default:
+      return "FD";
+  }
+}
+
+function getIconLabel(iconKey: NutritionIconKey) {
+  return `${getIconGlyph(iconKey)} ${iconKey.replace("_", " ")}`;
+}
+
+function getIconTone(iconKey: NutritionIconKey) {
+  switch (iconKey) {
+    case "water":
+    case "drink":
+    case "bottle":
+      return styles.iconBlue;
+    case "salt":
+    case "pretzel":
+      return styles.iconAmber;
+    case "gel":
+    case "bar":
+    case "candy":
+    case "sugar":
+    case "honey":
+    case "powder":
+      return styles.iconAccent;
+    case "banana":
+    case "dates":
+    case "raisins":
+    case "rice":
+    case "sandwich":
+    case "custom_food":
+    default:
+      return styles.iconPrimary;
+  }
+}
+
 function getProductColor(product: NutritionProduct, fallbackIndex = 0) {
   const palette = ["#a7f23a", "#51d9df", "#f5a623", "#2f6fdf", "#f26f5e", "#8aa10f", "#00a48f", "#efc84a"];
 
@@ -3837,6 +3940,9 @@ function toTimingType(value: string): NutritionTimingType | null {
   return timingOptions.some((option) => option.value === value) ? (value as NutritionTimingType) : null;
 }
 
+function toIconKey(value: string): NutritionIconKey {
+  return iconOptions.includes(value as NutritionIconKey) ? (value as NutritionIconKey) : "custom_food";
+}
 
 const fontFamily = Platform.select({ default: undefined, web: typography.fontFamily });
 
@@ -5377,6 +5483,31 @@ const styles = StyleSheet.create({
   },
   pillTextBlue: {
     color: colors.blue
+  },
+  nutritionIcon: {
+    alignItems: "center",
+    borderRadius: radii.md,
+    height: 42,
+    justifyContent: "center",
+    width: 42
+  },
+  nutritionIconText: {
+    color: colors.white,
+    fontFamily,
+    fontSize: 13,
+    fontWeight: typography.weights.black
+  },
+  iconPrimary: {
+    backgroundColor: colors.primary
+  },
+  iconAccent: {
+    backgroundColor: "#6f8f11"
+  },
+  iconAmber: {
+    backgroundColor: colors.amber
+  },
+  iconBlue: {
+    backgroundColor: colors.blue
   },
   error: {
     color: colors.danger,
