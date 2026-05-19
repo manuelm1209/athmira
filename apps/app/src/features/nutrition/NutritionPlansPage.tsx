@@ -323,23 +323,23 @@ const nutritionCopy = {
   },
   es: {
     add: "Agregar",
-    addBottle: "Agregar caramanola",
+    addBottle: "Agregar caramañola",
     addCustom: "Agregar personalizada",
     addFood: "Agregar comida",
     addIngredient: "Agregar ingrediente",
     addNutritionItems: "Agregar items de nutricion",
     addProductsTimeline: "Agrega productos para construir la linea de tiempo.",
-    addTargetBottle: "Agrega una caramanola antes de asignar productos dentro de una botella.",
+    addTargetBottle: "Agrega una caramañola antes de asignar productos dentro de una botella.",
     allProducts: "Todos los productos",
     atStart: "Al inicio",
     athmiraFuelingPlan: "Plan de fueling Athmira",
     before: "Antes",
     bodyWeightUsed: "Peso usado (kg)",
-    bottle: "Caramanola",
+    bottle: "Caramañola",
     bottleName: "Nombre de botella",
     bottleSizeGreaterThanZero: "El tamano de la botella debe ser mayor que 0.",
     bottleSizeMl: "Tamano ml",
-    bottlesTitle: "Botellas / Caramanolas",
+    bottlesTitle: "Botellas / Caramañolas",
     calculateSuggestedTargets: "Calcular objetivos sugeridos",
     calories: "Calorias",
     caloriesEstimate: "Calorias estimadas",
@@ -356,7 +356,7 @@ const nutritionCopy = {
     chooseBottle: "Elige botella",
     close: "Cerrar",
     collapse: "Colapsar",
-    concentration: "Concentracion",
+    concentration: "Concentración",
     configurations: "Configuraciones",
     composition: "Composicion",
     createFirstPlan: "Crear primer plan",
@@ -389,7 +389,7 @@ const nutritionCopy = {
     every45Long: "Cada 45 minutos",
     everyHour: "Cada hora",
     foodCarried: "Comida para llevar",
-    foodCarriedBody: "Geles, barras, sandwiches, fruta u otra comida por fuera de las caramanolas.",
+    foodCarriedBody: "Geles, barras, sandwiches, fruta u otra comida por fuera de las caramañolas.",
     fluids: "Liquidos",
     fluidsHr: "Liquidos/h",
     fluidsTarget: "Objetivo de hidratacion",
@@ -419,7 +419,7 @@ const nutritionCopy = {
     noPlansBody: "Crea configuraciones reutilizables para fondos, carreras, sesiones indoor o dias de running.",
     noPlansYet: "Aun no hay planes",
     notes: "Notas",
-    notesPlaceholder: "Ejemplo: Fondo largo con dos caramanolas y comida solida cada hora",
+    notesPlaceholder: "Ejemplo: Fondo largo con dos caramañolas y comida solida cada hora",
     nutritionPlan: "Plan de nutricion",
     nutritionPlanDeleted: "Plan de nutricion eliminado.",
     nutritionPlanNotFound: "Plan de nutricion no encontrado.",
@@ -445,7 +445,7 @@ const nutritionCopy = {
     sodiumMg: "Sodio mg",
     sodiumTarget: "Objetivo de sodio",
     strategyBoard: "Estrategia de alimentacion",
-    strategyBoardBody: "Agrega cada ingrediente desde la tarjeta de la caramanola que estas llenando. Desliza horizontalmente para manejar mas botellas o comida.",
+    strategyBoardBody: "Agrega cada ingrediente desde la tarjeta de la caramañola que estas llenando. Desliza horizontalmente para manejar mas botellas o comida.",
     startCardBody:
       "Usa el constructor para combinar botellas, gels, barras, bocadillos, gomitas, bananos, sandwiches, rice cakes y productos personalizados en una estrategia completa de fueling.",
     startCardTitle: "Selecciona o crea un plan",
@@ -464,10 +464,10 @@ const nutritionCopy = {
     totalSodium: "Sodio total",
     unit: "Unidad",
     updateProduct: "Actualizar producto",
-    usedByIngredients: "Usado por ingredientes",
+    usedByIngredients: "Ingredientes",
     useSuggestedValues: "Usar valores sugeridos",
     viewPlan: "Ver plan",
-    waterBottlePrompt: "Agrega al menos una caramanola para planificar hidratacion y carbohidratos dentro de botella.",
+    waterBottlePrompt: "Agrega al menos una caramañola para planificar hidratacion y carbohidratos dentro de botella.",
     weightGrams: "Peso gramos",
     youMustSignInProducts: "Debes iniciar sesion para gestionar productos."
   }
@@ -554,7 +554,7 @@ export function NutritionPlansPage() {
         return null;
       }
 
-      return createDraftFromDetail(detail);
+      return createDraftFromDetail(detail, language);
     } catch (openError) {
       setError(getErrorMessage(openError));
       return null;
@@ -598,7 +598,7 @@ export function NutritionPlansPage() {
         return;
       }
 
-      const nextDraft = createDraftFromDetail(detail);
+      const nextDraft = createDraftFromDetail(detail, language);
       const bottleIdMap = new Map(nextDraft.bottles.map((bottle) => [bottle.id, createUuid()]));
       const duplicatedBottles = nextDraft.bottles.map((bottle, index) => ({
         ...bottle,
@@ -663,7 +663,7 @@ export function NutritionPlansPage() {
       const savedPlan = await saveNutritionPlan(user.id, payload);
       const nextPlans = await listNutritionPlans(user.id);
       setPlans(nextPlans);
-      setDraft(createDraftFromDetail(savedPlan));
+      setDraft(createDraftFromDetail(savedPlan, language));
       setMessage(copy.nutritionPlanSaved);
     } catch (saveError) {
       setError(getErrorMessage(saveError));
@@ -948,7 +948,7 @@ export function NutritionPlanEditor({
           bottle_size_ml: sizeMl,
           display_order: draft.bottles.length,
           id: nextBottleId,
-          name: language === "es" ? `Caramanola ${nextIndex}` : `Bottle ${nextIndex}`
+          name: language === "es" ? `Caramañola ${nextIndex}` : `Bottle ${nextIndex}`
         }
       ]
     });
@@ -1497,7 +1497,7 @@ function FuelingCanvas({
       <View style={styles.canvasToolbar}>
         <View>
           <Text style={styles.canvasTitle}>{copy.strategyBoard}</Text>
-          <Text style={styles.canvasSubtitle}>{language === "es" ? "Llena caramanolas y separa lo que vas a llevar." : "Fill bottles and separate what you carry."}</Text>
+          <Text style={styles.canvasSubtitle}>{language === "es" ? "Llena caramañolas y separa lo que vas a llevar." : "Fill bottles and separate what you carry."}</Text>
         </View>
         <View style={styles.canvasActions}>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.bottleSizeRail}>
@@ -1611,7 +1611,7 @@ function ReadOnlyBottleCard({
         <View style={styles.bottleSideStats}>
           <MiniMetric label={copy.capacity} value={`${round(bottle.bottle_size_ml, 0)} ml`} />
           <MiniMetric label={copy.usedByIngredients} value={`${round(calculation.totalUsedVolumeMl, 0)} ml`} />
-          <MiniMetric label={language === "es" ? "Conc." : "Conc."} value={`${round(calculation.carbsPerLiter, 0)} g/L`} />
+          <MiniMetric label={copy.concentration} value={`${round(calculation.carbsPerLiter, 0)} g/L`} />
         </View>
       </View>
       <NutrientBars
@@ -1691,7 +1691,7 @@ function BottleFuelCard({
         <View style={styles.bottleSideStats}>
           <MiniMetric label={copy.capacity} value={`${round(bottle.bottle_size_ml, 0)} ml`} />
           <MiniMetric label={copy.usedByIngredients} value={`${round(calculation.totalUsedVolumeMl, 0)} ml`} />
-          <MiniMetric label={language === "es" ? "Conc." : "Conc."} value={`${round(calculation.carbsPerLiter, 0)} g/L`} />
+          <MiniMetric label={copy.concentration} value={`${round(calculation.carbsPerLiter, 0)} g/L`} />
         </View>
       </View>
 
@@ -3394,7 +3394,7 @@ function createDefaultDraft(profileWeightKg?: number | null, language: "en" | "e
         bottle_size_ml: 620,
         display_order: 0,
         id: createUuid(),
-        name: language === "es" ? "Caramanola 1" : "Bottle 1"
+        name: language === "es" ? "Caramañola 1" : "Bottle 1"
       }
     ],
     description: "",
@@ -3409,7 +3409,7 @@ function createDefaultDraft(profileWeightKg?: number | null, language: "en" | "e
   };
 }
 
-function createDraftFromDetail(detail: import("@athmira/types").NutritionPlanDetail): DraftPlan {
+function createDraftFromDetail(detail: import("@athmira/types").NutritionPlanDetail, language: "en" | "es" = "en"): DraftPlan {
   return {
     activity_type: detail.activity_type,
     body_weight_kg: detail.body_weight_kg,
@@ -3418,7 +3418,7 @@ function createDraftFromDetail(detail: import("@athmira/types").NutritionPlanDet
       bottle_size_ml: bottle.bottle_size_ml,
       display_order: bottle.display_order,
       id: bottle.id,
-      name: bottle.name ?? "Bottle"
+      name: normalizeBottleName(bottle.name ?? "Bottle", language)
     })),
     description: detail.description ?? "",
     duration_minutes: detail.duration_minutes,
@@ -3444,6 +3444,10 @@ function createDraftFromDetail(detail: import("@athmira/types").NutritionPlanDet
     target_sodium_mg_per_hour: detail.target_sodium_mg_per_hour,
     title: detail.title
   };
+}
+
+function normalizeBottleName(name: string, language: "en" | "es") {
+  return language === "es" ? name.replace(/Caramanola/g, "Caramañola").replace(/caramanola/g, "caramañola") : name;
 }
 
 function stripDraftItem(item: DraftItem): NutritionPlanItemInput {
@@ -4360,14 +4364,16 @@ const styles = StyleSheet.create({
   },
   bottleHeroRow: {
     alignItems: "center",
-    flexDirection: "row",
-    gap: spacing.lg,
+    flexDirection: "column",
+    gap: spacing.md,
     justifyContent: "center"
   },
   bottleSideStats: {
-    flex: 1,
+    alignSelf: "stretch",
+    flexDirection: "row",
+    flexWrap: "wrap",
     gap: spacing.sm,
-    minWidth: 130
+    width: "100%"
   },
   compactEditRow: {
     flexDirection: "row",
