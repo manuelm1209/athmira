@@ -472,6 +472,26 @@ const nutritionCopy = {
   }
 } as const;
 
+const globalProductNameTranslations: Record<string, { en: string; es: string }> = {
+  "00000000-0000-4000-8000-000000000100": { en: "Water", es: "Agua" },
+  "00000000-0000-4000-8000-000000000101": { en: "Sugar", es: "Azucar" },
+  "00000000-0000-4000-8000-000000000102": { en: "Salt", es: "Sal" },
+  "00000000-0000-4000-8000-000000000103": { en: "Maltodextrin", es: "Maltodextrina" },
+  "00000000-0000-4000-8000-000000000104": { en: "Honey", es: "Miel" },
+  "00000000-0000-4000-8000-000000000105": { en: "Energy gel", es: "Gel energetico" },
+  "00000000-0000-4000-8000-000000000106": { en: "Bocadillo", es: "Bocadillo" },
+  "00000000-0000-4000-8000-000000000107": { en: "Banana", es: "Banano" },
+  "00000000-0000-4000-8000-000000000108": { en: "Gummies", es: "Gomitas" },
+  "00000000-0000-4000-8000-000000000109": { en: "Energy bar", es: "Barra energetica" },
+  "00000000-0000-4000-8000-000000000110": { en: "Rice cake", es: "Torta de arroz" },
+  "00000000-0000-4000-8000-000000000111": { en: "Isotonic drink", es: "Bebida isotonica" },
+  "00000000-0000-4000-8000-000000000112": { en: "Coca-Cola", es: "Coca-Cola" },
+  "00000000-0000-4000-8000-000000000113": { en: "Dates", es: "Datiles" },
+  "00000000-0000-4000-8000-000000000114": { en: "Raisins", es: "Uvas pasas" },
+  "00000000-0000-4000-8000-000000000115": { en: "Pretzels", es: "Pretzels" },
+  "00000000-0000-4000-8000-000000000116": { en: "Sandwich", es: "Sandwich" }
+};
+
 export function NutritionPlansPage() {
   const { profile, user } = useAuth();
   const { language } = useLanguage();
@@ -1904,7 +1924,7 @@ function AddNutritionModal({
               <SelectField
                 label={copy.itemToAdd}
                 onValueChange={setProductId}
-                options={filteredProducts.map((product) => ({ label: product.name, value: product.id }))}
+                options={filteredProducts.map((product) => ({ label: getProductDisplayName(product, language), value: product.id }))}
                 value={productId}
               />
               {target?.mode === "carried" ? (
@@ -1920,7 +1940,7 @@ function AddNutritionModal({
                 <View style={styles.selectedProductPreview}>
                   <View style={[styles.ingredientDot, { backgroundColor: getProductColor(selectedProduct) }]} />
                   <View style={styles.simpleItemCopy}>
-                    <Text style={styles.simpleItemTitle}>{selectedProduct.name}</Text>
+                    <Text style={styles.simpleItemTitle}>{getProductDisplayName(selectedProduct, language)}</Text>
                     <Text style={styles.simpleItemMeta}>
                       {round(selectedProduct.carbs_per_serving, 0)} g {copy.carbs.toLowerCase()} / {round(selectedProduct.sodium_mg_per_serving, 0)} mg {copy.sodium.toLowerCase()} / {round(selectedProduct.calories_per_serving, 0)} kcal
                     </Text>
@@ -2044,7 +2064,7 @@ function IngredientComposition({
           <View key={item.id} style={styles.compositionRow}>
             <View style={[styles.ingredientDot, { backgroundColor: color }]} />
             <View style={styles.simpleItemCopy}>
-              <Text style={styles.simpleItemTitle}>{item.product.name}</Text>
+              <Text style={styles.simpleItemTitle}>{getProductDisplayName(item.product, language)}</Text>
               <Text style={styles.simpleItemMeta}>
                 {item.quantity} {item.unit ?? (language === "es" ? "porcion" : "serving")} / {round(calculated.calculated_carbs, 0)} g {copy.carbs.toLowerCase()} / {round(calculated.calculated_sodium_mg, 0)} mg {copy.sodium.toLowerCase()}
               </Text>
@@ -2189,7 +2209,7 @@ export function BottleStrategyBoard({
           {userProducts.map((product) => (
             <View key={product.id} style={styles.customProductChip}>
               <NutritionIcon iconKey={product.icon_key ?? "custom_food"} />
-              <Text style={styles.customProductChipText}>{product.name}</Text>
+              <Text style={styles.customProductChipText}>{getProductDisplayName(product, language)}</Text>
               <Pressable accessibilityRole="button" onPress={() => setProductForm({ visible: true, product })} style={styles.customProductAction}>
                 <Text style={styles.customProductActionText}>{copy.edit}</Text>
               </Pressable>
@@ -2325,7 +2345,7 @@ function BottleStrategyCard({
         <SelectField
           label={copy.itemToAdd}
           onValueChange={setProductId}
-          options={bottleProducts.map((product) => ({ label: product.name, value: product.id }))}
+          options={bottleProducts.map((product) => ({ label: getProductDisplayName(product, language), value: product.id }))}
           value={productId}
         />
         <Inline>
@@ -2404,7 +2424,7 @@ function CarriedFoodStrategyCard({
         <SelectField
           label={copy.itemToAdd}
           onValueChange={setProductId}
-          options={carriedProducts.map((product) => ({ label: product.name, value: product.id }))}
+          options={carriedProducts.map((product) => ({ label: getProductDisplayName(product, language), value: product.id }))}
           value={productId}
         />
         <SelectField
@@ -2505,7 +2525,7 @@ function SimpleItemList({
           <View key={item.id} style={styles.simpleItemRow}>
             <NutritionIcon iconKey={item.product.icon_key ?? "custom_food"} />
             <View style={styles.simpleItemCopy}>
-              <Text style={styles.simpleItemTitle}>{item.product.name}</Text>
+              <Text style={styles.simpleItemTitle}>{getProductDisplayName(item.product, language)}</Text>
               <Text style={styles.simpleItemMeta}>
                 {item.quantity} {item.unit ?? (language === "es" ? "porcion" : "serving")} / {round(calculated.calculated_carbs, 0)} g {copy.carbs.toLowerCase()} / {round(calculated.calculated_sodium_mg, 0)} mg {copy.sodium.toLowerCase()}
               </Text>
@@ -2765,7 +2785,7 @@ export function BottleIngredientList({
             <View style={styles.itemIdentity}>
               <NutritionIcon iconKey={item.product.icon_key ?? "custom_food"} />
               <View style={styles.itemCopy}>
-                <Text style={styles.itemTitle}>{item.product.name}</Text>
+                <Text style={styles.itemTitle}>{getProductDisplayName(item.product, language)}</Text>
                 <Text style={styles.itemMeta}>
                   {round(calculated.calculated_carbs, 1)} g carbs / {round(calculated.calculated_sodium_mg, 0)} mg sodium /{" "}
                   {round(calculated.calculated_calories, 0)} kcal
@@ -2992,7 +3012,7 @@ export function ProductCard({
       <Pressable accessibilityRole="button" onPress={onAdd} style={styles.productAddZone}>
         <NutritionIcon iconKey={product.icon_key ?? "custom_food"} />
         <View style={styles.productCopy}>
-          <Text style={styles.productTitle}>{product.name}</Text>
+          <Text style={styles.productTitle}>{getProductDisplayName(product, language)}</Text>
           <Text style={styles.productMeta}>
             {round(product.carbs_per_serving, 1)} g carbs / {round(product.calories_per_serving, 0)} kcal /{" "}
             {round(product.sodium_mg_per_serving, 0)} mg sodium
@@ -3267,7 +3287,7 @@ export function NutritionTimeline({ items }: { items: DraftItem[] }) {
           <View style={styles.timelineCopy}>
             <Text style={styles.timelineTitle}>{formatTiming(item, language)}</Text>
             <Text style={styles.timelineMeta}>
-              {item.product.name} / {item.quantity} {item.unit ?? (language === "es" ? "porcion" : "serving")} / {getLocationLabel(item.location, language)}
+              {getProductDisplayName(item.product, language)} / {item.quantity} {item.unit ?? (language === "es" ? "porcion" : "serving")} / {getLocationLabel(item.location, language)}
             </Text>
           </View>
         </View>
@@ -3288,7 +3308,7 @@ export function SharePreviewCard({
 }) {
   const { language } = useLanguage();
   const copy = nutritionCopy[language];
-  const uniqueItems = Array.from(new Set(items.map((item) => item.product.name))).slice(0, 6);
+  const uniqueItems = Array.from(new Set(items.map((item) => getProductDisplayName(item.product, language)))).slice(0, 6);
 
   return (
     <View style={styles.sharePreview}>
@@ -3493,6 +3513,14 @@ function createDraftFromDetail(detail: import("@athmira/types").NutritionPlanDet
 
 function normalizeBottleName(name: string, language: "en" | "es") {
   return language === "es" ? name.replace(/Caramanola/g, "Caramañola").replace(/caramanola/g, "caramañola") : name;
+}
+
+function getProductDisplayName(product: NutritionProduct, language: "en" | "es") {
+  if (product.product_scope !== "global") {
+    return product.name;
+  }
+
+  return globalProductNameTranslations[product.id]?.[language] ?? product.name;
 }
 
 function isWaterProduct(product: NutritionProduct | null | undefined) {

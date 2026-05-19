@@ -126,6 +126,26 @@ const adminHubCopy = {
   }
 };
 
+const adminProductNameTranslations: Record<string, { en: string; es: string }> = {
+  "00000000-0000-4000-8000-000000000100": { en: "Water", es: "Agua" },
+  "00000000-0000-4000-8000-000000000101": { en: "Sugar", es: "Azucar" },
+  "00000000-0000-4000-8000-000000000102": { en: "Salt", es: "Sal" },
+  "00000000-0000-4000-8000-000000000103": { en: "Maltodextrin", es: "Maltodextrina" },
+  "00000000-0000-4000-8000-000000000104": { en: "Honey", es: "Miel" },
+  "00000000-0000-4000-8000-000000000105": { en: "Energy gel", es: "Gel energetico" },
+  "00000000-0000-4000-8000-000000000106": { en: "Bocadillo", es: "Bocadillo" },
+  "00000000-0000-4000-8000-000000000107": { en: "Banana", es: "Banano" },
+  "00000000-0000-4000-8000-000000000108": { en: "Gummies", es: "Gomitas" },
+  "00000000-0000-4000-8000-000000000109": { en: "Energy bar", es: "Barra energetica" },
+  "00000000-0000-4000-8000-000000000110": { en: "Rice cake", es: "Torta de arroz" },
+  "00000000-0000-4000-8000-000000000111": { en: "Isotonic drink", es: "Bebida isotonica" },
+  "00000000-0000-4000-8000-000000000112": { en: "Coca-Cola", es: "Coca-Cola" },
+  "00000000-0000-4000-8000-000000000113": { en: "Dates", es: "Datiles" },
+  "00000000-0000-4000-8000-000000000114": { en: "Raisins", es: "Uvas pasas" },
+  "00000000-0000-4000-8000-000000000115": { en: "Pretzels", es: "Pretzels" },
+  "00000000-0000-4000-8000-000000000116": { en: "Sandwich", es: "Sandwich" }
+};
+
 export function AdminScreen({ mode = "hub" }: { mode?: AdminMode }) {
   const { language, t } = useLanguage();
   const nutritionCopy = adminNutritionCopy[language];
@@ -447,7 +467,7 @@ export function AdminScreen({ mode = "hub" }: { mode?: AdminMode }) {
               <SelectField
                 label={nutritionCopy.nutritionProducts}
                 onValueChange={setSelectedNutritionProductId}
-                options={nutritionProducts.map((product) => ({ label: product.name, value: product.id }))}
+                options={nutritionProducts.map((product) => ({ label: getAdminProductDisplayName(product, language), value: product.id }))}
                 value={selectedNutritionProduct?.id ?? ""}
               />
             </View>
@@ -905,6 +925,10 @@ function toNutritionProductDraft(product: NutritionProduct): NutritionProductDra
     sodiumMgPerServing: numberToInput(product.sodium_mg_per_serving),
     weightGPerServing: numberToInput(product.weight_g_per_serving)
   };
+}
+
+function getAdminProductDisplayName(product: NutritionProduct, language: "en" | "es") {
+  return adminProductNameTranslations[product.id]?.[language] ?? product.name;
 }
 
 function getUserDisplayName(user: AdminUserOverview) {
