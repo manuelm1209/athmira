@@ -735,15 +735,15 @@ export function NutritionPlansPage() {
         {error ? <Text selectable style={styles.error}>{error}</Text> : null}
         {message ? <Text selectable style={styles.message}>{message}</Text> : null}
 
-        <View style={[styles.pageGrid, (compact || draft || viewingDraft) && styles.pageGridCompact]}>
+        <View style={[styles.pageGrid, (compact || !draft || viewingDraft) && styles.pageGridCompact]}>
           {draft || viewingDraft ? null : (
-          <FadeInView delayMs={80} style={styles.planRail}>
+          <FadeInView delayMs={80} style={styles.planRailFull}>
             <View style={styles.sectionHeader}>
               <View>
                 <Text style={styles.sectionKicker}>{copy.configurations}</Text>
                 <Text style={styles.sectionTitle}>{copy.savedNutritionPlans}</Text>
               </View>
-              <Button onPress={startNewPlan}>{copy.newPlan}</Button>
+              {plans.length ? <Button onPress={startNewPlan}>{copy.newPlan}</Button> : null}
             </View>
 
             {loading ? (
@@ -754,10 +754,18 @@ export function NutritionPlansPage() {
             ) : (
               <View style={styles.planGrid}>
                 {plans.length === 0 ? (
-                  <Card style={styles.emptyCard}>
-                    <Text style={styles.emptyTitle}>{copy.noPlansYet}</Text>
-                    <Body>{copy.noPlansBody}</Body>
-                    <Button onPress={startNewPlan}>{copy.createFirstPlan}</Button>
+                  <Card style={styles.emptyStateCard}>
+                    <View style={styles.startIcon}>
+                      <NutritionIcon iconKey="bottle" />
+                    </View>
+                    <Text style={styles.emptyHeroTitle}>{copy.noPlansYet}</Text>
+                    <Body>{copy.startCardBody}</Body>
+                    <Inline>
+                      <Button onPress={startNewPlan}>{copy.createFirstPlan}</Button>
+                      <LinkButton href="/profile" variant="secondary">
+                        {copy.profileWeight}
+                      </LinkButton>
+                    </Inline>
                   </Card>
                 ) : null}
 
@@ -777,6 +785,7 @@ export function NutritionPlansPage() {
           </FadeInView>
           )}
 
+          {draft || viewingDraft ? (
           <FadeInView delayMs={140} style={[styles.editorColumn, draft && styles.editorColumnFull]}>
             {draft ? (
               <NutritionPlanEditor
@@ -799,22 +808,9 @@ export function NutritionPlansPage() {
                   setViewingDraft(null);
                 }}
               />
-            ) : (
-              <Card style={styles.startCard}>
-                <View style={styles.startIcon}>
-                  <NutritionIcon iconKey="bottle" />
-                </View>
-                  <Text style={styles.startTitle}>{copy.startCardTitle}</Text>
-                <Body>{copy.startCardBody}</Body>
-                <Inline>
-                  <Button onPress={startNewPlan}>{copy.newPlan}</Button>
-                  <LinkButton href="/profile" variant="secondary">
-                    {copy.profileWeight}
-                  </LinkButton>
-                </Inline>
-              </Card>
-            )}
+            ) : null}
           </FadeInView>
+          ) : null}
         </View>
 
         <DeletePlanConfirmModal
@@ -4035,6 +4031,10 @@ const styles = StyleSheet.create({
     gap: spacing.lg,
     width: "100%"
   },
+  planRailFull: {
+    gap: spacing.lg,
+    width: "100%"
+  },
   editorColumn: {
     flex: 1.4,
     width: "100%"
@@ -4077,11 +4077,24 @@ const styles = StyleSheet.create({
   emptyCard: {
     gap: spacing.lg
   },
+  emptyStateCard: {
+    alignItems: "flex-start",
+    gap: spacing.lg,
+    maxWidth: 760,
+    padding: spacing.xl
+  },
   emptyTitle: {
     color: colors.ink,
     fontFamily,
     fontSize: 22,
     fontWeight: typography.weights.black
+  },
+  emptyHeroTitle: {
+    color: colors.ink,
+    fontFamily,
+    fontSize: 30,
+    fontWeight: typography.weights.black,
+    lineHeight: 36
   },
   planCard: {
     gap: spacing.lg
