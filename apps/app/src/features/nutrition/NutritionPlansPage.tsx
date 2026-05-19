@@ -152,7 +152,6 @@ const iconOptions: NutritionIconKey[] = [
   "salt",
   "sugar",
   "honey",
-  "water",
   "drink",
   "rice",
   "dates",
@@ -189,7 +188,7 @@ const nutritionCopy = {
     bottleName: "Bottle name",
     bottleSizeGreaterThanZero: "Bottle size must be greater than 0.",
     bottleSizeMl: "Size ml",
-    bottlesTitle: "Bottles / Caramanolas",
+    bottlesTitle: "Bottles",
     calculateSuggestedTargets: "Calculate suggested targets",
     calories: "Calories",
     caloriesEstimate: "Calories estimate",
@@ -885,6 +884,7 @@ export function NutritionPlanEditor({
   const [addModalTarget, setAddModalTarget] = useState<{ bottleId?: string; mode: "bottle" | "carried" } | null>(null);
 
   const calculations = useMemo(() => calculateDraft(draft), [draft]);
+  const visibleItems = useMemo(() => draft.items.filter((item) => !isWaterProduct(item.product)), [draft.items]);
   const activeBottle = draft.bottles.find((bottle) => bottle.id === activeBottleId) ?? draft.bottles[0] ?? null;
 
   useEffect(() => {
@@ -960,6 +960,10 @@ export function NutritionPlanEditor({
   }
 
   function addProductToPlan(product: NutritionProduct, location: NutritionPlanItemLocation, bottleId?: string | null, quantity?: number) {
+    if (isWaterProduct(product)) {
+      return;
+    }
+
     if (location === "bottle" && !bottleId) {
       setLocalError(copy.addTargetBottle);
       return;
@@ -1029,7 +1033,7 @@ export function NutritionPlanEditor({
         activeBottleId={activeBottle?.id ?? ""}
         bottleCalculations={calculations.bottleCalculations}
         bottles={draft.bottles}
-        items={draft.items}
+        items={visibleItems}
         onAddBottle={addBottle}
         onOpenAddModal={setAddModalTarget}
         onRemoveBottle={removeBottle}
@@ -1064,6 +1068,7 @@ function NutritionPlanViewer({
   const { language } = useLanguage();
   const copy = nutritionCopy[language];
   const calculations = useMemo(() => calculateDraft(draft), [draft]);
+  const visibleItems = useMemo(() => draft.items.filter((item) => !isWaterProduct(item.product)), [draft.items]);
 
   return (
     <View style={styles.editorStack}>
@@ -1084,7 +1089,7 @@ function NutritionPlanViewer({
       </View>
 
       <PlanTotalStrip draft={draft} totals={calculations.totals} warnings={calculations.warnings} />
-      <ReadOnlyFuelingCanvas bottleCalculations={calculations.bottleCalculations} bottles={draft.bottles} items={draft.items} />
+      <ReadOnlyFuelingCanvas bottleCalculations={calculations.bottleCalculations} bottles={draft.bottles} items={visibleItems} />
     </View>
   );
 }
@@ -1606,14 +1611,8 @@ function ReadOnlyBottleCard({
           </Text>
         </View>
       </View>
-      <View style={styles.bottleHeroRow}>
-        <VirtualBottle bottle={bottle} calculation={calculation} items={items} large />
-        <View style={styles.bottleSideStats}>
-          <MiniMetric label={copy.capacity} value={`${round(bottle.bottle_size_ml, 0)} ml`} />
-          <MiniMetric label={copy.usedByIngredients} value={`${round(calculation.totalUsedVolumeMl, 0)} ml`} />
-          <MiniMetric label={copy.concentration} value={`${round(calculation.carbsPerLiter, 0)} g/L`} />
-        </View>
-      </View>
+      <VirtualBottle bottle={bottle} calculation={calculation} items={items} large showBadges={false} />
+      <BottleQuickStats bottle={bottle} calculation={calculation} />
       <NutrientBars
         calories={calculation.totalCalories}
         carbs={calculation.totalCarbs}
@@ -1686,14 +1685,8 @@ function BottleFuelCard({
         <Button onPress={onAddIngredient}>{copy.addIngredient}</Button>
       </View>
 
-      <View style={styles.bottleHeroRow}>
-        <VirtualBottle bottle={bottle} calculation={calculation} items={items} large />
-        <View style={styles.bottleSideStats}>
-          <MiniMetric label={copy.capacity} value={`${round(bottle.bottle_size_ml, 0)} ml`} />
-          <MiniMetric label={copy.usedByIngredients} value={`${round(calculation.totalUsedVolumeMl, 0)} ml`} />
-          <MiniMetric label={copy.concentration} value={`${round(calculation.carbsPerLiter, 0)} g/L`} />
-        </View>
-      </View>
+      <VirtualBottle bottle={bottle} calculation={calculation} items={items} large showBadges={false} />
+      <BottleQuickStats bottle={bottle} calculation={calculation} />
 
       <View style={styles.compactEditRow}>
         <View style={styles.strategyNameField}>
@@ -1756,6 +1749,46 @@ function CarriedFuelCard({
   );
 }
 
+function BottleQuickStats({
+  bottle,
+  calculation
+}: {
+  bottle: DraftBottle | NutritionPlanBottleInput;
+  calculation: BottleCalculation;
+}) {
+  const { language } = useLanguage();
+  const copy = nutritionCopy[language];
+  const stats = [
+    {
+      label: copy.capacity,
+      value: `${round(bottle.bottle_size_ml, 0)} ml`
+    },
+    {
+      label: copy.remainingWater,
+      value: `${round(calculation.remainingWaterMl, 0)} ml`
+    },
+    {
+      label: copy.usedByIngredients,
+      value: `${round(calculation.totalUsedVolumeMl, 0)} ml`
+    },
+    {
+      label: copy.concentration,
+      value: `${round(calculation.carbsPerLiter, 0)} g/L`
+    }
+  ];
+
+  return (
+    <View style={styles.bottleQuickStats}>
+      {stats.map((stat) => (
+        <View key={stat.label} style={styles.bottleQuickChip}>
+          <Text style={styles.bottleQuickValue}>{stat.value}</Text>
+          <Text style={styles.bottleQuickLabel}>{stat.label}</Text>
+        </View>
+      ))}
+    </View>
+  );
+}
+
 function AddNutritionModal({
   bottles,
   customProductCount,
@@ -1783,11 +1816,13 @@ function AddNutritionModal({
   const [location, setLocation] = useState<NutritionPlanItemLocation>("during");
   const [error, setError] = useState<string | null>(null);
   const filteredProducts = useMemo(() => {
+    const selectableProducts = products.filter((product) => !isWaterProduct(product));
+
     if (target?.mode === "bottle") {
-      return products.filter((product) => ["bottle_ingredient", "powder", "drink", "gel", "custom"].includes(product.category));
+      return selectableProducts.filter((product) => ["bottle_ingredient", "powder", "drink", "gel", "custom"].includes(product.category));
     }
 
-    return products.filter((product) => product.category !== "bottle_ingredient" && product.category !== "powder");
+    return selectableProducts.filter((product) => product.category !== "bottle_ingredient" && product.category !== "powder");
   }, [products, target?.mode]);
   const selectedProduct = filteredProducts.find((product) => product.id === productId) ?? filteredProducts[0] ?? null;
   const targetBottle = bottles.find((bottle) => bottle.id === target?.bottleId);
@@ -2228,7 +2263,7 @@ function BottleStrategyCard({
   const { language } = useLanguage();
   const copy = nutritionCopy[language];
   const bottleProducts = useMemo(
-    () => products.filter((product) => ["bottle_ingredient", "powder", "drink", "gel", "custom"].includes(product.category)),
+    () => products.filter((product) => !isWaterProduct(product) && ["bottle_ingredient", "powder", "drink", "gel", "custom"].includes(product.category)),
     [products]
   );
   const [productId, setProductId] = useState(bottleProducts[0]?.id ?? "");
@@ -2328,7 +2363,7 @@ function CarriedFoodStrategyCard({
   const { language } = useLanguage();
   const copy = nutritionCopy[language];
   const carriedProducts = useMemo(
-    () => products.filter((product) => product.category !== "bottle_ingredient" && product.category !== "powder"),
+    () => products.filter((product) => !isWaterProduct(product) && product.category !== "bottle_ingredient" && product.category !== "powder"),
     [products]
   );
   const [productId, setProductId] = useState(carriedProducts[0]?.id ?? "");
@@ -2613,12 +2648,14 @@ export function VirtualBottle({
   bottle,
   calculation,
   items = [],
-  large
+  large,
+  showBadges = true
 }: {
   bottle: DraftBottle | NutritionPlanBottleInput;
   calculation: BottleCalculation;
   items?: DraftItem[];
   large?: boolean;
+  showBadges?: boolean;
 }) {
   const { language } = useLanguage();
   const copy = nutritionCopy[language];
@@ -2679,11 +2716,13 @@ export function VirtualBottle({
       <Text style={styles.bottleVolume}>
         {round(calculation.totalUsedVolumeMl, 0)} ml {language === "es" ? "usados" : "used"}
       </Text>
-      <View style={styles.bottleBadgeRow}>
-        <BottleStatBadge label={`${round(calculation.totalCarbs, 0)} g ${language === "es" ? "carbos" : "carbs"}`} tone="primary" />
-        <BottleStatBadge label={`${round(calculation.totalSodiumMg, 0)} mg ${copy.sodium.toLowerCase()}`} tone="amber" />
-        <BottleStatBadge label={`${round(calculation.totalCalories, 0)} kcal`} tone="blue" />
-      </View>
+      {showBadges ? (
+        <View style={styles.bottleBadgeRow}>
+          <BottleStatBadge label={`${round(calculation.totalCarbs, 0)} g ${language === "es" ? "carbos" : "carbs"}`} tone="primary" />
+          <BottleStatBadge label={`${round(calculation.totalSodiumMg, 0)} mg ${copy.sodium.toLowerCase()}`} tone="amber" />
+          <BottleStatBadge label={`${round(calculation.totalCalories, 0)} kcal`} tone="blue" />
+        </View>
+      ) : null}
     </View>
   );
 }
@@ -2822,9 +2861,13 @@ export function ProductPicker({
     }
   }, [bottleId, bottles]);
 
-  const filteredProducts = products.filter((product) => !category || product.category === category);
+  const filteredProducts = products.filter((product) => !isWaterProduct(product) && (!category || product.category === category));
 
   function addProduct(product: NutritionProduct) {
+    if (isWaterProduct(product)) {
+      return;
+    }
+
     if (location === "bottle" && !bottleId) {
       setError(copy.addTargetBottle);
       return;
@@ -3299,7 +3342,8 @@ function NutritionIcon({ iconKey }: { iconKey: NutritionIconKey }) {
 }
 
 function calculateDraft(draft: DraftPlan) {
-  const calculatedItems: (NutritionCalculatedItem & { product: NutritionProduct })[] = draft.items.map((item) => ({
+  const nutritionItems = draft.items.filter((item) => !isWaterProduct(item.product));
+  const calculatedItems: (NutritionCalculatedItem & { product: NutritionProduct })[] = nutritionItems.map((item) => ({
     ...calculateNutritionItem(item.product, stripDraftItem(item)),
     product: item.product
   }));
@@ -3427,6 +3471,7 @@ function createDraftFromDetail(detail: import("@athmira/types").NutritionPlanDet
     intensity: detail.intensity,
     items: detail.items
       .filter((item) => item.product)
+      .filter((item) => !isWaterProduct(item.product))
       .map((item) => ({
         bottle_id: item.bottle_id,
         id: item.id,
@@ -3448,6 +3493,12 @@ function createDraftFromDetail(detail: import("@athmira/types").NutritionPlanDet
 
 function normalizeBottleName(name: string, language: "en" | "es") {
   return language === "es" ? name.replace(/Caramanola/g, "Caramañola").replace(/caramanola/g, "caramañola") : name;
+}
+
+function isWaterProduct(product: NutritionProduct | null | undefined) {
+  const productName = product?.name.trim().toLowerCase();
+
+  return product?.icon_key === "water" || productName === "water" || productName === "agua";
 }
 
 function stripDraftItem(item: DraftItem): NutritionPlanItemInput {
@@ -4378,6 +4429,42 @@ const styles = StyleSheet.create({
   compactEditRow: {
     flexDirection: "row",
     gap: spacing.md
+  },
+  bottleQuickStats: {
+    borderBottomColor: colors.border,
+    borderBottomWidth: 1,
+    borderTopColor: colors.border,
+    borderTopWidth: 1,
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 0,
+    paddingVertical: spacing.sm
+  },
+  bottleQuickChip: {
+    backgroundColor: "transparent",
+    borderRightColor: colors.border,
+    borderRightWidth: 1,
+    flexBasis: 92,
+    flexGrow: 1,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs
+  },
+  bottleQuickValue: {
+    color: colors.ink,
+    fontFamily,
+    fontSize: 15,
+    fontWeight: typography.weights.black,
+    lineHeight: 18,
+    textAlign: "center"
+  },
+  bottleQuickLabel: {
+    color: colors.inkMuted,
+    fontFamily,
+    fontSize: 9,
+    fontWeight: typography.weights.black,
+    lineHeight: 12,
+    textAlign: "center",
+    textTransform: "uppercase"
   },
   addBottleTile: {
     alignItems: "center",

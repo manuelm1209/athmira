@@ -240,6 +240,22 @@ export async function listNutritionProducts(userId: string): Promise<NutritionPr
   return [...((globalResult.data ?? []) as NutritionProduct[]), ...((customResult.data ?? []) as NutritionProduct[])];
 }
 
+export async function listGlobalNutritionProducts(): Promise<NutritionProduct[]> {
+  assertSupabaseConfigured();
+
+  const { data, error } = await supabase
+    .from("nutrition_products")
+    .select("*")
+    .eq("product_scope", "global")
+    .order("name", { ascending: true });
+
+  if (error) {
+    throw error;
+  }
+
+  return (data ?? []) as NutritionProduct[];
+}
+
 export async function countCustomNutritionProducts(userId: string): Promise<number> {
   assertSupabaseConfigured();
 
@@ -302,6 +318,29 @@ export async function updateCustomNutritionProduct(
     .eq("id", productId)
     .eq("user_id", userId)
     .eq("product_scope", "user")
+    .select("*")
+    .single();
+
+  if (error) {
+    throw error;
+  }
+
+  return data as NutritionProduct;
+}
+
+export async function updateGlobalNutritionProduct(productId: string, input: NutritionProductInput): Promise<NutritionProduct> {
+  assertSupabaseConfigured();
+
+  const { data, error } = await supabase
+    .from("nutrition_products")
+    .update({
+      ...toNutritionProductPayload(input),
+      product_scope: "global",
+      updated_at: new Date().toISOString(),
+      user_id: null
+    })
+    .eq("id", productId)
+    .eq("product_scope", "global")
     .select("*")
     .single();
 

@@ -1,12 +1,14 @@
 import {
   createAdminManagedUser,
   getAdminUserDetail,
+  listGlobalNutritionProducts,
   listAdminUsers,
   setAdminManagedUserRole,
   setAdminManagedUserTemporaryPassword,
+  updateGlobalNutritionProduct,
   updateAdminManagedUserProfile
 } from "@athmira/supabase";
-import type { AdminUserDetail, AdminUserOverview, LanguageCode } from "@athmira/types";
+import type { AdminUserDetail, AdminUserOverview, LanguageCode, NutritionProduct, NutritionProductInput } from "@athmira/types";
 import { Body, Button, Card, DateField, Field, Heading, Inline, Screen, SelectField, colors, spacing } from "@athmira/ui";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
@@ -36,6 +38,18 @@ type AdminDetailTab = "account" | "bikes" | "tests";
 type RoleFilter = "all" | "admin" | "athlete";
 type UserSort = "recent_analysis" | "name" | "created_at" | "analyses";
 
+type NutritionProductDraft = {
+  caloriesPerServing: string;
+  carbsPerServing: string;
+  defaultServingSize: string;
+  defaultServingUnit: string;
+  liquidVolumeMlPerServing: string;
+  name: string;
+  notes: string;
+  sodiumMgPerServing: string;
+  weightGPerServing: string;
+};
+
 const emptyProfileDraft: ProfileDraft = {
   dateOfBirth: "",
   email: "",
@@ -46,12 +60,61 @@ const emptyProfileDraft: ProfileDraft = {
   weightKg: ""
 };
 
+const emptyNutritionProductDraft: NutritionProductDraft = {
+  caloriesPerServing: "",
+  carbsPerServing: "",
+  defaultServingSize: "",
+  defaultServingUnit: "",
+  liquidVolumeMlPerServing: "",
+  name: "",
+  notes: "",
+  sodiumMgPerServing: "",
+  weightGPerServing: ""
+};
+
+const adminNutritionCopy = {
+  en: {
+    calories: "Calories",
+    carbs: "Carbs",
+    liquid: "Liquid ml",
+    name: "Product name",
+    nutritionProducts: "Nutrition products",
+    nutritionProductsBody: "Edit the global foods used by Nutrition Planning. These values affect new additions to user plans.",
+    notes: "Notes",
+    productSaved: "Nutrition product updated.",
+    saveProduct: "Save product",
+    servingSize: "Serving size",
+    servingUnit: "Serving unit",
+    sodium: "Sodium mg",
+    weight: "Weight g"
+  },
+  es: {
+    calories: "Calorias",
+    carbs: "Carbohidratos",
+    liquid: "Liquido ml",
+    name: "Nombre del producto",
+    nutritionProducts: "Productos de nutricion",
+    nutritionProductsBody: "Edita los alimentos globales usados en Plan de nutricion. Estos valores afectan nuevas adiciones en los planes.",
+    notes: "Notas",
+    productSaved: "Producto de nutricion actualizado.",
+    saveProduct: "Guardar producto",
+    servingSize: "Tamano de porcion",
+    servingUnit: "Unidad de porcion",
+    sodium: "Sodio mg",
+    weight: "Peso g"
+  }
+};
+
 export function AdminScreen() {
-  const { t } = useLanguage();
+  const { language, t } = useLanguage();
+  const nutritionCopy = adminNutritionCopy[language];
   const [users, setUsers] = useState<AdminUserOverview[]>([]);
+  const [nutritionProducts, setNutritionProducts] = useState<NutritionProduct[]>([]);
   const [selectedUser, setSelectedUser] = useState<AdminUserDetail | null>(null);
+  const [selectedNutritionProductId, setSelectedNutritionProductId] = useState<string>("");
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const [profileDraft, setProfileDraft] = useState<ProfileDraft>(emptyProfileDraft);
+  const [nutritionProductDraft, setNutritionProductDraft] = useState<NutritionProductDraft>(emptyNutritionProductDraft);
   const [createDraft, setCreateDraft] = useState<CreateUserDraft>({
     email: "",
     isAdmin: false,
@@ -67,6 +130,7 @@ export function AdminScreen() {
   const [loadingUsers, setLoadingUsers] = useState(true);
   const [loadingDetail, setLoadingDetail] = useState(false);
   const [savingProfile, setSavingProfile] = useState(false);
+  const [savingNutritionProduct, setSavingNutritionProduct] = useState(false);
   const [creatingUser, setCreatingUser] = useState(false);
   const [resettingPassword, setResettingPassword] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
@@ -105,11 +169,27 @@ export function AdminScreen() {
       .sort((a, b) => compareUsers(a, b, userSort));
   }, [roleFilter, searchQuery, userSort, users]);
 
+  const selectedNutritionProduct = useMemo(
+    () => nutritionProducts.find((product) => product.id === selectedNutritionProductId) ?? nutritionProducts[0] ?? null,
+    [nutritionProducts, selectedNutritionProductId]
+  );
+
   useEffect(() => {
     loadUsers();
+    loadNutritionProducts();
   // Load once when the protected admin route mounts.
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => {
+    if (!selectedNutritionProduct) {
+      setNutritionProductDraft(emptyNutritionProductDraft);
+      return;
+    }
+
+    setNutritionProductDraft(toNutritionProductDraft(selectedNutritionProduct));
+    setSelectedNutritionProductId(selectedNutritionProduct.id);
+  }, [selectedNutritionProduct]);
 
   async function loadUsers(selectUserId?: string) {
     setLoadingUsers(true);
@@ -127,6 +207,16 @@ export function AdminScreen() {
       setError(getErrorMessage(loadError));
     } finally {
       setLoadingUsers(false);
+    }
+  }
+
+  async function loadNutritionProducts(selectProductId?: string) {
+    try {
+      const products = await listGlobalNutritionProducts();
+      setNutritionProducts(products);
+      setSelectedNutritionProductId(selectProductId ?? selectedNutritionProductId ?? products[0]?.id ?? "");
+    } catch (loadError) {
+      setError(getErrorMessage(loadError));
     }
   }
 
@@ -236,6 +326,43 @@ export function AdminScreen() {
     }
   }
 
+  async function saveNutritionProduct() {
+    if (!selectedNutritionProduct) {
+      return;
+    }
+
+    setSavingNutritionProduct(true);
+    setError(null);
+    setMessage(null);
+
+    try {
+      if (!nutritionProductDraft.name.trim()) {
+        throw new Error(nutritionCopy.name);
+      }
+
+      const input: NutritionProductInput = {
+        calories_per_serving: parseOptionalNumber(nutritionProductDraft.caloriesPerServing) ?? 0,
+        carbs_per_serving: parseOptionalNumber(nutritionProductDraft.carbsPerServing) ?? 0,
+        category: selectedNutritionProduct.category,
+        default_serving_size: parseOptionalNumber(nutritionProductDraft.defaultServingSize),
+        default_serving_unit: nutritionProductDraft.defaultServingUnit.trim() || null,
+        icon_key: selectedNutritionProduct.icon_key,
+        liquid_volume_ml_per_serving: parseOptionalNumber(nutritionProductDraft.liquidVolumeMlPerServing) ?? 0,
+        name: nutritionProductDraft.name.trim(),
+        notes: nutritionProductDraft.notes.trim() || null,
+        sodium_mg_per_serving: parseOptionalNumber(nutritionProductDraft.sodiumMgPerServing) ?? 0,
+        weight_g_per_serving: parseOptionalNumber(nutritionProductDraft.weightGPerServing) ?? 0
+      };
+      const updated = await updateGlobalNutritionProduct(selectedNutritionProduct.id, input);
+      setMessage(nutritionCopy.productSaved);
+      await loadNutritionProducts(updated.id);
+    } catch (saveError) {
+      setError(getErrorMessage(saveError));
+    } finally {
+      setSavingNutritionProduct(false);
+    }
+  }
+
   return (
     <Screen maxWidth={1240}>
       <View style={styles.page}>
@@ -252,6 +379,89 @@ export function AdminScreen() {
 
         {error ? <Text style={styles.error}>{error}</Text> : null}
         {message ? <Text style={styles.message}>{message}</Text> : null}
+
+        <Card style={styles.card}>
+          <View style={styles.sectionHeader}>
+            <View style={styles.roleCopy}>
+              <Text style={styles.sectionTitle}>{nutritionCopy.nutritionProducts}</Text>
+              <Body>{nutritionCopy.nutritionProductsBody}</Body>
+            </View>
+            <View style={styles.productSelectField}>
+              <SelectField
+                label={nutritionCopy.nutritionProducts}
+                onValueChange={setSelectedNutritionProductId}
+                options={nutritionProducts.map((product) => ({ label: product.name, value: product.id }))}
+                value={selectedNutritionProduct?.id ?? ""}
+              />
+            </View>
+          </View>
+          {selectedNutritionProduct ? (
+            <View style={styles.formGrid}>
+              <View style={styles.productWideField}>
+                <Field
+                  label={nutritionCopy.name}
+                  onChangeText={(name) => setNutritionProductDraft((draft) => ({ ...draft, name }))}
+                  value={nutritionProductDraft.name}
+                />
+              </View>
+              <Field
+                inputMode="numeric"
+                label={nutritionCopy.servingSize}
+                onChangeText={(defaultServingSize) => setNutritionProductDraft((draft) => ({ ...draft, defaultServingSize }))}
+                value={nutritionProductDraft.defaultServingSize}
+              />
+              <Field
+                label={nutritionCopy.servingUnit}
+                onChangeText={(defaultServingUnit) => setNutritionProductDraft((draft) => ({ ...draft, defaultServingUnit }))}
+                value={nutritionProductDraft.defaultServingUnit}
+              />
+              <Field
+                inputMode="numeric"
+                label={nutritionCopy.carbs}
+                onChangeText={(carbsPerServing) => setNutritionProductDraft((draft) => ({ ...draft, carbsPerServing }))}
+                value={nutritionProductDraft.carbsPerServing}
+              />
+              <Field
+                inputMode="numeric"
+                label={nutritionCopy.calories}
+                onChangeText={(caloriesPerServing) => setNutritionProductDraft((draft) => ({ ...draft, caloriesPerServing }))}
+                value={nutritionProductDraft.caloriesPerServing}
+              />
+              <Field
+                inputMode="numeric"
+                label={nutritionCopy.sodium}
+                onChangeText={(sodiumMgPerServing) => setNutritionProductDraft((draft) => ({ ...draft, sodiumMgPerServing }))}
+                value={nutritionProductDraft.sodiumMgPerServing}
+              />
+              <Field
+                inputMode="numeric"
+                label={nutritionCopy.liquid}
+                onChangeText={(liquidVolumeMlPerServing) => setNutritionProductDraft((draft) => ({ ...draft, liquidVolumeMlPerServing }))}
+                value={nutritionProductDraft.liquidVolumeMlPerServing}
+              />
+              <Field
+                inputMode="numeric"
+                label={nutritionCopy.weight}
+                onChangeText={(weightGPerServing) => setNutritionProductDraft((draft) => ({ ...draft, weightGPerServing }))}
+                value={nutritionProductDraft.weightGPerServing}
+              />
+              <View style={styles.productWideField}>
+                <Field
+                  label={nutritionCopy.notes}
+                  onChangeText={(notes) => setNutritionProductDraft((draft) => ({ ...draft, notes }))}
+                  value={nutritionProductDraft.notes}
+                />
+              </View>
+            </View>
+          ) : (
+            <Body>Loading...</Body>
+          )}
+          <Inline>
+            <Button loading={savingNutritionProduct} onPress={saveNutritionProduct}>
+              {nutritionCopy.saveProduct}
+            </Button>
+          </Inline>
+        </Card>
 
         <View style={styles.grid}>
           <View style={styles.sidebar}>
@@ -607,6 +817,20 @@ function toProfileDraft(user: AdminUserDetail): ProfileDraft {
   };
 }
 
+function toNutritionProductDraft(product: NutritionProduct): NutritionProductDraft {
+  return {
+    caloriesPerServing: numberToInput(product.calories_per_serving),
+    carbsPerServing: numberToInput(product.carbs_per_serving),
+    defaultServingSize: numberToInput(product.default_serving_size),
+    defaultServingUnit: product.default_serving_unit ?? "",
+    liquidVolumeMlPerServing: numberToInput(product.liquid_volume_ml_per_serving),
+    name: product.name,
+    notes: product.notes ?? "",
+    sodiumMgPerServing: numberToInput(product.sodium_mg_per_serving),
+    weightGPerServing: numberToInput(product.weight_g_per_serving)
+  };
+}
+
 function getUserDisplayName(user: AdminUserOverview) {
   return user.profile?.name || user.authUser.email || user.authUser.id;
 }
@@ -815,6 +1039,14 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     flexWrap: "wrap",
     gap: spacing.md
+  },
+  productSelectField: {
+    flexBasis: 280,
+    flexGrow: 1
+  },
+  productWideField: {
+    flexBasis: 300,
+    flexGrow: 2
   },
   passwordPanel: {
     borderColor: colors.border,
