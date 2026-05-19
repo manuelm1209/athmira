@@ -47,7 +47,6 @@ type NutritionProductDraft = {
   carbsPerServing: string;
   defaultServingSize: string;
   defaultServingUnit: string;
-  iconKey: NonNullable<NutritionProduct["icon_key"]>;
   liquidVolumeMlPerServing: string;
   nameEn: string;
   nameEs: string;
@@ -72,7 +71,6 @@ const emptyNutritionProductDraft: NutritionProductDraft = {
   carbsPerServing: "",
   defaultServingSize: "",
   defaultServingUnit: "",
-  iconKey: "custom_food",
   liquidVolumeMlPerServing: "",
   nameEn: "",
   nameEs: "",
@@ -89,7 +87,6 @@ const adminNutritionCopy = {
     createProduct: "New product",
     editExistingProduct: "Edit existing product",
     englishName: "English name",
-    icon: "Icon",
     liquid: "Liquid ml",
     nameRequired: "English and Spanish names are required.",
     nutritionProductsAction: "Edit products",
@@ -112,7 +109,6 @@ const adminNutritionCopy = {
     createProduct: "Nuevo producto",
     editExistingProduct: "Editar producto existente",
     englishName: "Nombre en ingles",
-    icon: "Icono",
     liquid: "Liquido ml",
     nameRequired: "El nombre en ingles y espanol es obligatorio.",
     nutritionProductsAction: "Editar productos",
@@ -423,7 +419,7 @@ export function AdminScreen({ mode = "hub" }: { mode?: AdminMode }) {
         category: nutritionProductDraft.category,
         default_serving_size: parseOptionalNumber(nutritionProductDraft.defaultServingSize),
         default_serving_unit: nutritionProductDraft.defaultServingUnit.trim() || null,
-        icon_key: nutritionProductDraft.iconKey,
+        icon_key: getDefaultNutritionIconKey(nutritionProductDraft.category),
         liquid_volume_ml_per_serving: parseOptionalNumber(nutritionProductDraft.liquidVolumeMlPerServing) ?? 0,
         name: nameEn,
         name_en: nameEn,
@@ -551,12 +547,6 @@ export function AdminScreen({ mode = "hub" }: { mode?: AdminMode }) {
                 onValueChange={(category) => setNutritionProductDraft((draft) => ({ ...draft, category: toNutritionProductCategory(category) }))}
                 options={adminNutritionCategoryOptions(language)}
                 value={nutritionProductDraft.category}
-              />
-              <SelectField
-                label={nutritionCopy.icon}
-                onValueChange={(iconKey) => setNutritionProductDraft((draft) => ({ ...draft, iconKey: toNutritionIconKey(iconKey) }))}
-                options={adminNutritionIconOptions()}
-                value={nutritionProductDraft.iconKey}
               />
               <Field
                 inputMode="numeric"
@@ -997,7 +987,6 @@ function toNutritionProductDraft(product: NutritionProduct): NutritionProductDra
     carbsPerServing: numberToInput(product.carbs_per_serving),
     defaultServingSize: numberToInput(product.default_serving_size),
     defaultServingUnit: product.default_serving_unit ?? "",
-    iconKey: product.icon_key ?? "custom_food",
     liquidVolumeMlPerServing: numberToInput(product.liquid_volume_ml_per_serving),
     nameEn: product.name_en ?? product.name,
     nameEs: product.name_es ?? product.name,
@@ -1059,14 +1048,6 @@ function toNutritionProductCategory(value: string): NutritionProduct["category"]
   return categories.includes(value as NutritionProduct["category"]) ? (value as NutritionProduct["category"]) : "custom";
 }
 
-function toNutritionIconKey(value: string): NonNullable<NutritionProduct["icon_key"]> {
-  const iconKeys = adminNutritionIconOptions().map((option) => option.value);
-
-  return iconKeys.includes(value as NonNullable<NutritionProduct["icon_key"]>)
-    ? (value as NonNullable<NutritionProduct["icon_key"]>)
-    : "custom_food";
-}
-
 function adminNutritionCategoryOptions(language: "en" | "es"): { label: string; value: NutritionProduct["category"] }[] {
   if (language === "es") {
     return [
@@ -1097,25 +1078,28 @@ function adminNutritionCategoryOptions(language: "en" | "es"): { label: string; 
   ];
 }
 
-function adminNutritionIconOptions(): { label: string; value: NonNullable<NutritionProduct["icon_key"]> }[] {
-  return [
-    { label: "Bottle", value: "bottle" },
-    { label: "Gel", value: "gel" },
-    { label: "Bar", value: "bar" },
-    { label: "Banana", value: "banana" },
-    { label: "Candy", value: "candy" },
-    { label: "Sandwich", value: "sandwich" },
-    { label: "Powder", value: "powder" },
-    { label: "Salt", value: "salt" },
-    { label: "Sugar", value: "sugar" },
-    { label: "Honey", value: "honey" },
-    { label: "Drink", value: "drink" },
-    { label: "Rice", value: "rice" },
-    { label: "Dates", value: "dates" },
-    { label: "Raisins", value: "raisins" },
-    { label: "Pretzel", value: "pretzel" },
-    { label: "Custom food", value: "custom_food" }
-  ];
+function getDefaultNutritionIconKey(category: NutritionProduct["category"]): NonNullable<NutritionProduct["icon_key"]> {
+  switch (category) {
+    case "bottle_ingredient":
+    case "powder":
+      return "powder";
+    case "gel":
+      return "gel";
+    case "bar":
+      return "bar";
+    case "drink":
+      return "drink";
+    case "fruit":
+      return "banana";
+    case "candy":
+      return "candy";
+    case "sandwich":
+      return "sandwich";
+    case "solid_food":
+    case "custom":
+    default:
+      return "custom_food";
+  }
 }
 
 function formatDateTime(value: string | null) {

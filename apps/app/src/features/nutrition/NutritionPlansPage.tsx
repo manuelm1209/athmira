@@ -23,7 +23,6 @@ import {
 } from "@athmira/supabase";
 import type {
   NutritionActivityType,
-  NutritionIconKey,
   NutritionIntensity,
   NutritionPlan,
   NutritionPlanBottleInput,
@@ -143,25 +142,6 @@ const bottleSizes = [
   { label: "1000 ml", value: 1000 }
 ];
 
-const iconOptions: NutritionIconKey[] = [
-  "bottle",
-  "gel",
-  "bar",
-  "banana",
-  "candy",
-  "sandwich",
-  "powder",
-  "salt",
-  "sugar",
-  "honey",
-  "drink",
-  "rice",
-  "dates",
-  "raisins",
-  "pretzel",
-  "custom_food"
-];
-
 const bottleFillMotionStyle = Platform.select({
   default: undefined,
   web: {
@@ -251,7 +231,6 @@ const nutritionCopy = {
       "Athmira estimates sports fueling and hydration needs for education and training guidance. This is not medical advice or a prescribed diet.",
     heroKicker: "Nutrition Planning",
     heroTitle: "Build race-ready fueling plans",
-    icon: "Icon",
     insideBottle: "Inside bottle",
     insideThisBottle: "Inside this bottle",
     itemToAdd: "Item to add",
@@ -401,7 +380,6 @@ const nutritionCopy = {
       "Athmira estima necesidades de fueling e hidratacion deportiva como guia educativa y de entrenamiento. No es consejo medico ni una dieta prescrita.",
     heroKicker: "Planificacion de nutricion",
     heroTitle: "Construye planes de fueling listos para carrera",
-    icon: "Icono",
     insideBottle: "Dentro de botella",
     insideThisBottle: "Dentro de esta botella",
     itemToAdd: "Item a agregar",
@@ -755,9 +733,6 @@ export function NutritionPlansPage() {
               <View style={styles.planGrid}>
                 {plans.length === 0 ? (
                   <Card style={styles.emptyStateCard}>
-                    <View style={styles.startIcon}>
-                      <NutritionIcon iconKey="bottle" />
-                    </View>
                     <Text style={styles.emptyHeroTitle}>{copy.noPlansYet}</Text>
                     <Body>{copy.startCardBody}</Body>
                     <Inline>
@@ -889,9 +864,6 @@ export function NutritionPlanCard({
   return (
     <Card style={styles.planCard}>
       <View style={styles.cardTopRow}>
-        <View style={styles.iconBubble}>
-          <NutritionIcon iconKey={getActivityIcon(plan.activity_type)} />
-        </View>
         <View style={styles.planCardCopy}>
           <Text style={styles.planTitle}>{plan.title}</Text>
           <Text style={styles.planMeta}>
@@ -2258,7 +2230,7 @@ export function BottleStrategyBoard({
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.customProductStrip}>
           {userProducts.map((product) => (
             <View key={product.id} style={styles.customProductChip}>
-              <NutritionIcon iconKey={product.icon_key ?? "custom_food"} />
+              <View style={[styles.ingredientDot, { backgroundColor: getProductColor(product) }]} />
               <Text style={styles.customProductChipText}>{getProductDisplayName(product, language)}</Text>
               <Pressable accessibilityRole="button" onPress={() => setProductForm({ visible: true, product })} style={styles.customProductAction}>
                 <Text style={styles.customProductActionText}>{copy.edit}</Text>
@@ -2573,7 +2545,7 @@ function SimpleItemList({
 
         return (
           <View key={item.id} style={styles.simpleItemRow}>
-            <NutritionIcon iconKey={item.product.icon_key ?? "custom_food"} />
+            <View style={[styles.ingredientDot, { backgroundColor: getProductColor(item.product) }]} />
             <View style={styles.simpleItemCopy}>
               <Text style={styles.simpleItemTitle}>{getProductDisplayName(item.product, language)}</Text>
               <Text style={styles.simpleItemMeta}>
@@ -2660,7 +2632,7 @@ export function BottleBuilder({
 
       {bottles.length === 0 ? (
         <View style={styles.emptyInline}>
-          <NutritionIcon iconKey="water" />
+          <View style={[styles.ingredientDot, { backgroundColor: "#51d9df" }]} />
           <Text style={styles.helperCopy}>{copy.waterBottlePrompt}</Text>
         </View>
       ) : null}
@@ -2833,7 +2805,7 @@ export function BottleIngredientList({
         return (
           <View key={item.id} style={styles.itemRow}>
             <View style={styles.itemIdentity}>
-              <NutritionIcon iconKey={item.product.icon_key ?? "custom_food"} />
+              <View style={[styles.ingredientDot, { backgroundColor: getProductColor(item.product) }]} />
               <View style={styles.itemCopy}>
                 <Text style={styles.itemTitle}>{getProductDisplayName(item.product, language)}</Text>
                 <Text style={styles.itemMeta}>
@@ -3060,7 +3032,7 @@ export function ProductCard({
   return (
     <View style={styles.productRow}>
       <Pressable accessibilityRole="button" onPress={onAdd} style={styles.productAddZone}>
-        <NutritionIcon iconKey={product.icon_key ?? "custom_food"} />
+        <View style={[styles.ingredientDot, { backgroundColor: getProductColor(product) }]} />
         <View style={styles.productCopy}>
           <Text style={styles.productTitle}>{getProductDisplayName(product, language)}</Text>
           <Text style={styles.productMeta}>
@@ -3111,7 +3083,6 @@ export function CustomProductForm({
   const [sodium, setSodium] = useState(numberToInput(initialProduct?.sodium_mg_per_serving ?? 0));
   const [liquidVolume, setLiquidVolume] = useState(numberToInput(initialProduct?.liquid_volume_ml_per_serving ?? 0));
   const [weightGrams, setWeightGrams] = useState(numberToInput(initialProduct?.weight_g_per_serving ?? 0));
-  const [iconKey, setIconKey] = useState<NutritionIconKey>(initialProduct?.icon_key ?? "custom_food");
   const [notes, setNotes] = useState(initialProduct?.notes ?? "");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -3133,7 +3104,7 @@ export function CustomProductForm({
           category,
           default_serving_size: parseOptionalNumber(servingSize) ?? 1,
           default_serving_unit: servingUnit,
-          icon_key: iconKey,
+          icon_key: getDefaultProductIconKey(category),
           liquid_volume_ml_per_serving: parseOptionalNumber(liquidVolume) ?? 0,
           name,
           notes,
@@ -3160,14 +3131,6 @@ export function CustomProductForm({
             onValueChange={(value) => setCategory(toCategory(value))}
             options={getCategoryOptions(language)}
             value={category}
-          />
-        </View>
-        <View style={styles.splitField}>
-          <SelectField
-            label={copy.icon}
-            onValueChange={(value) => setIconKey(toIconKey(value))}
-            options={iconOptions.map((icon) => ({ label: getIconLabel(icon), value: icon }))}
-            value={iconKey}
           />
         </View>
       </Inline>
@@ -3399,14 +3362,6 @@ function Pill({ label, tone = "primary" }: { label: string; tone?: "amber" | "bl
       <Text style={[styles.pillText, tone === "amber" && styles.pillTextAmber, tone === "blue" && styles.pillTextBlue]}>
         {label}
       </Text>
-    </View>
-  );
-}
-
-function NutritionIcon({ iconKey }: { iconKey: NutritionIconKey }) {
-  return (
-    <View style={[styles.nutritionIcon, getIconTone(iconKey)]}>
-      <Text style={styles.nutritionIconText}>{getIconGlyph(iconKey)}</Text>
     </View>
   );
 }
@@ -3801,93 +3756,6 @@ function translateNutritionWarning(message: string, language: "en" | "es") {
     .replace(" has a high carbohydrate concentration. Test it in training first.", " tiene una concentracion alta de carbohidratos. Pruebala primero en entrenamiento.");
 }
 
-function getActivityIcon(activityType: NutritionActivityType): NutritionIconKey {
-  switch (activityType) {
-    case "running":
-    case "hiking":
-      return "custom_food";
-    case "triathlon":
-    case "cycling":
-    case "gravel":
-    case "mountain_biking":
-    case "indoor_cycling":
-    case "other":
-    default:
-      return "bottle";
-  }
-}
-
-function getIconGlyph(iconKey: NutritionIconKey) {
-  switch (iconKey) {
-    case "bottle":
-      return "BT";
-    case "gel":
-      return "GL";
-    case "bar":
-      return "BR";
-    case "banana":
-      return "BN";
-    case "candy":
-      return "CY";
-    case "sandwich":
-      return "SW";
-    case "powder":
-      return "PW";
-    case "salt":
-      return "Na";
-    case "sugar":
-      return "CH";
-    case "honey":
-      return "HN";
-    case "water":
-      return "H2";
-    case "drink":
-      return "DR";
-    case "rice":
-      return "RC";
-    case "dates":
-      return "DT";
-    case "raisins":
-      return "RS";
-    case "pretzel":
-      return "PZ";
-    case "custom_food":
-    default:
-      return "FD";
-  }
-}
-
-function getIconLabel(iconKey: NutritionIconKey) {
-  return `${getIconGlyph(iconKey)} ${iconKey.replace("_", " ")}`;
-}
-
-function getIconTone(iconKey: NutritionIconKey) {
-  switch (iconKey) {
-    case "water":
-    case "drink":
-    case "bottle":
-      return styles.iconBlue;
-    case "salt":
-    case "pretzel":
-      return styles.iconAmber;
-    case "gel":
-    case "bar":
-    case "candy":
-    case "sugar":
-    case "honey":
-    case "powder":
-      return styles.iconAccent;
-    case "banana":
-    case "dates":
-    case "raisins":
-    case "rice":
-    case "sandwich":
-    case "custom_food":
-    default:
-      return styles.iconPrimary;
-  }
-}
-
 function getProductColor(product: NutritionProduct, fallbackIndex = 0) {
   const palette = ["#a7f23a", "#51d9df", "#f5a623", "#2f6fdf", "#f26f5e", "#8aa10f", "#00a48f", "#efc84a"];
 
@@ -3920,6 +3788,30 @@ function getProductColor(product: NutritionProduct, fallbackIndex = 0) {
   }
 }
 
+function getDefaultProductIconKey(category: NutritionProductCategory): NonNullable<NutritionProduct["icon_key"]> {
+  switch (category) {
+    case "bottle_ingredient":
+    case "powder":
+      return "powder";
+    case "gel":
+      return "gel";
+    case "bar":
+      return "bar";
+    case "drink":
+      return "drink";
+    case "fruit":
+      return "banana";
+    case "candy":
+      return "candy";
+    case "sandwich":
+      return "sandwich";
+    case "solid_food":
+    case "custom":
+    default:
+      return "custom_food";
+  }
+}
+
 function toActivityType(value: string): NutritionActivityType {
   return activityOptions.some((option) => option.value === value) ? (value as NutritionActivityType) : "cycling";
 }
@@ -3938,10 +3830,6 @@ function toLocation(value: string): NutritionPlanItemLocation {
 
 function toTimingType(value: string): NutritionTimingType | null {
   return timingOptions.some((option) => option.value === value) ? (value as NutritionTimingType) : null;
-}
-
-function toIconKey(value: string): NutritionIconKey {
-  return iconOptions.includes(value as NutritionIconKey) ? (value as NutritionIconKey) : "custom_food";
 }
 
 const fontFamily = Platform.select({ default: undefined, web: typography.fontFamily });
@@ -4104,14 +3992,6 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     gap: spacing.md
   },
-  iconBubble: {
-    alignItems: "center",
-    backgroundColor: colors.primaryMist,
-    borderRadius: radii.md,
-    height: 52,
-    justifyContent: "center",
-    width: 52
-  },
   planCardCopy: {
     flex: 1,
     gap: spacing.xs
@@ -4163,14 +4043,6 @@ const styles = StyleSheet.create({
   startCard: {
     gap: spacing.lg,
     minHeight: 360
-  },
-  startIcon: {
-    alignItems: "center",
-    backgroundColor: colors.primaryMist,
-    borderRadius: radii.lg,
-    height: 72,
-    justifyContent: "center",
-    width: 72
   },
   startTitle: {
     color: colors.ink,
@@ -5483,31 +5355,6 @@ const styles = StyleSheet.create({
   },
   pillTextBlue: {
     color: colors.blue
-  },
-  nutritionIcon: {
-    alignItems: "center",
-    borderRadius: radii.md,
-    height: 42,
-    justifyContent: "center",
-    width: 42
-  },
-  nutritionIconText: {
-    color: colors.white,
-    fontFamily,
-    fontSize: 13,
-    fontWeight: typography.weights.black
-  },
-  iconPrimary: {
-    backgroundColor: colors.primary
-  },
-  iconAccent: {
-    backgroundColor: "#6f8f11"
-  },
-  iconAmber: {
-    backgroundColor: colors.amber
-  },
-  iconBlue: {
-    backgroundColor: colors.blue
   },
   error: {
     color: colors.danger,
