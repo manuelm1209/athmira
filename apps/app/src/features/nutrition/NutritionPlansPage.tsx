@@ -211,7 +211,7 @@ const nutritionCopy = {
     edit: "Edit",
     editCustomProduct: "Edit custom product",
     editPlan: "Edit plan",
-    editTargets: "Edit target values",
+    editTargets: "Adjust targets",
     estimatesDisclaimer: "Athmira estimates sports fueling needs for planning. This is not medical or dietary advice.",
     expand: "Expand",
     every30: "Every 30 min",
@@ -360,7 +360,7 @@ const nutritionCopy = {
     edit: "Editar",
     editCustomProduct: "Editar producto personalizado",
     editPlan: "Editar plan",
-    editTargets: "Editar valores objetivo",
+    editTargets: "Ajustar objetivos",
     estimatesDisclaimer: "Athmira estima necesidades de fueling deportivo para planificar. No es consejo medico ni nutricional.",
     expand: "Expandir",
     every30: "Cada 30 min",
@@ -1272,6 +1272,7 @@ function PlanControlBar({
 }) {
   const { language } = useLanguage();
   const copy = nutritionCopy[language];
+  const [editingTargets, setEditingTargets] = useState(false);
   const suggested = calculateSuggestedNutritionTargets({
     activityType: draft.activity_type,
     bodyWeightKg: draft.body_weight_kg ?? null,
@@ -1279,6 +1280,17 @@ function PlanControlBar({
     intensity: draft.intensity
   });
   const caloriesEstimate = draft.estimated_calories_burned ?? suggested.caloriesBurned;
+  const targetMetrics = [
+    { label: copy.carbsTarget, value: `${draft.target_carbs_per_hour ?? suggested.carbsPerHour}`, unit: "g/hr", tone: "primary" as const },
+    { label: copy.fluidsTarget, value: `${draft.target_fluids_ml_per_hour ?? suggested.fluidsMlPerHour}`, unit: "ml/hr", tone: "blue" as const },
+    { label: copy.sodiumTarget, value: `${draft.target_sodium_mg_per_hour ?? suggested.sodiumMgPerHour}`, unit: "mg/hr", tone: "amber" as const },
+    {
+      label: copy.caloriesEstimate,
+      value: caloriesEstimate ? `${caloriesEstimate}` : language === "es" ? "Agrega peso" : "Add weight",
+      unit: caloriesEstimate ? "kcal" : "",
+      tone: "neutral" as const
+    }
+  ];
 
   return (
     <Card style={styles.planControlBar}>
@@ -1337,43 +1349,91 @@ function PlanControlBar({
             </Inline>
           </View>
           <View style={styles.planControlTargets}>
-            <Text style={styles.subsectionTitle}>{copy.editTargets}</Text>
-            <Inline>
-              <View style={styles.splitField}>
-                <Field
-                  inputMode="numeric"
-                  label={copy.carbsTarget}
-                  onChangeText={(value) => onChange({ target_carbs_per_hour: parseOptionalNumber(value) })}
-                  value={numberToInput(draft.target_carbs_per_hour ?? suggested.carbsPerHour)}
-                />
+            <View style={styles.targetsHeader}>
+              <Text style={styles.subsectionTitle}>{copy.targets}</Text>
+              <Button onPress={() => setEditingTargets((current) => !current)} variant={editingTargets ? "ghost" : "secondary"}>
+                {editingTargets ? copy.close : copy.editTargets}
+              </Button>
+            </View>
+            <View style={styles.targetSummaryGrid}>
+              {targetMetrics.map((metric) => (
+                <View
+                  key={metric.label}
+                  style={[
+                    styles.targetSummaryCard,
+                    metric.tone === "primary" && styles.targetSummaryCardPrimary,
+                    metric.tone === "blue" && styles.targetSummaryCardBlue,
+                    metric.tone === "amber" && styles.targetSummaryCardAmber
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.targetSummaryValue,
+                      metric.tone === "primary" && styles.targetSummaryValuePrimary,
+                      metric.tone === "blue" && styles.targetSummaryValueBlue,
+                      metric.tone === "amber" && styles.targetSummaryValueAmber
+                    ]}
+                  >
+                    {metric.value}
+                    {metric.unit ? <Text style={styles.targetSummaryUnit}> {metric.unit}</Text> : null}
+                  </Text>
+                  <Text style={styles.targetSummaryLabel}>{metric.label}</Text>
+                </View>
+              ))}
+            </View>
+            {editingTargets ? (
+              <View style={styles.targetEditPanel}>
+                <Inline>
+                  <View style={styles.splitField}>
+                    <Field
+                      inputMode="numeric"
+                      label={copy.carbsTarget}
+                      onChangeText={(value) => onChange({ target_carbs_per_hour: parseOptionalNumber(value) })}
+                      value={numberToInput(draft.target_carbs_per_hour ?? suggested.carbsPerHour)}
+                    />
+                  </View>
+                  <View style={styles.splitField}>
+                    <Field
+                      inputMode="numeric"
+                      label={copy.fluidsTarget}
+                      onChangeText={(value) => onChange({ target_fluids_ml_per_hour: parseOptionalNumber(value) })}
+                      value={numberToInput(draft.target_fluids_ml_per_hour ?? suggested.fluidsMlPerHour)}
+                    />
+                  </View>
+                </Inline>
+                <Inline>
+                  <View style={styles.splitField}>
+                    <Field
+                      inputMode="numeric"
+                      label={copy.sodiumTarget}
+                      onChangeText={(value) => onChange({ target_sodium_mg_per_hour: parseOptionalNumber(value) })}
+                      value={numberToInput(draft.target_sodium_mg_per_hour ?? suggested.sodiumMgPerHour)}
+                    />
+                  </View>
+                  <View style={styles.splitField}>
+                    <Field
+                      inputMode="numeric"
+                      label={copy.caloriesEstimate}
+                      onChangeText={(value) => onChange({ estimated_calories_burned: parseOptionalNumber(value) })}
+                      value={numberToInput(caloriesEstimate)}
+                    />
+                  </View>
+                </Inline>
+                <Button
+                  onPress={() =>
+                    onChange({
+                      estimated_calories_burned: suggested.caloriesBurned,
+                      target_carbs_per_hour: suggested.carbsPerHour,
+                      target_fluids_ml_per_hour: suggested.fluidsMlPerHour,
+                      target_sodium_mg_per_hour: suggested.sodiumMgPerHour
+                    })
+                  }
+                  variant="ghost"
+                >
+                  {copy.useSuggestedValues}
+                </Button>
               </View>
-              <View style={styles.splitField}>
-                <Field
-                  inputMode="numeric"
-                  label={copy.fluidsTarget}
-                  onChangeText={(value) => onChange({ target_fluids_ml_per_hour: parseOptionalNumber(value) })}
-                  value={numberToInput(draft.target_fluids_ml_per_hour ?? suggested.fluidsMlPerHour)}
-                />
-              </View>
-            </Inline>
-            <Inline>
-              <View style={styles.splitField}>
-                <Field
-                  inputMode="numeric"
-                  label={copy.sodiumTarget}
-                  onChangeText={(value) => onChange({ target_sodium_mg_per_hour: parseOptionalNumber(value) })}
-                  value={numberToInput(draft.target_sodium_mg_per_hour ?? suggested.sodiumMgPerHour)}
-                />
-              </View>
-              <View style={styles.splitField}>
-                <Field
-                  inputMode="numeric"
-                  label={copy.caloriesEstimate}
-                  onChangeText={(value) => onChange({ estimated_calories_burned: parseOptionalNumber(value) })}
-                  value={numberToInput(caloriesEstimate)}
-                />
-              </View>
-            </Inline>
+            ) : null}
             <NutritionProgressBar
               current={totals.carbsPerHour}
               label={copy.plannedCarbsPerHour}
@@ -4135,6 +4195,78 @@ const styles = StyleSheet.create({
     flex: 1,
     gap: spacing.md,
     minWidth: 300
+  },
+  targetsHeader: {
+    alignItems: "center",
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: spacing.md,
+    justifyContent: "space-between"
+  },
+  targetSummaryGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: spacing.sm
+  },
+  targetSummaryCard: {
+    backgroundColor: colors.surfaceMuted,
+    borderColor: colors.border,
+    borderRadius: radii.lg,
+    borderWidth: 1,
+    flexBasis: 150,
+    flexGrow: 1,
+    gap: spacing.xs,
+    padding: spacing.md
+  },
+  targetSummaryCardPrimary: {
+    backgroundColor: colors.primaryMist,
+    borderColor: "#b8e6df"
+  },
+  targetSummaryCardBlue: {
+    backgroundColor: "#edf3ff",
+    borderColor: "#cddcff"
+  },
+  targetSummaryCardAmber: {
+    backgroundColor: "#fff4d9",
+    borderColor: "#f6dfaa"
+  },
+  targetSummaryValue: {
+    color: colors.ink,
+    fontFamily,
+    fontSize: 25,
+    fontVariant: ["tabular-nums"],
+    fontWeight: typography.weights.black,
+    lineHeight: 30
+  },
+  targetSummaryValuePrimary: {
+    color: colors.primaryDark
+  },
+  targetSummaryValueBlue: {
+    color: "#245fd6"
+  },
+  targetSummaryValueAmber: {
+    color: "#8c5c06"
+  },
+  targetSummaryUnit: {
+    color: colors.inkMuted,
+    fontSize: 13,
+    fontWeight: typography.weights.black
+  },
+  targetSummaryLabel: {
+    color: colors.inkMuted,
+    fontFamily,
+    fontSize: 11,
+    fontWeight: typography.weights.black,
+    lineHeight: 14,
+    textTransform: "uppercase"
+  },
+  targetEditPanel: {
+    backgroundColor: colors.surfaceMuted,
+    borderColor: colors.border,
+    borderRadius: radii.lg,
+    borderWidth: 1,
+    gap: spacing.md,
+    padding: spacing.md
   },
   totalStrip: {
     gap: spacing.md,
