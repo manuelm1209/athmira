@@ -141,6 +141,7 @@ const bottleSizes = [
   { label: "950 ml / 32 oz", value: 950 },
   { label: "1000 ml", value: 1000 }
 ];
+const customBottleSizeValue = "custom";
 
 const bottleFillMotionStyle = Platform.select({
   default: undefined,
@@ -317,8 +318,8 @@ const nutritionCopy = {
     bodyWeightUsed: "Peso usado (kg)",
     bottle: "Caramañola",
     bottleName: "Nombre de botella",
-    bottleSizeGreaterThanZero: "El tamano de la botella debe ser mayor que 0.",
-    bottleSizeMl: "Tamano ml",
+    bottleSizeGreaterThanZero: "El tamaño de la botella debe ser mayor que 0.",
+    bottleSizeMl: "Tamaño ml",
     bottlesTitle: "Botellas / Caramañolas",
     calculateSuggestedTargets: "Calcular objetivos sugeridos",
     calories: "Calorias",
@@ -341,7 +342,7 @@ const nutritionCopy = {
     composition: "Composicion",
     createFirstPlan: "Crear primer plan",
     createProduct: "Crear producto",
-    customBottleSize: "Tamano personalizado (ml)",
+    customBottleSize: "Tamaño personalizado (ml)",
     customFoods: "Productos propios",
     customProductCreated: "Producto personalizado creado.",
     customProductDeleted: "Producto personalizado eliminado.",
@@ -1572,6 +1573,75 @@ function TargetRing({
   );
 }
 
+function getBottleSizeSelectOptions(language: "en" | "es") {
+  return [
+    ...bottleSizes.map((size) => ({ label: size.label, value: String(size.value) })),
+    { label: language === "es" ? "Volumen personalizado" : "Custom volume", value: customBottleSizeValue }
+  ];
+}
+
+function getBottleSizeValue(sizeMl: number) {
+  return bottleSizes.some((size) => size.value === sizeMl) ? String(sizeMl) : customBottleSizeValue;
+}
+
+function getBottleSizeLabel(sizeMl: number) {
+  return bottleSizes.find((size) => size.value === sizeMl)?.label ?? `${round(sizeMl, 0)} ml`;
+}
+
+function BottleSizeSelect({
+  customLabel,
+  label,
+  onChange,
+  value
+}: {
+  customLabel: string;
+  label: string;
+  onChange: (sizeMl: number, sizeLabel: string) => void;
+  value: number;
+}) {
+  const { language } = useLanguage();
+  const [selectedSize, setSelectedSize] = useState(getBottleSizeValue(value));
+
+  useEffect(() => {
+    const nextSize = getBottleSizeValue(value);
+
+    if (selectedSize !== customBottleSizeValue && selectedSize !== nextSize) {
+      setSelectedSize(nextSize);
+    }
+  }, [selectedSize, value]);
+
+  return (
+    <View style={styles.bottleSizeSelectBlock}>
+      <SelectField
+        label={label}
+        onValueChange={(nextValue) => {
+          setSelectedSize(nextValue);
+
+          if (nextValue === customBottleSizeValue) {
+            return;
+          }
+
+          const nextSize = Number(nextValue);
+          onChange(nextSize, getBottleSizeLabel(nextSize));
+        }}
+        options={getBottleSizeSelectOptions(language)}
+        value={selectedSize}
+      />
+      {selectedSize === customBottleSizeValue ? (
+        <Field
+          inputMode="numeric"
+          label={customLabel}
+          onChangeText={(nextValue) => {
+            const nextSize = Math.max(0, parseOptionalNumber(nextValue) ?? 0);
+            onChange(nextSize, getBottleSizeLabel(nextSize));
+          }}
+          value={numberToInput(value)}
+        />
+      ) : null}
+    </View>
+  );
+}
+
 function FuelingCanvas({
   activeBottleId,
   bottleCalculations,
@@ -1606,23 +1676,9 @@ function FuelingCanvas({
           <Text style={styles.canvasTitle}>{copy.strategyBoard}</Text>
           <Text style={styles.canvasSubtitle}>{language === "es" ? "Llena caramañolas y separa lo que vas a llevar." : "Fill bottles and separate what you carry."}</Text>
         </View>
-        <View style={styles.canvasActions}>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.bottleSizeRail}>
-            {bottleSizes.map((size) => (
-              <Pressable
-                accessibilityRole="button"
-                key={size.label}
-                onPress={() => onAddBottle(size.value, size.label)}
-                style={styles.sizeChip}
-              >
-                <Text style={styles.sizeChipText}>{size.label}</Text>
-              </Pressable>
-            ))}
-          </ScrollView>
-          <Button onPress={() => onOpenAddModal({ mode: "carried" })} variant="secondary">
-            {copy.addFood}
-          </Button>
-        </View>
+        <Button onPress={() => onAddBottle()} variant="secondary">
+          {copy.addBottle}
+        </Button>
       </View>
 
       <ScrollView horizontal showsHorizontalScrollIndicator contentContainerStyle={styles.fuelingScroller}>
@@ -1795,11 +1851,11 @@ function BottleFuelCard({
           <Field label={copy.bottleName} onChangeText={(name) => onUpdateBottle({ name })} value={bottle.name} />
         </View>
         <View style={styles.strategySizeField}>
-          <Field
-            inputMode="numeric"
+          <BottleSizeSelect
+            customLabel={copy.customBottleSize}
             label={copy.bottleSizeMl}
-            onChangeText={(value) => onUpdateBottle({ bottle_size_ml: Math.max(0, parseOptionalNumber(value) ?? 0) })}
-            value={numberToInput(bottle.bottle_size_ml)}
+            onChange={(sizeMl, sizeLabel) => onUpdateBottle({ bottle_size_label: sizeLabel, bottle_size_ml: sizeMl })}
+            value={bottle.bottle_size_ml}
           />
         </View>
       </View>
@@ -2414,11 +2470,11 @@ function BottleStrategyCard({
           <Field label={copy.bottleName} onChangeText={(name) => onUpdateBottle(bottle.id, { name })} value={bottle.name} />
         </View>
         <View style={styles.strategySizeField}>
-          <Field
-            inputMode="numeric"
+          <BottleSizeSelect
+            customLabel={copy.customBottleSize}
             label={copy.bottleSizeMl}
-            onChangeText={(value) => onUpdateBottle(bottle.id, { bottle_size_ml: Math.max(0, parseOptionalNumber(value) ?? 0) })}
-            value={numberToInput(bottle.bottle_size_ml)}
+            onChange={(sizeMl, sizeLabel) => onUpdateBottle(bottle.id, { bottle_size_label: sizeLabel, bottle_size_ml: sizeMl })}
+            value={bottle.bottle_size_ml}
           />
         </View>
       </View>
@@ -2712,11 +2768,11 @@ export function BottleBuilder({
                 />
               </View>
               <View style={styles.bottleSizeField}>
-                <Field
-                  inputMode="numeric"
+                <BottleSizeSelect
+                  customLabel={copy.customBottleSize}
                   label={copy.bottleSizeMl}
-                  onChangeText={(value) => onUpdateBottle(bottle.id, { bottle_size_ml: Math.max(0, parseOptionalNumber(value) ?? 0) })}
-                  value={numberToInput(bottle.bottle_size_ml)}
+                  onChange={(sizeMl, sizeLabel) => onUpdateBottle(bottle.id, { bottle_size_label: sizeLabel, bottle_size_ml: sizeMl })}
+                  value={bottle.bottle_size_ml}
                 />
               </View>
               <Button onPress={() => onRemoveBottle(bottle.id)} variant="danger">
@@ -4528,6 +4584,9 @@ const styles = StyleSheet.create({
   compactEditRow: {
     flexDirection: "row",
     gap: spacing.md
+  },
+  bottleSizeSelectBlock: {
+    gap: spacing.sm
   },
   bottleQuickStats: {
     borderBottomColor: colors.border,
