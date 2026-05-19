@@ -10,6 +10,7 @@ import {
 } from "@athmira/supabase";
 import type { AdminUserDetail, AdminUserOverview, LanguageCode, NutritionProduct, NutritionProductInput } from "@athmira/types";
 import { Body, Button, Card, DateField, Field, Heading, Inline, Screen, SelectField, colors, spacing } from "@athmira/ui";
+import { Link, type Href } from "expo-router";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
@@ -35,6 +36,7 @@ type CreateUserDraft = {
 };
 
 type AdminDetailTab = "account" | "bikes" | "tests";
+type AdminMode = "hub" | "nutrition-products" | "users";
 type RoleFilter = "all" | "admin" | "athlete";
 type UserSort = "recent_analysis" | "name" | "created_at" | "analyses";
 
@@ -78,6 +80,7 @@ const adminNutritionCopy = {
     carbs: "Carbs",
     liquid: "Liquid ml",
     name: "Product name",
+    nutritionProductsAction: "Edit products",
     nutritionProducts: "Nutrition products",
     nutritionProductsBody: "Edit the global foods used by Nutrition Planning. These values affect new additions to user plans.",
     notes: "Notes",
@@ -93,6 +96,7 @@ const adminNutritionCopy = {
     carbs: "Carbohidratos",
     liquid: "Liquido ml",
     name: "Nombre del producto",
+    nutritionProductsAction: "Editar productos",
     nutritionProducts: "Productos de nutricion",
     nutritionProductsBody: "Edita los alimentos globales usados en Plan de nutricion. Estos valores afectan nuevas adiciones en los planes.",
     notes: "Notas",
@@ -105,9 +109,27 @@ const adminNutritionCopy = {
   }
 };
 
-export function AdminScreen() {
+const adminHubCopy = {
+  en: {
+    createUsersBody: "Create users, review athlete accounts, manage roles, reset temporary passwords, and inspect bikes or camera tests.",
+    createUsersTitle: "Users and roles",
+    hubBody: "Choose the administrative area you want to manage.",
+    nutritionBody: "Update global nutrition product composition values used by fueling plans.",
+    open: "Open"
+  },
+  es: {
+    createUsersBody: "Crea usuarios, revisa cuentas de atletas, gestiona roles, restablece contrasenas temporales e inspecciona bicicletas o tests de camara.",
+    createUsersTitle: "Usuarios y roles",
+    hubBody: "Elige el area administrativa que quieres gestionar.",
+    nutritionBody: "Actualiza los valores de composicion de productos globales usados en los planes de alimentacion.",
+    open: "Abrir"
+  }
+};
+
+export function AdminScreen({ mode = "hub" }: { mode?: AdminMode }) {
   const { language, t } = useLanguage();
   const nutritionCopy = adminNutritionCopy[language];
+  const hubCopy = adminHubCopy[language];
   const [users, setUsers] = useState<AdminUserOverview[]>([]);
   const [nutritionProducts, setNutritionProducts] = useState<NutritionProduct[]>([]);
   const [selectedUser, setSelectedUser] = useState<AdminUserDetail | null>(null);
@@ -175,11 +197,16 @@ export function AdminScreen() {
   );
 
   useEffect(() => {
-    loadUsers();
-    loadNutritionProducts();
+    if (mode === "users") {
+      loadUsers();
+    }
+
+    if (mode === "nutrition-products") {
+      loadNutritionProducts();
+    }
   // Load once when the protected admin route mounts.
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [mode]);
 
   useEffect(() => {
     if (!selectedNutritionProduct) {
@@ -363,6 +390,33 @@ export function AdminScreen() {
     }
   }
 
+  if (mode === "hub") {
+    return (
+      <Screen maxWidth={1040}>
+        <View style={styles.page}>
+          <View style={styles.header}>
+            <Heading>{t("admin")}</Heading>
+            <Body>{hubCopy.hubBody}</Body>
+          </View>
+          <View style={styles.hubGrid}>
+            <AdminHubCard
+              body={hubCopy.createUsersBody}
+              cta={hubCopy.open}
+              href="/admin/users"
+              title={hubCopy.createUsersTitle}
+            />
+            <AdminHubCard
+              body={hubCopy.nutritionBody}
+              cta={nutritionCopy.nutritionProductsAction}
+              href="/admin/nutrition-products"
+              title={nutritionCopy.nutritionProducts}
+            />
+          </View>
+        </View>
+      </Screen>
+    );
+  }
+
   return (
     <Screen maxWidth={1240}>
       <View style={styles.page}>
@@ -371,16 +425,19 @@ export function AdminScreen() {
           <Body>{t("adminIntro")}</Body>
         </View>
 
-        <Inline>
+        {mode === "users" ? (
+          <Inline>
           <Metric label={t("adminUsers")} value={stats.users} />
           <Metric label={t("adminBikes")} value={stats.bikes} />
           <Metric label={t("adminAnalyses")} value={stats.analyses} />
-        </Inline>
+          </Inline>
+        ) : null}
 
         {error ? <Text style={styles.error}>{error}</Text> : null}
         {message ? <Text style={styles.message}>{message}</Text> : null}
 
-        <Card style={styles.card}>
+        {mode === "nutrition-products" ? (
+          <Card style={styles.card}>
           <View style={styles.sectionHeader}>
             <View style={styles.roleCopy}>
               <Text style={styles.sectionTitle}>{nutritionCopy.nutritionProducts}</Text>
@@ -461,9 +518,11 @@ export function AdminScreen() {
               {nutritionCopy.saveProduct}
             </Button>
           </Inline>
-        </Card>
+          </Card>
+        ) : null}
 
-        <View style={styles.grid}>
+        {mode === "users" ? (
+          <View style={styles.grid}>
           <View style={styles.sidebar}>
             <Card style={styles.card}>
               <Text style={styles.sectionTitle}>{t("adminCreateUser")}</Text>
@@ -723,9 +782,26 @@ export function AdminScreen() {
               )}
             </Card>
           </View>
-        </View>
+          </View>
+        ) : null}
       </View>
     </Screen>
+  );
+}
+
+function AdminHubCard({ body, cta, href, title }: { body: string; cta: string; href: Href; title: string }) {
+  return (
+    <Card style={styles.hubCard}>
+      <View style={styles.roleCopy}>
+        <Text style={styles.sectionTitle}>{title}</Text>
+        <Body>{body}</Body>
+      </View>
+      <Link href={href} asChild>
+        <Pressable accessibilityRole="link" style={styles.hubAction}>
+          <Text style={styles.hubActionText}>{cta}</Text>
+        </Pressable>
+      </Link>
+    </Card>
   );
 }
 
@@ -895,6 +971,31 @@ const styles = StyleSheet.create({
   },
   header: {
     gap: spacing.sm
+  },
+  hubGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: spacing.lg
+  },
+  hubCard: {
+    flexBasis: 320,
+    flexGrow: 1,
+    gap: spacing.lg,
+    justifyContent: "space-between",
+    minHeight: 220
+  },
+  hubAction: {
+    alignItems: "center",
+    alignSelf: "flex-start",
+    backgroundColor: colors.primary,
+    borderRadius: 8,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md
+  },
+  hubActionText: {
+    color: "#ffffff",
+    fontSize: 14,
+    fontWeight: "900"
   },
   grid: {
     alignItems: "flex-start",

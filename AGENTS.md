@@ -97,6 +97,17 @@ Security rules for all changes:
 - Audit admin grants, revocations, user creation, profile edits, and password resets.
 - Add or update security notes in README, migrations, and deployment config when introducing new auth, storage, AI, wearable, or external integration behavior.
 
+## Admin UI Pattern
+
+The main `/admin` route must stay as a minimal administration hub. It should show the available admin areas and route the administrator to dedicated pages instead of rendering all management forms directly.
+
+Current dedicated admin pages:
+
+- `/admin/users` for user creation, user account review, role management, temporary passwords, bikes, and camera analysis review.
+- `/admin/nutrition-products` for editing global nutrition product composition values.
+
+When adding new admin functionality, add it as a dedicated admin route and link to it from the `/admin` hub. Keep privileged operations behind existing protected admin endpoints or RLS policies, depending on the operation.
+
 ## Suggested Structure
 
 ```text
