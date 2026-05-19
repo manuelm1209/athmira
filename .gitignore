@@ -3,7 +3,11 @@ node_modules/
 dist/
 web-build/
 .vercel/
-.playwright-mcp/
+.playwright-cl*
+.playwright-*/
+playwright-report/
+test-results/
+blob-report/
 .env
 .env.local
 .DS_Store
