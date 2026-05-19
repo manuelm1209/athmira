@@ -41,7 +41,6 @@ import {
   Card,
   FadeInView,
   Field,
-  Heading,
   Inline,
   Screen,
   SelectField,
@@ -52,7 +51,7 @@ import {
   typography
 } from "@athmira/ui";
 import { useEffect, useMemo, useState } from "react";
-import { ActivityIndicator, Alert, Platform, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from "react-native";
+import { ActivityIndicator, Alert, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from "react-native";
 
 import { LinkButton } from "@/components/LinkButton";
 import { useAuth } from "@/providers/AuthProvider";
@@ -174,7 +173,10 @@ const bottleFillMotionStyle = Platform.select({
 const nutritionCopy = {
   en: {
     add: "Add",
+    addBottle: "Add bottle",
     addCustom: "Add custom",
+    addFood: "Add food",
+    addIngredient: "Add ingredient",
     addNutritionItems: "Add nutrition items",
     addProductsTimeline: "Add products to build the timeline.",
     addTargetBottle: "Add a bottle before assigning products inside a bottle.",
@@ -203,8 +205,10 @@ const nutritionCopy = {
     category: "Category",
     chooseBottle: "Choose bottle",
     close: "Close",
+    collapse: "Collapse",
     concentration: "Concentration",
     configurations: "Configurations",
+    composition: "Composition",
     createFirstPlan: "Create first plan",
     createProduct: "Create product",
     customBottleSize: "Custom bottle size (ml)",
@@ -225,7 +229,10 @@ const nutritionCopy = {
     durationMinutes: "Duration (minutes)",
     edit: "Edit",
     editCustomProduct: "Edit custom product",
+    editPlan: "Edit plan",
+    editTargets: "Edit target values",
     estimatesDisclaimer: "Athmira estimates sports fueling needs for planning. This is not medical or dietary advice.",
+    expand: "Expand",
     every30: "Every 30 min",
     every30Long: "Every 30 minutes",
     every45: "Every 45 min",
@@ -268,6 +275,7 @@ const nutritionCopy = {
     nutritionPlanNotFound: "Nutrition plan not found.",
     nutritionPlanSaved: "Nutrition plan saved.",
     planSetup: "Plan setup",
+    planAndTargets: "Plan and targets",
     planTitle: "Plan title",
     planTitleRequired: "Plan title is required.",
     plannedCarbsPerHour: "Planned carbs per hour",
@@ -298,6 +306,7 @@ const nutritionCopy = {
     suggestedRanges: "Suggested ranges",
     targetBottle: "Target bottle",
     targets: "Targets",
+    totalPlan: "Total plan",
     timing: "Timing",
     totalCalories: "Total calories",
     totalCarbs: "Total carbs",
@@ -307,13 +316,17 @@ const nutritionCopy = {
     updateProduct: "Update product",
     usedByIngredients: "Used by ingredients",
     useSuggestedValues: "Use suggested values",
+    viewPlan: "View plan",
     waterBottlePrompt: "Add at least one bottle to plan hydration and in-bottle carbohydrates.",
     weightGrams: "Weight grams",
     youMustSignInProducts: "You must be signed in to manage products."
   },
   es: {
     add: "Agregar",
+    addBottle: "Agregar caramanola",
     addCustom: "Agregar personalizada",
+    addFood: "Agregar comida",
+    addIngredient: "Agregar ingrediente",
     addNutritionItems: "Agregar items de nutricion",
     addProductsTimeline: "Agrega productos para construir la linea de tiempo.",
     addTargetBottle: "Agrega una caramanola antes de asignar productos dentro de una botella.",
@@ -342,8 +355,10 @@ const nutritionCopy = {
     category: "Categoria",
     chooseBottle: "Elige botella",
     close: "Cerrar",
+    collapse: "Colapsar",
     concentration: "Concentracion",
     configurations: "Configuraciones",
+    composition: "Composicion",
     createFirstPlan: "Crear primer plan",
     createProduct: "Crear producto",
     customBottleSize: "Tamano personalizado (ml)",
@@ -364,7 +379,10 @@ const nutritionCopy = {
     durationMinutes: "Duracion (minutos)",
     edit: "Editar",
     editCustomProduct: "Editar producto personalizado",
+    editPlan: "Editar plan",
+    editTargets: "Editar valores objetivo",
     estimatesDisclaimer: "Athmira estima necesidades de fueling deportivo para planificar. No es consejo medico ni nutricional.",
+    expand: "Expandir",
     every30: "Cada 30 min",
     every30Long: "Cada 30 minutos",
     every45: "Cada 45 min",
@@ -407,6 +425,7 @@ const nutritionCopy = {
     nutritionPlanNotFound: "Plan de nutricion no encontrado.",
     nutritionPlanSaved: "Plan de nutricion guardado.",
     planSetup: "Configuracion del plan",
+    planAndTargets: "Plan y objetivos",
     planTitle: "Titulo del plan",
     planTitleRequired: "El titulo del plan es obligatorio.",
     plannedCarbsPerHour: "Carbos planificados por hora",
@@ -437,6 +456,7 @@ const nutritionCopy = {
     suggestedRanges: "Rangos sugeridos",
     targetBottle: "Botella destino",
     targets: "Objetivos",
+    totalPlan: "Plan total",
     timing: "Horario",
     totalCalories: "Calorias totales",
     totalCarbs: "Carbos totales",
@@ -446,6 +466,7 @@ const nutritionCopy = {
     updateProduct: "Actualizar producto",
     usedByIngredients: "Usado por ingredientes",
     useSuggestedValues: "Usar valores sugeridos",
+    viewPlan: "Ver plan",
     waterBottlePrompt: "Agrega al menos una caramanola para planificar hidratacion y carbohidratos dentro de botella.",
     weightGrams: "Peso gramos",
     youMustSignInProducts: "Debes iniciar sesion para gestionar productos."
@@ -461,6 +482,7 @@ export function NutritionPlansPage() {
   const [plans, setPlans] = useState<NutritionPlan[]>([]);
   const [products, setProducts] = useState<NutritionProduct[]>([]);
   const [draft, setDraft] = useState<DraftPlan | null>(null);
+  const [viewingDraft, setViewingDraft] = useState<DraftPlan | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadingPlanId, setLoadingPlanId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -511,12 +533,13 @@ export function NutritionPlansPage() {
 
   function startNewPlan() {
     setMessage(null);
+    setViewingDraft(null);
     setDraft(createDefaultDraft(profile?.weight_kg ?? null, language));
   }
 
-  async function openPlan(planId: string) {
+  async function loadPlanDraft(planId: string) {
     if (!user) {
-      return;
+      return null;
     }
 
     setLoadingPlanId(planId);
@@ -528,14 +551,33 @@ export function NutritionPlansPage() {
 
       if (!detail) {
         setError(copy.nutritionPlanNotFound);
-        return;
+        return null;
       }
 
-      setDraft(createDraftFromDetail(detail));
+      return createDraftFromDetail(detail);
     } catch (openError) {
       setError(getErrorMessage(openError));
+      return null;
     } finally {
       setLoadingPlanId(null);
+    }
+  }
+
+  async function openPlan(planId: string) {
+    const nextDraft = await loadPlanDraft(planId);
+
+    if (nextDraft) {
+      setViewingDraft(null);
+      setDraft(nextDraft);
+    }
+  }
+
+  async function viewPlan(planId: string) {
+    const nextDraft = await loadPlanDraft(planId);
+
+    if (nextDraft) {
+      setDraft(null);
+      setViewingDraft(nextDraft);
     }
   }
 
@@ -601,6 +643,7 @@ export function NutritionPlansPage() {
       await deleteNutritionPlan(user.id, planId);
       setPlans((current) => current.filter((plan) => plan.id !== planId));
       setDraft((current) => (current?.id === planId ? null : current));
+      setViewingDraft((current) => (current?.id === planId ? null : current));
       setMessage(copy.nutritionPlanDeleted);
     } catch (deleteError) {
       setError(getErrorMessage(deleteError));
@@ -665,25 +708,11 @@ export function NutritionPlansPage() {
   return (
     <Screen maxWidth={1360}>
       <View style={styles.stack}>
-        <FadeInView style={[styles.hero, compact && styles.heroCompact]}>
-          <View style={styles.heroCopy}>
-            <Text style={styles.eyebrow}>{copy.heroKicker}</Text>
-            <Heading style={styles.heroTitle}>{copy.heroTitle}</Heading>
-            <Body style={styles.heroBody}>{copy.heroBody}</Body>
-            <Text style={styles.disclaimer}>{copy.heroDisclaimer}</Text>
-          </View>
-          <View style={styles.heroStats}>
-            <MetricPill label={copy.savedPlan} value={String(plans.length)} />
-            <MetricPill label={copy.customFoods} value={`${customProductCount}/${MAX_CUSTOM_NUTRITION_PRODUCTS}`} />
-            <MetricPill label={copy.globalProducts} value={String(products.filter((product) => product.product_scope === "global").length)} />
-          </View>
-        </FadeInView>
-
         {error ? <Text selectable style={styles.error}>{error}</Text> : null}
         {message ? <Text selectable style={styles.message}>{message}</Text> : null}
 
-        <View style={[styles.pageGrid, (compact || draft) && styles.pageGridCompact]}>
-          {draft ? null : (
+        <View style={[styles.pageGrid, (compact || draft || viewingDraft) && styles.pageGridCompact]}>
+          {draft || viewingDraft ? null : (
           <FadeInView delayMs={80} style={styles.planRail}>
             <View style={styles.sectionHeader}>
               <View>
@@ -715,6 +744,7 @@ export function NutritionPlansPage() {
                     onDelete={() => confirmDeletePlan(plan.id)}
                     onDuplicate={() => void duplicatePlan(plan.id)}
                     onOpen={() => void openPlan(plan.id)}
+                    onView={() => void viewPlan(plan.id)}
                     plan={plan}
                   />
                 ))}
@@ -735,6 +765,15 @@ export function NutritionPlansPage() {
                 onSave={saveDraft}
                 products={products}
                 saving={saving}
+              />
+            ) : viewingDraft ? (
+              <NutritionPlanViewer
+                draft={viewingDraft}
+                onClose={() => setViewingDraft(null)}
+                onEdit={() => {
+                  setDraft(viewingDraft);
+                  setViewingDraft(null);
+                }}
               />
             ) : (
               <Card style={styles.startCard}>
@@ -763,12 +802,14 @@ export function NutritionPlanCard({
   onDelete,
   onDuplicate,
   onOpen,
+  onView,
   plan
 }: {
   loading?: boolean;
   onDelete: () => void;
   onDuplicate: () => void;
   onOpen: () => void;
+  onView: () => void;
   plan: NutritionPlan;
 }) {
   const { language } = useLanguage();
@@ -797,8 +838,11 @@ export function NutritionPlanCard({
       </View>
 
       <Inline style={styles.cardActions}>
-        <Button loading={loading} onPress={onOpen} variant="secondary">
-          {language === "es" ? "Abrir" : "Open"}
+        <Button loading={loading} onPress={onView} variant="secondary">
+          {copy.viewPlan}
+        </Button>
+        <Button loading={loading} onPress={onOpen} variant="ghost">
+          {copy.editPlan}
         </Button>
         <Button onPress={onDuplicate} variant="ghost">
           {copy.duplicate}
@@ -835,18 +879,13 @@ export function NutritionPlanEditor({
   const { language } = useLanguage();
   const copy = nutritionCopy[language];
   const { width } = useWindowDimensions();
-  const compact = width < 1180;
+  const compact = width < 900;
   const [localError, setLocalError] = useState<string | null>(null);
   const [activeBottleId, setActiveBottleId] = useState(draft.bottles[0]?.id ?? "");
+  const [addModalTarget, setAddModalTarget] = useState<{ bottleId?: string; mode: "bottle" | "carried" } | null>(null);
 
   const calculations = useMemo(() => calculateDraft(draft), [draft]);
   const activeBottle = draft.bottles.find((bottle) => bottle.id === activeBottleId) ?? draft.bottles[0] ?? null;
-  const activeBottleCalculation = activeBottle
-    ? calculations.bottleCalculations.find((calculation) => calculation.bottle.id === activeBottle.id) ?? calculateBottleTotals(activeBottle, [])
-    : null;
-  const activeBottleItems = activeBottle
-    ? draft.items.filter((item) => item.location === "bottle" && item.bottle_id === activeBottle.id)
-    : [];
 
   useEffect(() => {
     if (!draft.bottles.length) {
@@ -861,6 +900,24 @@ export function NutritionPlanEditor({
 
   function updateDraft(patch: Partial<DraftPlan>) {
     onChange({ ...draft, ...patch });
+  }
+
+  function updateDraftWithSuggestedTargets(patch: Partial<DraftPlan>) {
+    const nextDraft = { ...draft, ...patch };
+    const targets = calculateSuggestedNutritionTargets({
+      activityType: nextDraft.activity_type,
+      bodyWeightKg: nextDraft.body_weight_kg ?? null,
+      durationMinutes: nextDraft.duration_minutes,
+      intensity: nextDraft.intensity
+    });
+
+    onChange({
+      ...nextDraft,
+      estimated_calories_burned: targets.caloriesBurned,
+      target_carbs_per_hour: targets.carbsPerHour,
+      target_fluids_ml_per_hour: targets.fluidsMlPerHour,
+      target_sodium_mg_per_hour: targets.sodiumMgPerHour
+    });
   }
 
   function updateBottle(bottleId: string, patch: Partial<DraftBottle>) {
@@ -927,22 +984,6 @@ export function NutritionPlanEditor({
     onChange({ ...draft, items: draft.items.filter((item) => item.id !== itemId) });
   }
 
-  function applyTargets() {
-    const targets = calculateSuggestedNutritionTargets({
-      activityType: draft.activity_type,
-      bodyWeightKg: draft.body_weight_kg ?? null,
-      durationMinutes: draft.duration_minutes,
-      intensity: draft.intensity
-    });
-
-    updateDraft({
-      estimated_calories_burned: targets.caloriesBurned,
-      target_carbs_per_hour: targets.carbsPerHour,
-      target_fluids_ml_per_hour: targets.fluidsMlPerHour,
-      target_sodium_mg_per_hour: targets.sodiumMgPerHour
-    });
-  }
-
   async function handleSave() {
     const validationError = validateDraft(draft, copy);
 
@@ -974,81 +1015,76 @@ export function NutritionPlanEditor({
 
       {localError ? <Text selectable style={styles.error}>{localError}</Text> : null}
 
-      {compact ? (
-        <View style={styles.workspaceLayoutCompact}>
-          <NutritionPlanSetupForm draft={draft} onApplyTargets={applyTargets} onChange={updateDraft} />
-          <ActiveBottleFocus
-            bottle={activeBottle}
-            calculation={activeBottleCalculation}
-            draft={draft}
-            items={activeBottleItems}
-            totals={calculations.totals}
-            warnings={calculations.warnings}
-          />
-          <NutritionTargetCalculator draft={draft} onApply={applyTargets} totals={calculations.totals} />
-          <BottleStrategyBoard
-            activeBottleId={activeBottle?.id ?? ""}
-            bottleCalculations={calculations.bottleCalculations}
-            bottles={draft.bottles}
-            customProductCount={customProductCount}
-            items={draft.items}
-            onAddBottle={addBottle}
-            onAddProduct={addProductToPlan}
-            onCreateOrUpdateProduct={onCreateOrUpdateProduct}
-            onDeleteProduct={onDeleteProduct}
-            onRemoveBottle={removeBottle}
-            onRemoveItem={removeItem}
-            onSelectBottle={setActiveBottleId}
-            onUpdateBottle={updateBottle}
-            products={products}
-          />
-        </View>
-      ) : (
-        <View style={styles.workspaceLayout}>
-          <View style={styles.workspaceRail}>
-            <NutritionPlanSetupForm draft={draft} onApplyTargets={applyTargets} onChange={updateDraft} />
-            <NutritionTargetCalculator draft={draft} onApply={applyTargets} totals={calculations.totals} />
-          </View>
-          <View style={styles.strategyMain}>
-            <BottleStrategyBoard
-              activeBottleId={activeBottle?.id ?? ""}
-              bottleCalculations={calculations.bottleCalculations}
-              bottles={draft.bottles}
-              customProductCount={customProductCount}
-              items={draft.items}
-              onAddBottle={addBottle}
-              onAddProduct={addProductToPlan}
-              onCreateOrUpdateProduct={onCreateOrUpdateProduct}
-              onDeleteProduct={onDeleteProduct}
-              onRemoveBottle={removeBottle}
-              onRemoveItem={removeItem}
-              onSelectBottle={setActiveBottleId}
-              onUpdateBottle={updateBottle}
-              products={products}
-            />
-          </View>
-          <View style={styles.strategyFocus}>
-            <ActiveBottleFocus
-              bottle={activeBottle}
-              calculation={activeBottleCalculation}
-              draft={draft}
-              items={activeBottleItems}
-              totals={calculations.totals}
-              warnings={calculations.warnings}
-            />
-          </View>
-        </View>
-      )}
+      <PlanControlBar
+        compact={compact}
+        draft={draft}
+        onChange={updateDraft}
+        onChangeWithSuggestedTargets={updateDraftWithSuggestedTargets}
+        totals={calculations.totals}
+      />
 
-      <View style={styles.reviewFooter}>
-        <NutritionTimeline items={draft.items} />
-        <SharePreviewCard
-          bottleCalculations={calculations.bottleCalculations}
-          draft={draft}
-          items={draft.items}
-          totals={calculations.totals}
-        />
+      <PlanTotalStrip draft={draft} totals={calculations.totals} warnings={calculations.warnings} />
+
+      <FuelingCanvas
+        activeBottleId={activeBottle?.id ?? ""}
+        bottleCalculations={calculations.bottleCalculations}
+        bottles={draft.bottles}
+        items={draft.items}
+        onAddBottle={addBottle}
+        onOpenAddModal={setAddModalTarget}
+        onRemoveBottle={removeBottle}
+        onRemoveItem={removeItem}
+        onSelectBottle={setActiveBottleId}
+        onUpdateBottle={updateBottle}
+      />
+
+      <AddNutritionModal
+        bottles={draft.bottles}
+        customProductCount={customProductCount}
+        onAddProduct={addProductToPlan}
+        onClose={() => setAddModalTarget(null)}
+        onCreateOrUpdateProduct={onCreateOrUpdateProduct}
+        onDeleteProduct={onDeleteProduct}
+        products={products}
+        target={addModalTarget}
+      />
+    </View>
+  );
+}
+
+function NutritionPlanViewer({
+  draft,
+  onClose,
+  onEdit
+}: {
+  draft: DraftPlan;
+  onClose: () => void;
+  onEdit: () => void;
+}) {
+  const { language } = useLanguage();
+  const copy = nutritionCopy[language];
+  const calculations = useMemo(() => calculateDraft(draft), [draft]);
+
+  return (
+    <View style={styles.editorStack}>
+      <View style={styles.editorHeader}>
+        <View>
+          <Text style={styles.sectionKicker}>{copy.viewPlan}</Text>
+          <Text style={styles.editorTitle}>{draft.title || copy.nutritionPlan}</Text>
+          <Text style={styles.planControlMeta}>
+            {getActivityLabel(draft.activity_type, language)} / {formatDuration(draft.duration_minutes)} / {getIntensityLabel(draft.intensity, language)}
+          </Text>
+        </View>
+        <Inline>
+          <Button onPress={onEdit}>{copy.editPlan}</Button>
+          <Button onPress={onClose} variant="secondary">
+            {copy.close}
+          </Button>
+        </Inline>
       </View>
+
+      <PlanTotalStrip draft={draft} totals={calculations.totals} warnings={calculations.warnings} />
+      <ReadOnlyFuelingCanvas bottleCalculations={calculations.bottleCalculations} bottles={draft.bottles} items={draft.items} />
     </View>
   );
 }
@@ -1174,7 +1210,823 @@ export function NutritionTargetCalculator({
   );
 }
 
-function BottleStrategyBoard({
+function PlanControlBar({
+  compact,
+  draft,
+  onChange,
+  onChangeWithSuggestedTargets,
+  totals
+}: {
+  compact: boolean;
+  draft: DraftPlan;
+  onChange: (patch: Partial<DraftPlan>) => void;
+  onChangeWithSuggestedTargets: (patch: Partial<DraftPlan>) => void;
+  totals: PlanTotals;
+}) {
+  const { language } = useLanguage();
+  const copy = nutritionCopy[language];
+  const suggested = calculateSuggestedNutritionTargets({
+    activityType: draft.activity_type,
+    bodyWeightKg: draft.body_weight_kg ?? null,
+    durationMinutes: draft.duration_minutes,
+    intensity: draft.intensity
+  });
+  const caloriesEstimate = draft.estimated_calories_burned ?? suggested.caloriesBurned;
+
+  return (
+    <Card style={styles.planControlBar}>
+      <View style={styles.planControlHeader}>
+        <View style={styles.planControlTitleBlock}>
+          <Text style={styles.planControlTitle}>{copy.planAndTargets}</Text>
+          <Text style={styles.planControlMeta}>
+            {getActivityLabel(draft.activity_type, language)} / {formatDuration(draft.duration_minutes)} / {getIntensityLabel(draft.intensity, language)}
+          </Text>
+        </View>
+        <View style={styles.planControlSnapshot}>
+          <Pill label={`${draft.target_carbs_per_hour ?? suggested.carbsPerHour} g/h`} tone="primary" />
+          <Pill label={`${draft.target_fluids_ml_per_hour ?? suggested.fluidsMlPerHour} ml/h`} tone="blue" />
+          <Pill label={`${draft.target_sodium_mg_per_hour ?? suggested.sodiumMgPerHour} mg/h`} tone="amber" />
+        </View>
+      </View>
+
+      <View style={[styles.planControlBody, compact && styles.planControlBodyCompact]}>
+          <View style={styles.planControlForm}>
+            <Field label={copy.planTitle} onChangeText={(title) => onChange({ title })} value={draft.title} />
+            <Inline>
+              <View style={styles.splitField}>
+                <SelectField
+                  label={language === "es" ? "Actividad" : "Activity"}
+                  onValueChange={(value) => onChangeWithSuggestedTargets({ activity_type: toActivityType(value) })}
+                  options={getActivityOptions(language)}
+                  value={draft.activity_type}
+                />
+              </View>
+              <View style={styles.splitField}>
+                <SelectField
+                  label={copy.intensity}
+                  onValueChange={(value) => onChangeWithSuggestedTargets({ intensity: toIntensity(value) })}
+                  options={getIntensityOptions(language)}
+                  value={draft.intensity}
+                />
+              </View>
+            </Inline>
+            <Inline>
+              <View style={styles.splitField}>
+                <Field
+                  inputMode="numeric"
+                  label={copy.durationMinutes}
+                  onChangeText={(value) => onChangeWithSuggestedTargets({ duration_minutes: Math.max(0, parseOptionalNumber(value) ?? 0) })}
+                  value={numberToInput(draft.duration_minutes)}
+                />
+              </View>
+              <View style={styles.splitField}>
+                <Field
+                  inputMode="numeric"
+                  label={copy.bodyWeightUsed}
+                  onChangeText={(value) => onChangeWithSuggestedTargets({ body_weight_kg: parseOptionalNumber(value) })}
+                  value={numberToInput(draft.body_weight_kg)}
+                />
+              </View>
+            </Inline>
+          </View>
+          <View style={styles.planControlTargets}>
+            <Text style={styles.subsectionTitle}>{copy.editTargets}</Text>
+            <Inline>
+              <View style={styles.splitField}>
+                <Field
+                  inputMode="numeric"
+                  label={copy.carbsTarget}
+                  onChangeText={(value) => onChange({ target_carbs_per_hour: parseOptionalNumber(value) })}
+                  value={numberToInput(draft.target_carbs_per_hour ?? suggested.carbsPerHour)}
+                />
+              </View>
+              <View style={styles.splitField}>
+                <Field
+                  inputMode="numeric"
+                  label={copy.fluidsTarget}
+                  onChangeText={(value) => onChange({ target_fluids_ml_per_hour: parseOptionalNumber(value) })}
+                  value={numberToInput(draft.target_fluids_ml_per_hour ?? suggested.fluidsMlPerHour)}
+                />
+              </View>
+            </Inline>
+            <Inline>
+              <View style={styles.splitField}>
+                <Field
+                  inputMode="numeric"
+                  label={copy.sodiumTarget}
+                  onChangeText={(value) => onChange({ target_sodium_mg_per_hour: parseOptionalNumber(value) })}
+                  value={numberToInput(draft.target_sodium_mg_per_hour ?? suggested.sodiumMgPerHour)}
+                />
+              </View>
+              <View style={styles.splitField}>
+                <Field
+                  inputMode="numeric"
+                  label={copy.caloriesEstimate}
+                  onChangeText={(value) => onChange({ estimated_calories_burned: parseOptionalNumber(value) })}
+                  value={numberToInput(caloriesEstimate)}
+                />
+              </View>
+            </Inline>
+            <NutritionProgressBar
+              current={totals.carbsPerHour}
+              label={copy.plannedCarbsPerHour}
+              target={draft.target_carbs_per_hour ?? suggested.carbsPerHour}
+              unit="g/hr"
+            />
+            <Text style={styles.helperCopy}>{copy.estimatesDisclaimer}</Text>
+          </View>
+        </View>
+    </Card>
+  );
+}
+
+function PlanTotalStrip({
+  draft,
+  totals,
+  warnings
+}: {
+  draft: DraftPlan;
+  totals: PlanTotals;
+  warnings: NutritionWarning[];
+}) {
+  const { language } = useLanguage();
+  const copy = nutritionCopy[language];
+  const visibleWarnings = warnings.filter((warning) => warning.message !== "This is an estimated sports fueling plan for training guidance, not medical advice.");
+
+  return (
+    <Card style={styles.totalStrip}>
+      <View style={styles.totalStripHeaderCompact}>
+        <Text style={styles.totalStripTitle}>{copy.totalPlan}</Text>
+      </View>
+      <View style={styles.totalMetricStrip}>
+        <TotalPlanMetric
+          color={colors.accent}
+          current={totals.carbsPerHour}
+          label={copy.carbs}
+          target={draft.target_carbs_per_hour ?? 0}
+          total={`${round(totals.totalCarbs, 0)} g`}
+          unit="g/hr"
+        />
+        <TotalPlanMetric
+          color="#51d9df"
+          current={totals.fluidsMlPerHour}
+          label={copy.fluids}
+          target={draft.target_fluids_ml_per_hour ?? 0}
+          total={`${round(totals.totalFluidsMl, 0)} ml`}
+          unit="ml/hr"
+        />
+        <TotalPlanMetric
+          color={colors.amber}
+          current={totals.sodiumMgPerHour}
+          label={copy.sodium}
+          target={draft.target_sodium_mg_per_hour ?? 0}
+          total={`${round(totals.totalSodiumMg, 0)} mg`}
+          unit="mg/hr"
+        />
+        <TotalPlanMetric
+          color={colors.coral}
+          current={totals.totalCalories}
+          label={copy.calories}
+          target={draft.estimated_calories_burned ?? 0}
+          total={`${round(totals.totalCalories, 0)} kcal`}
+          unit="kcal"
+        />
+      </View>
+      {visibleWarnings.length ? (
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.warningRail}>
+          {visibleWarnings.slice(0, 3).map((warning, index) => (
+            <NutritionWarningBadge key={`${warning.message}-${index}`} warning={warning} />
+          ))}
+        </ScrollView>
+      ) : null}
+    </Card>
+  );
+}
+
+function TotalPlanMetric({
+  color,
+  current,
+  label,
+  target,
+  total,
+  unit
+}: {
+  color: string;
+  current: number;
+  label: string;
+  target: number;
+  total: string;
+  unit: string;
+}) {
+  return (
+    <View style={styles.totalMetricCard}>
+      <TargetRing color={color} current={current} target={target} />
+      <View style={styles.totalMetricCopy}>
+        <Text style={styles.totalMetricLabel}>{label}</Text>
+        <Text style={styles.totalMetricTotal}>{total}</Text>
+        <Text style={styles.totalMetricTarget}>
+          {round(current, 0)} / {target > 0 ? round(target, 0) : "--"} {unit}
+        </Text>
+      </View>
+    </View>
+  );
+}
+
+function TargetRing({
+  color,
+  current,
+  target
+}: {
+  color: string;
+  current: number;
+  target: number;
+}) {
+  const percent = target > 0 ? Math.min(100, Math.max(0, current / target * 100)) : 0;
+  const ringStyle = Platform.select({
+    web: {
+      backgroundImage: `conic-gradient(${color} ${percent}%, #dbecee ${percent}% 100%)`,
+      transitionDuration: "320ms",
+      transitionProperty: "background-image",
+      transitionTimingFunction: "ease"
+    } as never,
+    default: {
+      borderColor: color
+    }
+  });
+
+  return (
+    <View style={styles.targetRingBlock}>
+      <View style={[styles.targetRing, ringStyle]}>
+        <View style={styles.targetRingInner}>
+          <Text style={styles.targetRingValue}>{round(percent, 0)}%</Text>
+        </View>
+      </View>
+    </View>
+  );
+}
+
+function FuelingCanvas({
+  activeBottleId,
+  bottleCalculations,
+  bottles,
+  items,
+  onAddBottle,
+  onOpenAddModal,
+  onRemoveBottle,
+  onRemoveItem,
+  onSelectBottle,
+  onUpdateBottle
+}: {
+  activeBottleId: string;
+  bottleCalculations: BottleCalculation[];
+  bottles: DraftBottle[];
+  items: DraftItem[];
+  onAddBottle: (sizeMl?: number, label?: string) => void;
+  onOpenAddModal: (target: { bottleId?: string; mode: "bottle" | "carried" }) => void;
+  onRemoveBottle: (bottleId: string) => void;
+  onRemoveItem: (itemId: string) => void;
+  onSelectBottle: (bottleId: string) => void;
+  onUpdateBottle: (bottleId: string, patch: Partial<DraftBottle>) => void;
+}) {
+  const { language } = useLanguage();
+  const copy = nutritionCopy[language];
+  const carriedItems = items.filter((item) => item.location !== "bottle");
+
+  return (
+    <Card style={styles.fuelingCanvas}>
+      <View style={styles.canvasToolbar}>
+        <View>
+          <Text style={styles.canvasTitle}>{copy.strategyBoard}</Text>
+          <Text style={styles.canvasSubtitle}>{language === "es" ? "Llena caramanolas y separa lo que vas a llevar." : "Fill bottles and separate what you carry."}</Text>
+        </View>
+        <View style={styles.canvasActions}>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.bottleSizeRail}>
+            {bottleSizes.map((size) => (
+              <Pressable
+                accessibilityRole="button"
+                key={size.label}
+                onPress={() => onAddBottle(size.value, size.label)}
+                style={styles.sizeChip}
+              >
+                <Text style={styles.sizeChipText}>{size.label}</Text>
+              </Pressable>
+            ))}
+          </ScrollView>
+          <Button onPress={() => onOpenAddModal({ mode: "carried" })} variant="secondary">
+            {copy.addFood}
+          </Button>
+        </View>
+      </View>
+
+      <ScrollView horizontal showsHorizontalScrollIndicator contentContainerStyle={styles.fuelingScroller}>
+        {bottles.map((bottle) => {
+          const calculation = bottleCalculations.find((entry) => entry.bottle.id === bottle.id) ?? calculateBottleTotals(bottle, []);
+          const bottleItems = items.filter((item) => item.location === "bottle" && item.bottle_id === bottle.id);
+
+          return (
+            <BottleFuelCard
+              active={bottle.id === activeBottleId}
+              bottle={bottle}
+              calculation={calculation}
+              items={bottleItems}
+              key={bottle.id}
+              onAddIngredient={() => onOpenAddModal({ bottleId: bottle.id, mode: "bottle" })}
+              onRemoveBottle={() => onRemoveBottle(bottle.id)}
+              onRemoveItem={onRemoveItem}
+              onSelect={() => onSelectBottle(bottle.id)}
+              onUpdateBottle={(patch) => onUpdateBottle(bottle.id, patch)}
+            />
+          );
+        })}
+        <CarriedFuelCard items={carriedItems} onAddFood={() => onOpenAddModal({ mode: "carried" })} onRemoveItem={onRemoveItem} />
+        <Pressable accessibilityRole="button" onPress={() => onAddBottle()} style={styles.addBottleTile}>
+          <Text style={styles.addBottleTileMark}>+</Text>
+          <Text style={styles.addBottleTileText}>{copy.addBottle}</Text>
+        </Pressable>
+      </ScrollView>
+    </Card>
+  );
+}
+
+function ReadOnlyFuelingCanvas({
+  bottleCalculations,
+  bottles,
+  items
+}: {
+  bottleCalculations: BottleCalculation[];
+  bottles: DraftBottle[];
+  items: DraftItem[];
+}) {
+  const { language } = useLanguage();
+  const copy = nutritionCopy[language];
+  const carriedItems = items.filter((item) => item.location !== "bottle");
+
+  return (
+    <Card style={styles.fuelingCanvas}>
+      <View style={styles.canvasToolbar}>
+        <View>
+          <Text style={styles.canvasTitle}>{copy.strategyBoard}</Text>
+          <Text style={styles.canvasSubtitle}>{language === "es" ? "Esto es lo que debes preparar y llevar." : "What to prepare and carry."}</Text>
+        </View>
+      </View>
+
+      <ScrollView horizontal showsHorizontalScrollIndicator contentContainerStyle={styles.fuelingScroller}>
+        {bottles.map((bottle) => {
+          const calculation = bottleCalculations.find((entry) => entry.bottle.id === bottle.id) ?? calculateBottleTotals(bottle, []);
+          const bottleItems = items.filter((item) => item.location === "bottle" && item.bottle_id === bottle.id);
+
+          return <ReadOnlyBottleCard bottle={bottle} calculation={calculation} items={bottleItems} key={bottle.id} />;
+        })}
+        <ReadOnlyCarriedCard items={carriedItems} />
+      </ScrollView>
+    </Card>
+  );
+}
+
+function ReadOnlyBottleCard({
+  bottle,
+  calculation,
+  items
+}: {
+  bottle: DraftBottle;
+  calculation: BottleCalculation;
+  items: DraftItem[];
+}) {
+  const { language } = useLanguage();
+  const copy = nutritionCopy[language];
+
+  return (
+    <View style={[styles.fuelCard, styles.readOnlyFuelCard]}>
+      <View style={styles.fuelCardHeader}>
+        <View style={styles.fuelTitleBlock}>
+          <Text style={styles.fuelCardKicker}>{copy.bottle}</Text>
+          <Text style={styles.fuelCardTitle}>{bottle.name}</Text>
+          <Text style={styles.fuelCardMeta}>
+            {round(calculation.remainingWaterMl, 0)} ml {copy.remainingWater.toLowerCase()} / {round(calculation.carbsPerLiter, 0)} g/L
+          </Text>
+        </View>
+      </View>
+      <View style={styles.bottleHeroRow}>
+        <VirtualBottle bottle={bottle} calculation={calculation} items={items} large />
+        <View style={styles.bottleSideStats}>
+          <MiniMetric label={copy.capacity} value={`${round(bottle.bottle_size_ml, 0)} ml`} />
+          <MiniMetric label={copy.usedByIngredients} value={`${round(calculation.totalUsedVolumeMl, 0)} ml`} />
+          <MiniMetric label={language === "es" ? "Conc." : "Conc."} value={`${round(calculation.carbsPerLiter, 0)} g/L`} />
+        </View>
+      </View>
+      <NutrientBars
+        calories={calculation.totalCalories}
+        carbs={calculation.totalCarbs}
+        fluids={bottle.bottle_size_ml}
+        sodium={calculation.totalSodiumMg}
+      />
+      <IngredientComposition items={items} onRemoveItem={() => undefined} readonly />
+    </View>
+  );
+}
+
+function ReadOnlyCarriedCard({ items }: { items: DraftItem[] }) {
+  const { language } = useLanguage();
+  const copy = nutritionCopy[language];
+  const calculated = items.map((item) => calculateNutritionItem(item.product, stripDraftItem(item)));
+  const carbs = calculated.reduce((total, item) => total + item.calculated_carbs, 0);
+  const sodium = calculated.reduce((total, item) => total + item.calculated_sodium_mg, 0);
+  const calories = calculated.reduce((total, item) => total + item.calculated_calories, 0);
+  const fluids = calculated.reduce((total, item) => total + item.calculated_volume_ml, 0);
+
+  return (
+    <View style={[styles.fuelCard, styles.carriedFuelCard, styles.readOnlyFuelCard]}>
+      <View style={styles.fuelCardHeader}>
+        <View style={styles.fuelTitleBlock}>
+          <Text style={styles.fuelCardKicker}>{copy.carried}</Text>
+          <Text style={styles.fuelCardTitle}>{copy.foodCarried}</Text>
+          <Text style={styles.fuelCardMeta}>{copy.foodCarriedBody}</Text>
+        </View>
+      </View>
+      <NutrientBars calories={calories} carbs={carbs} fluids={fluids} sodium={sodium} />
+      <IngredientComposition items={items} onRemoveItem={() => undefined} readonly />
+    </View>
+  );
+}
+
+function BottleFuelCard({
+  active,
+  bottle,
+  calculation,
+  items,
+  onAddIngredient,
+  onRemoveBottle,
+  onRemoveItem,
+  onSelect,
+  onUpdateBottle
+}: {
+  active: boolean;
+  bottle: DraftBottle;
+  calculation: BottleCalculation;
+  items: DraftItem[];
+  onAddIngredient: () => void;
+  onRemoveBottle: () => void;
+  onRemoveItem: (itemId: string) => void;
+  onSelect: () => void;
+  onUpdateBottle: (patch: Partial<DraftBottle>) => void;
+}) {
+  const { language } = useLanguage();
+  const copy = nutritionCopy[language];
+
+  return (
+    <Pressable accessibilityRole="button" onPress={onSelect} style={[styles.fuelCard, active && styles.fuelCardActive]}>
+      <View style={styles.fuelCardHeader}>
+        <View style={styles.fuelTitleBlock}>
+          <Text style={styles.fuelCardKicker}>{active ? (language === "es" ? "Seleccionada" : "Selected") : copy.bottle}</Text>
+          <Text style={styles.fuelCardTitle}>{bottle.name}</Text>
+          <Text style={styles.fuelCardMeta}>
+            {round(calculation.remainingWaterMl, 0)} ml {copy.remainingWater.toLowerCase()} / {round(calculation.carbsPerLiter, 0)} g/L
+          </Text>
+        </View>
+        <Button onPress={onAddIngredient}>{copy.addIngredient}</Button>
+      </View>
+
+      <View style={styles.bottleHeroRow}>
+        <VirtualBottle bottle={bottle} calculation={calculation} items={items} large />
+        <View style={styles.bottleSideStats}>
+          <MiniMetric label={copy.capacity} value={`${round(bottle.bottle_size_ml, 0)} ml`} />
+          <MiniMetric label={copy.usedByIngredients} value={`${round(calculation.totalUsedVolumeMl, 0)} ml`} />
+          <MiniMetric label={language === "es" ? "Conc." : "Conc."} value={`${round(calculation.carbsPerLiter, 0)} g/L`} />
+        </View>
+      </View>
+
+      <View style={styles.compactEditRow}>
+        <View style={styles.strategyNameField}>
+          <Field label={copy.bottleName} onChangeText={(name) => onUpdateBottle({ name })} value={bottle.name} />
+        </View>
+        <View style={styles.strategySizeField}>
+          <Field
+            inputMode="numeric"
+            label={copy.bottleSizeMl}
+            onChangeText={(value) => onUpdateBottle({ bottle_size_ml: Math.max(0, parseOptionalNumber(value) ?? 0) })}
+            value={numberToInput(bottle.bottle_size_ml)}
+          />
+        </View>
+      </View>
+
+      <NutrientBars
+        calories={calculation.totalCalories}
+        carbs={calculation.totalCarbs}
+        fluids={bottle.bottle_size_ml}
+        sodium={calculation.totalSodiumMg}
+      />
+      <IngredientComposition items={items} onRemoveItem={onRemoveItem} />
+      <Button onPress={onRemoveBottle} variant="danger">
+        {copy.remove}
+      </Button>
+    </Pressable>
+  );
+}
+
+function CarriedFuelCard({
+  items,
+  onAddFood,
+  onRemoveItem
+}: {
+  items: DraftItem[];
+  onAddFood: () => void;
+  onRemoveItem: (itemId: string) => void;
+}) {
+  const { language } = useLanguage();
+  const copy = nutritionCopy[language];
+  const calculated = items.map((item) => calculateNutritionItem(item.product, stripDraftItem(item)));
+  const carbs = calculated.reduce((total, item) => total + item.calculated_carbs, 0);
+  const sodium = calculated.reduce((total, item) => total + item.calculated_sodium_mg, 0);
+  const calories = calculated.reduce((total, item) => total + item.calculated_calories, 0);
+  const fluids = calculated.reduce((total, item) => total + item.calculated_volume_ml, 0);
+
+  return (
+    <View style={[styles.fuelCard, styles.carriedFuelCard]}>
+      <View style={styles.fuelCardHeader}>
+        <View style={styles.fuelTitleBlock}>
+          <Text style={styles.fuelCardKicker}>{copy.carried}</Text>
+          <Text style={styles.fuelCardTitle}>{copy.foodCarried}</Text>
+          <Text style={styles.fuelCardMeta}>{copy.foodCarriedBody}</Text>
+        </View>
+        <Button onPress={onAddFood}>{copy.addFood}</Button>
+      </View>
+      <NutrientBars calories={calories} carbs={carbs} fluids={fluids} sodium={sodium} />
+      <IngredientComposition items={items} onRemoveItem={onRemoveItem} />
+    </View>
+  );
+}
+
+function AddNutritionModal({
+  bottles,
+  customProductCount,
+  onAddProduct,
+  onClose,
+  onCreateOrUpdateProduct,
+  onDeleteProduct,
+  products,
+  target
+}: {
+  bottles: DraftBottle[];
+  customProductCount: number;
+  onAddProduct: (product: NutritionProduct, location: NutritionPlanItemLocation, bottleId?: string | null, quantity?: number) => void;
+  onClose: () => void;
+  onCreateOrUpdateProduct: (input: NutritionProductInput, productId?: string) => Promise<NutritionProduct>;
+  onDeleteProduct: (productId: string) => Promise<void>;
+  products: NutritionProduct[];
+  target: { bottleId?: string; mode: "bottle" | "carried" } | null;
+}) {
+  const { language } = useLanguage();
+  const copy = nutritionCopy[language];
+  const [productForm, setProductForm] = useState<ProductFormMode>({ visible: false });
+  const [productId, setProductId] = useState("");
+  const [quantity, setQuantity] = useState("1");
+  const [location, setLocation] = useState<NutritionPlanItemLocation>("during");
+  const [error, setError] = useState<string | null>(null);
+  const filteredProducts = useMemo(() => {
+    if (target?.mode === "bottle") {
+      return products.filter((product) => ["bottle_ingredient", "powder", "drink", "gel", "custom"].includes(product.category));
+    }
+
+    return products.filter((product) => product.category !== "bottle_ingredient" && product.category !== "powder");
+  }, [products, target?.mode]);
+  const selectedProduct = filteredProducts.find((product) => product.id === productId) ?? filteredProducts[0] ?? null;
+  const targetBottle = bottles.find((bottle) => bottle.id === target?.bottleId);
+
+  useEffect(() => {
+    if (!target) {
+      return;
+    }
+
+    const nextProduct = filteredProducts[0];
+    setProductId(nextProduct?.id ?? "");
+    setQuantity(numberToInput(nextProduct?.default_serving_size ?? 1));
+    setLocation(target.mode === "bottle" ? "bottle" : "during");
+    setProductForm({ visible: false });
+    setError(null);
+  }, [filteredProducts, target]);
+
+  useEffect(() => {
+    if (selectedProduct) {
+      setQuantity(numberToInput(selectedProduct.default_serving_size ?? 1));
+    }
+  }, [selectedProduct]);
+
+  async function submitProduct(input: NutritionProductInput, productIdToUpdate?: string) {
+    try {
+      const product = await onCreateOrUpdateProduct(input, productIdToUpdate);
+      setProductId(product.id);
+      setProductForm({ visible: false });
+      setError(null);
+    } catch (submitError) {
+      setError(getErrorMessage(submitError));
+    }
+  }
+
+  function confirmDeleteProduct(product: NutritionProduct) {
+    Alert.alert(copy.deleteCustomProduct, copy.deleteCustomProductBody(product.name), [
+      { text: copy.cancel, style: "cancel" },
+      {
+        text: copy.delete,
+        style: "destructive",
+        onPress: () => {
+          onDeleteProduct(product.id).catch((deleteError) => setError(getErrorMessage(deleteError)));
+        }
+      }
+    ]);
+  }
+
+  function addSelectedProduct() {
+    if (!selectedProduct || !target) {
+      return;
+    }
+
+    onAddProduct(selectedProduct, target.mode === "bottle" ? "bottle" : location, target.mode === "bottle" ? target.bottleId ?? null : null, parseOptionalNumber(quantity) ?? undefined);
+    onClose();
+  }
+
+  return (
+    <Modal animationType="fade" onRequestClose={onClose} transparent visible={Boolean(target)}>
+      <View style={styles.modalOverlay}>
+        <View style={styles.addModal}>
+          <View style={styles.modalHeader}>
+            <View>
+              <Text style={styles.modalTitle}>{target?.mode === "bottle" ? copy.addIngredient : copy.addFood}</Text>
+              <Text style={styles.modalMeta}>{targetBottle?.name ?? copy.foodCarried}</Text>
+            </View>
+            <Button onPress={onClose} variant="secondary">
+              {copy.close}
+            </Button>
+          </View>
+
+          {productForm.visible ? (
+            <CustomProductForm
+              initialProduct={productForm.product}
+              onCancel={() => setProductForm({ visible: false })}
+              onSubmit={submitProduct}
+            />
+          ) : (
+            <View style={styles.modalForm}>
+              <SelectField
+                label={copy.itemToAdd}
+                onValueChange={setProductId}
+                options={filteredProducts.map((product) => ({ label: product.name, value: product.id }))}
+                value={productId}
+              />
+              {target?.mode === "carried" ? (
+                <SelectField
+                  label={copy.location}
+                  onValueChange={(value) => setLocation(toLocation(value))}
+                  options={getLocationOptions(language).filter((option) => option.value !== "bottle")}
+                  value={location}
+                />
+              ) : null}
+              <Field inputMode="numeric" label={language === "es" ? "Cantidad" : "Quantity"} onChangeText={setQuantity} value={quantity} />
+              {selectedProduct ? (
+                <View style={styles.selectedProductPreview}>
+                  <View style={[styles.ingredientDot, { backgroundColor: getProductColor(selectedProduct) }]} />
+                  <View style={styles.simpleItemCopy}>
+                    <Text style={styles.simpleItemTitle}>{selectedProduct.name}</Text>
+                    <Text style={styles.simpleItemMeta}>
+                      {round(selectedProduct.carbs_per_serving, 0)} g {copy.carbs.toLowerCase()} / {round(selectedProduct.sodium_mg_per_serving, 0)} mg {copy.sodium.toLowerCase()} / {round(selectedProduct.calories_per_serving, 0)} kcal
+                    </Text>
+                  </View>
+                </View>
+              ) : null}
+              <NutrientBars
+                calories={selectedProduct?.calories_per_serving ?? 0}
+                carbs={selectedProduct?.carbs_per_serving ?? 0}
+                fluids={selectedProduct?.liquid_volume_ml_per_serving ?? 0}
+                sodium={selectedProduct?.sodium_mg_per_serving ?? 0}
+              />
+              <Inline>
+                <Button onPress={addSelectedProduct}>{copy.add}</Button>
+                <Button onPress={() => setProductForm({ visible: true })} variant="secondary">
+                  {copy.newCustomProduct}
+                </Button>
+                <Pill label={`${customProductCount}/${MAX_CUSTOM_NUTRITION_PRODUCTS}`} tone="blue" />
+              </Inline>
+              {selectedProduct?.product_scope === "user" ? (
+                <Inline>
+                  <Button onPress={() => setProductForm({ product: selectedProduct, visible: true })} variant="ghost">
+                    {copy.edit}
+                  </Button>
+                  <Button onPress={() => confirmDeleteProduct(selectedProduct)} variant="danger">
+                    {copy.delete}
+                  </Button>
+                </Inline>
+              ) : null}
+            </View>
+          )}
+          {error ? <Text selectable style={styles.error}>{error}</Text> : null}
+        </View>
+      </View>
+    </Modal>
+  );
+}
+
+function NutrientBars({
+  calories,
+  carbs,
+  fluids,
+  sodium
+}: {
+  calories: number;
+  carbs: number;
+  fluids: number;
+  sodium: number;
+}) {
+  const { language } = useLanguage();
+  const copy = nutritionCopy[language];
+  const max = Math.max(carbs, fluids / 10, sodium / 10, calories / 4, 1);
+
+  return (
+    <View style={styles.nutrientBars}>
+      <CompactNutritionBar color={colors.accent} label={copy.carbs} max={max} unit="g" value={carbs} />
+      <CompactNutritionBar color="#51d9df" label={copy.fluids} max={max} unit="ml" value={fluids} scale={10} />
+      <CompactNutritionBar color={colors.amber} label={copy.sodium} max={max} unit="mg" value={sodium} scale={10} />
+      <CompactNutritionBar color={colors.coral} label={copy.calories} max={max} unit="kcal" value={calories} scale={4} />
+    </View>
+  );
+}
+
+function CompactNutritionBar({
+  color,
+  label,
+  max,
+  scale = 1,
+  unit,
+  value
+}: {
+  color: string;
+  label: string;
+  max: number;
+  scale?: number;
+  unit: string;
+  value: number;
+}) {
+  const visualValue = value / scale;
+  const width = Math.min(100, Math.max(4, visualValue / max * 100));
+
+  return (
+    <View style={styles.compactBarRow}>
+      <View style={styles.compactBarLabelRow}>
+        <Text style={styles.compactBarLabel}>{label}</Text>
+        <Text style={styles.compactBarValue}>
+          {round(value, 0)} {unit}
+        </Text>
+      </View>
+      <View style={styles.compactBarTrack}>
+        <View style={[styles.compactBarFill, { backgroundColor: color, width: `${width}%` }]} />
+      </View>
+    </View>
+  );
+}
+
+function IngredientComposition({
+  items,
+  onRemoveItem,
+  readonly
+}: {
+  items: DraftItem[];
+  onRemoveItem: (itemId: string) => void;
+  readonly?: boolean;
+}) {
+  const { language } = useLanguage();
+  const copy = nutritionCopy[language];
+
+  if (!items.length) {
+    return <Text style={styles.helperCopy}>{copy.noItemsAssigned}</Text>;
+  }
+
+  return (
+    <View style={styles.compositionList}>
+      <Text style={styles.compositionTitle}>{copy.composition}</Text>
+      {items.map((item, index) => {
+        const calculated = calculateNutritionItem(item.product, stripDraftItem(item));
+        const color = getProductColor(item.product, index);
+
+        return (
+          <View key={item.id} style={styles.compositionRow}>
+            <View style={[styles.ingredientDot, { backgroundColor: color }]} />
+            <View style={styles.simpleItemCopy}>
+              <Text style={styles.simpleItemTitle}>{item.product.name}</Text>
+              <Text style={styles.simpleItemMeta}>
+                {item.quantity} {item.unit ?? (language === "es" ? "porcion" : "serving")} / {round(calculated.calculated_carbs, 0)} g {copy.carbs.toLowerCase()} / {round(calculated.calculated_sodium_mg, 0)} mg {copy.sodium.toLowerCase()}
+              </Text>
+            </View>
+            {readonly ? null : (
+              <Pressable accessibilityRole="button" onPress={() => onRemoveItem(item.id)} style={styles.removeItemButton}>
+                <Text style={styles.removeItemButtonText}>x</Text>
+              </Pressable>
+            )}
+          </View>
+        );
+      })}
+    </View>
+  );
+}
+
+export function BottleStrategyBoard({
   activeBottleId,
   bottleCalculations,
   bottles,
@@ -1538,7 +2390,7 @@ function CarriedFoodStrategyCard({
   );
 }
 
-function ActiveBottleFocus({
+export function ActiveBottleFocus({
   bottle,
   calculation,
   draft,
@@ -1760,10 +2612,12 @@ export function BottleBuilder({
 export function VirtualBottle({
   bottle,
   calculation,
+  items = [],
   large
 }: {
   bottle: DraftBottle | NutritionPlanBottleInput;
   calculation: BottleCalculation;
+  items?: DraftItem[];
   large?: boolean;
 }) {
   const { language } = useLanguage();
@@ -1775,17 +2629,48 @@ export function VirtualBottle({
     ? Math.min(100, Math.max(0, calculation.remainingWaterMl / bottle.bottle_size_ml * 100))
     : 0;
   const overfilled = calculation.overfilled;
+  const layers = items.map((item, index) => {
+    const calculated = calculateNutritionItem(item.product, stripDraftItem(item));
+    const rawPercent = bottle.bottle_size_ml > 0 ? calculated.calculated_volume_ml / bottle.bottle_size_ml * 100 : 0;
+
+    return {
+      color: getProductColor(item.product, index),
+      height: Math.max(calculated.calculated_volume_ml > 0 ? rawPercent : calculated.calculated_carbs > 0 ? 3 : 1.5, 1.5),
+      id: item.id
+    };
+  });
+  let layerOffset = 0;
 
   return (
     <View style={[styles.virtualBottleBlock, large && styles.virtualBottleBlockLarge]}>
       <View style={[styles.bottleCap, large && styles.bottleCapLarge, overfilled && styles.bottleCapDanger]} />
       <View style={[styles.virtualBottle, large && styles.virtualBottleLarge, overfilled && styles.virtualBottleDanger]}>
         <View style={[styles.waterZone, { height: `${waterPercent}%` }]} />
+        {layers.map((layer) => {
+          const bottom = layerOffset;
+          layerOffset += layer.height;
+
+          return (
+            <View
+              key={layer.id}
+              style={[
+                styles.bottleLayer,
+                bottleFillMotionStyle,
+                {
+                  backgroundColor: layer.color,
+                  bottom: `${bottom}%`,
+                  height: `${Math.min(layer.height, 100)}%`
+                }
+              ]}
+            />
+          );
+        })}
         <View
           style={[
             styles.bottleFill,
             bottleFillMotionStyle,
             overfilled && styles.bottleFillDanger,
+            layers.length > 0 && styles.bottleFillTransparent,
             { height: `${fillPercent}%` }
           ]}
         />
@@ -1795,10 +2680,20 @@ export function VirtualBottle({
         {round(calculation.totalUsedVolumeMl, 0)} ml {language === "es" ? "usados" : "used"}
       </Text>
       <View style={styles.bottleBadgeRow}>
-        <Pill label={`${round(calculation.totalCarbs, 0)} g ${copy.carbs.toLowerCase()}`} tone="primary" />
-        <Pill label={`${round(calculation.totalSodiumMg, 0)} mg ${copy.sodium.toLowerCase()}`} tone="amber" />
-        <Pill label={`${round(calculation.totalCalories, 0)} kcal`} tone="blue" />
+        <BottleStatBadge label={`${round(calculation.totalCarbs, 0)} g ${language === "es" ? "carbos" : "carbs"}`} tone="primary" />
+        <BottleStatBadge label={`${round(calculation.totalSodiumMg, 0)} mg ${copy.sodium.toLowerCase()}`} tone="amber" />
+        <BottleStatBadge label={`${round(calculation.totalCalories, 0)} kcal`} tone="blue" />
       </View>
+    </View>
+  );
+}
+
+function BottleStatBadge({ label, tone }: { label: string; tone: "amber" | "blue" | "primary" }) {
+  return (
+    <View style={[styles.bottleStatBadge, tone === "amber" && styles.pillAmber, tone === "blue" && styles.pillBlue]}>
+      <Text style={[styles.bottleStatBadgeText, tone === "amber" && styles.pillTextAmber, tone === "blue" && styles.pillTextBlue]}>
+        {label}
+      </Text>
     </View>
   );
 }
@@ -2376,15 +3271,6 @@ export function SharePreviewCard({
   );
 }
 
-function MetricPill({ label, value }: { label: string; value: string }) {
-  return (
-    <View style={styles.metricPill}>
-      <Text style={styles.metricPillValue}>{value}</Text>
-      <Text style={styles.metricPillLabel}>{label}</Text>
-    </View>
-  );
-}
-
 function MiniMetric({ label, value }: { label: string; value: string }) {
   return (
     <View style={styles.miniMetric}>
@@ -2869,6 +3755,38 @@ function getIconTone(iconKey: NutritionIconKey) {
   }
 }
 
+function getProductColor(product: NutritionProduct, fallbackIndex = 0) {
+  const palette = ["#a7f23a", "#51d9df", "#f5a623", "#2f6fdf", "#f26f5e", "#8aa10f", "#00a48f", "#efc84a"];
+
+  switch (product.icon_key) {
+    case "honey":
+      return "#f5a623";
+    case "powder":
+      return "#2f6fdf";
+    case "sugar":
+      return "#a7f23a";
+    case "salt":
+      return "#f26f5e";
+    case "water":
+    case "drink":
+    case "bottle":
+      return "#51d9df";
+    case "gel":
+      return "#00a48f";
+    case "bar":
+    case "candy":
+      return "#8aa10f";
+    case "banana":
+    case "dates":
+    case "raisins":
+      return "#efc84a";
+    case "sandwich":
+      return "#c97943";
+    default:
+      return palette[fallbackIndex % palette.length];
+  }
+}
+
 function toActivityType(value: string): NutritionActivityType {
   return activityOptions.some((option) => option.value === value) ? (value as NutritionActivityType) : "cycling";
 }
@@ -3086,6 +4004,7 @@ const styles = StyleSheet.create({
     fontFamily,
     fontSize: 11,
     fontWeight: typography.weights.black,
+    lineHeight: 14,
     textTransform: "uppercase"
   },
   cardActions: {
@@ -3132,6 +4051,461 @@ const styles = StyleSheet.create({
     fontSize: 30,
     fontWeight: typography.weights.black,
     lineHeight: 36
+  },
+  planControlBar: {
+    gap: spacing.md,
+    padding: spacing.lg
+  },
+  planControlHeader: {
+    alignItems: "center",
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: spacing.md,
+    justifyContent: "space-between"
+  },
+  planControlTitleBlock: {
+    flex: 1,
+    gap: spacing.xs,
+    minWidth: 240
+  },
+  planControlTitle: {
+    color: colors.ink,
+    fontFamily,
+    fontSize: 20,
+    fontWeight: typography.weights.black,
+    lineHeight: 25
+  },
+  planControlMeta: {
+    color: colors.inkMuted,
+    fontFamily,
+    fontSize: 13,
+    fontWeight: typography.weights.bold
+  },
+  planControlSnapshot: {
+    alignItems: "center",
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: spacing.sm,
+    justifyContent: "flex-end"
+  },
+  collapseText: {
+    color: colors.primary,
+    fontFamily,
+    fontSize: 13,
+    fontWeight: typography.weights.black
+  },
+  planControlBody: {
+    borderTopColor: colors.border,
+    borderTopWidth: 1,
+    flexDirection: "row",
+    gap: spacing.lg,
+    paddingTop: spacing.md
+  },
+  planControlBodyCompact: {
+    flexDirection: "column"
+  },
+  planControlForm: {
+    flex: 1,
+    gap: spacing.md,
+    minWidth: 280
+  },
+  planControlTargets: {
+    flex: 1,
+    gap: spacing.md,
+    minWidth: 300
+  },
+  totalStrip: {
+    gap: spacing.md,
+    padding: spacing.md
+  },
+  totalStripHeaderCompact: {
+    alignItems: "center",
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: spacing.md,
+    justifyContent: "space-between"
+  },
+  totalStripLayout: {
+    alignItems: "center",
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: spacing.xl
+  },
+  totalStripLeft: {
+    flexBasis: 320,
+    gap: spacing.md
+  },
+  totalStripRight: {
+    flex: 1,
+    gap: spacing.md,
+    minWidth: 320
+  },
+  totalStripHeader: {
+    alignItems: "center",
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: spacing.md,
+    justifyContent: "space-between"
+  },
+  totalStripTitle: {
+    color: colors.ink,
+    fontFamily,
+    fontSize: 22,
+    fontWeight: typography.weights.black,
+    lineHeight: 28
+  },
+  totalMetricStrip: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: spacing.sm
+  },
+  totalMetricCard: {
+    alignItems: "center",
+    backgroundColor: colors.surfaceMuted,
+    borderColor: colors.border,
+    borderRadius: radii.lg,
+    borderWidth: 1,
+    flexBasis: 220,
+    flexDirection: "row",
+    flexGrow: 1,
+    gap: spacing.md,
+    padding: spacing.md
+  },
+  totalMetricCopy: {
+    flex: 1,
+    gap: 2,
+    minWidth: 0
+  },
+  totalMetricLabel: {
+    color: colors.ink,
+    fontFamily,
+    fontSize: 14,
+    fontWeight: typography.weights.black
+  },
+  totalMetricTotal: {
+    color: colors.ink,
+    fontFamily,
+    fontSize: 22,
+    fontVariant: ["tabular-nums"],
+    fontWeight: typography.weights.black,
+    lineHeight: 27
+  },
+  totalMetricTarget: {
+    color: colors.inkMuted,
+    fontFamily,
+    fontSize: 12,
+    fontVariant: ["tabular-nums"],
+    fontWeight: typography.weights.black,
+    lineHeight: 16
+  },
+  totalStripMetrics: {
+    flex: 1,
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: spacing.sm,
+    minWidth: 300
+  },
+  totalStripBars: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: spacing.md
+  },
+  ringGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: spacing.md
+  },
+  targetRingBlock: {
+    alignItems: "center",
+    gap: spacing.xs,
+    width: 54
+  },
+  targetRing: {
+    alignItems: "center",
+    backgroundColor: colors.surfaceStrong,
+    borderRadius: radii.round,
+    height: 54,
+    justifyContent: "center",
+    width: 54
+  },
+  targetRingInner: {
+    alignItems: "center",
+    backgroundColor: colors.surface,
+    borderRadius: radii.round,
+    height: 36,
+    justifyContent: "center",
+    width: 36
+  },
+  targetRingValue: {
+    color: colors.ink,
+    fontFamily,
+    fontSize: 12,
+    fontVariant: ["tabular-nums"],
+    fontWeight: typography.weights.black
+  },
+  targetRingLabel: {
+    color: colors.ink,
+    fontFamily,
+    fontSize: 11,
+    fontWeight: typography.weights.black,
+    textAlign: "center"
+  },
+  targetRingMeta: {
+    color: colors.inkMuted,
+    fontFamily,
+    fontSize: 10,
+    fontVariant: ["tabular-nums"],
+    fontWeight: typography.weights.bold,
+    textAlign: "center"
+  },
+  warningRail: {
+    gap: spacing.sm,
+    paddingRight: spacing.md
+  },
+  fuelingCanvas: {
+    gap: spacing.lg,
+    overflow: "hidden",
+    padding: spacing.lg
+  },
+  canvasToolbar: {
+    alignItems: "center",
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: spacing.md,
+    justifyContent: "space-between"
+  },
+  canvasTitle: {
+    color: colors.ink,
+    fontFamily,
+    fontSize: 26,
+    fontWeight: typography.weights.black,
+    lineHeight: 32
+  },
+  canvasSubtitle: {
+    color: colors.inkMuted,
+    fontFamily,
+    fontSize: 14,
+    fontWeight: typography.weights.bold,
+    lineHeight: 20
+  },
+  canvasActions: {
+    alignItems: "center",
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: spacing.md
+  },
+  bottleSizeRail: {
+    gap: spacing.sm,
+    paddingRight: spacing.sm
+  },
+  fuelingScroller: {
+    gap: spacing.lg,
+    paddingBottom: spacing.md,
+    paddingRight: spacing.lg
+  },
+  fuelCard: {
+    backgroundColor: colors.surface,
+    borderColor: colors.border,
+    borderRadius: radii.xl,
+    borderWidth: 1,
+    gap: spacing.lg,
+    minHeight: 660,
+    padding: spacing.lg,
+    width: 440,
+    ...shadows.soft
+  },
+  fuelCardActive: {
+    borderColor: colors.primary,
+    borderWidth: 2,
+    shadowColor: colors.primary
+  },
+  carriedFuelCard: {
+    backgroundColor: "#fffdf6",
+    borderColor: "#f3d596"
+  },
+  readOnlyFuelCard: {
+    minHeight: 560
+  },
+  fuelCardHeader: {
+    alignItems: "flex-start",
+    flexDirection: "row",
+    gap: spacing.md,
+    justifyContent: "space-between"
+  },
+  fuelTitleBlock: {
+    flex: 1,
+    gap: spacing.xs,
+    minWidth: 0
+  },
+  fuelCardKicker: {
+    color: colors.primary,
+    fontFamily,
+    fontSize: 11,
+    fontWeight: typography.weights.black,
+    textTransform: "uppercase"
+  },
+  fuelCardTitle: {
+    color: colors.ink,
+    fontFamily,
+    fontSize: 28,
+    fontWeight: typography.weights.black,
+    lineHeight: 34
+  },
+  fuelCardMeta: {
+    color: colors.inkMuted,
+    fontFamily,
+    fontSize: 13,
+    fontWeight: typography.weights.bold,
+    lineHeight: 18
+  },
+  bottleHeroRow: {
+    alignItems: "center",
+    flexDirection: "row",
+    gap: spacing.lg,
+    justifyContent: "center"
+  },
+  bottleSideStats: {
+    flex: 1,
+    gap: spacing.sm,
+    minWidth: 130
+  },
+  compactEditRow: {
+    flexDirection: "row",
+    gap: spacing.md
+  },
+  addBottleTile: {
+    alignItems: "center",
+    backgroundColor: colors.primaryMist,
+    borderColor: colors.borderStrong,
+    borderRadius: radii.xl,
+    borderStyle: "dashed",
+    borderWidth: 2,
+    gap: spacing.md,
+    justifyContent: "center",
+    minHeight: 660,
+    padding: spacing.xl,
+    width: 220
+  },
+  addBottleTileMark: {
+    color: colors.primary,
+    fontFamily,
+    fontSize: 44,
+    fontWeight: typography.weights.black,
+    lineHeight: 48
+  },
+  addBottleTileText: {
+    color: colors.primaryDark,
+    fontFamily,
+    fontSize: 17,
+    fontWeight: typography.weights.black,
+    textAlign: "center"
+  },
+  nutrientBars: {
+    backgroundColor: colors.surfaceMuted,
+    borderRadius: radii.lg,
+    gap: spacing.sm,
+    padding: spacing.md
+  },
+  compactBarRow: {
+    gap: spacing.xs
+  },
+  compactBarLabelRow: {
+    alignItems: "center",
+    flexDirection: "row",
+    justifyContent: "space-between"
+  },
+  compactBarLabel: {
+    color: colors.ink,
+    fontFamily,
+    fontSize: 12,
+    fontWeight: typography.weights.black
+  },
+  compactBarValue: {
+    color: colors.inkMuted,
+    fontFamily,
+    fontSize: 11,
+    fontWeight: typography.weights.black
+  },
+  compactBarTrack: {
+    backgroundColor: colors.surfaceStrong,
+    borderRadius: radii.round,
+    height: 8,
+    overflow: "hidden"
+  },
+  compactBarFill: {
+    borderRadius: radii.round,
+    height: "100%"
+  },
+  compositionList: {
+    gap: spacing.sm
+  },
+  compositionTitle: {
+    color: colors.ink,
+    fontFamily,
+    fontSize: 14,
+    fontWeight: typography.weights.black,
+    textTransform: "uppercase"
+  },
+  compositionRow: {
+    alignItems: "center",
+    backgroundColor: colors.surfaceMuted,
+    borderRadius: radii.md,
+    flexDirection: "row",
+    gap: spacing.md,
+    padding: spacing.md
+  },
+  ingredientDot: {
+    borderRadius: radii.round,
+    height: 18,
+    width: 18
+  },
+  modalOverlay: {
+    alignItems: "center",
+    backgroundColor: "rgba(7,18,28,0.46)",
+    flex: 1,
+    justifyContent: "center",
+    padding: spacing.lg
+  },
+  addModal: {
+    backgroundColor: colors.surface,
+    borderColor: colors.border,
+    borderRadius: radii.xl,
+    borderWidth: 1,
+    gap: spacing.lg,
+    maxWidth: 560,
+    padding: spacing.xl,
+    width: "100%",
+    ...shadows.medium
+  },
+  modalHeader: {
+    alignItems: "center",
+    flexDirection: "row",
+    gap: spacing.md,
+    justifyContent: "space-between"
+  },
+  modalTitle: {
+    color: colors.ink,
+    fontFamily,
+    fontSize: 24,
+    fontWeight: typography.weights.black,
+    lineHeight: 30
+  },
+  modalMeta: {
+    color: colors.inkMuted,
+    fontFamily,
+    fontSize: 13,
+    fontWeight: typography.weights.bold
+  },
+  modalForm: {
+    gap: spacing.md
+  },
+  selectedProductPreview: {
+    alignItems: "center",
+    backgroundColor: colors.primaryMist,
+    borderRadius: radii.md,
+    flexDirection: "row",
+    gap: spacing.md,
+    padding: spacing.md
   },
   builderGrid: {
     alignItems: "flex-start",
@@ -3491,6 +4865,15 @@ const styles = StyleSheet.create({
     position: "absolute",
     right: 0
   },
+  bottleLayer: {
+    left: 0,
+    opacity: 0.92,
+    position: "absolute",
+    right: 0
+  },
+  bottleFillTransparent: {
+    opacity: 0
+  },
   bottleFillDanger: {
     backgroundColor: colors.coral
   },
@@ -3514,7 +4897,23 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     flexWrap: "wrap",
     gap: spacing.xs,
-    justifyContent: "center"
+    justifyContent: "center",
+    maxWidth: "100%"
+  },
+  bottleStatBadge: {
+    backgroundColor: colors.primarySoft,
+    borderRadius: radii.round,
+    maxWidth: 150,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs
+  },
+  bottleStatBadgeText: {
+    color: colors.primaryDark,
+    fontFamily,
+    fontSize: 11,
+    fontWeight: typography.weights.black,
+    lineHeight: 14,
+    textAlign: "center"
   },
   itemListBlock: {
     gap: spacing.md
