@@ -328,6 +328,26 @@ export async function updateCustomNutritionProduct(
   return data as NutritionProduct;
 }
 
+export async function createGlobalNutritionProduct(input: NutritionProductInput): Promise<NutritionProduct> {
+  assertSupabaseConfigured();
+
+  const { data, error } = await supabase
+    .from("nutrition_products")
+    .insert({
+      ...toNutritionProductPayload(input),
+      product_scope: "global",
+      user_id: null
+    })
+    .select("*")
+    .single();
+
+  if (error) {
+    throw error;
+  }
+
+  return data as NutritionProduct;
+}
+
 export async function updateGlobalNutritionProduct(productId: string, input: NutritionProductInput): Promise<NutritionProduct> {
   assertSupabaseConfigured();
 
@@ -447,6 +467,8 @@ function toNutritionProductPayload(input: NutritionProductInput) {
     icon_key: input.icon_key ?? "custom_food",
     liquid_volume_ml_per_serving: input.liquid_volume_ml_per_serving ?? 0,
     name: input.name.trim(),
+    name_en: input.name_en?.trim() || input.name.trim(),
+    name_es: input.name_es?.trim() || input.name.trim(),
     notes: input.notes?.trim() || null,
     sodium_mg_per_serving: input.sodium_mg_per_serving ?? 0,
     weight_g_per_serving: input.weight_g_per_serving ?? 0

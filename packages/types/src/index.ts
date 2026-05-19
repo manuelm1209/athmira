@@ -184,6 +184,8 @@ export type NutritionPlan = {
 export type NutritionProduct = {
   id: string;
   name: string;
+  name_en: string | null;
+  name_es: string | null;
   category: NutritionProductCategory;
   product_scope: NutritionProductScope;
   user_id: string | null;
@@ -295,6 +297,8 @@ export type NutritionPlanItemInput = {
 
 export type NutritionProductInput = {
   name: string;
+  name_en?: string | null;
+  name_es?: string | null;
   category: NutritionProductCategory;
   default_serving_size?: number | null;
   default_serving_unit?: string | null;

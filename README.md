@@ -151,7 +151,7 @@ Current admin routes:
 
 - `/admin`: administration hub.
 - `/admin/users`: user creation, user review, role management, temporary passwords, bikes, and camera analysis review.
-- `/admin/nutrition-products`: global nutrition product composition editing.
+- `/admin/nutrition-products`: global nutrition product creation and composition editing.
 
 Admin capabilities:
 
@@ -163,7 +163,7 @@ Admin capabilities:
 - Review and edit user profile/preferences.
 - Review each user's bikes.
 - Review saved camera analysis sessions and measurements.
-- Edit global nutrition product serving, carbohydrate, calorie, sodium, liquid, and weight values.
+- Create and edit global nutrition products, including English and Spanish names plus serving, carbohydrate, calorie, sodium, liquid, and weight values.
 
 Admin Auth operations run through Vercel serverless endpoints in `/api/admin/*`. These endpoints verify the signed-in user's Supabase access token, check `admin_roles`, and only then use `SUPABASE_SERVICE_ROLE_KEY` server-side.
 

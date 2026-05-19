@@ -266,6 +266,8 @@ export type Database = {
         Row: {
           id: string;
           name: string;
+          name_en: string | null;
+          name_es: string | null;
           category: NutritionProductCategory;
           product_scope: NutritionProductScope;
           user_id: string | null;
@@ -285,6 +287,8 @@ export type Database = {
         Insert: {
           id?: string;
           name: string;
+          name_en?: string | null;
+          name_es?: string | null;
           category: NutritionProductCategory;
           product_scope: NutritionProductScope;
           user_id?: string | null;
@@ -303,6 +307,8 @@ export type Database = {
         };
         Update: {
           name?: string;
+          name_en?: string | null;
+          name_es?: string | null;
           category?: NutritionProductCategory;
           product_scope?: NutritionProductScope;
           user_id?: string | null;

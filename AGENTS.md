@@ -104,7 +104,7 @@ The main `/admin` route must stay as a minimal administration hub. It should sho
 Current dedicated admin pages:
 
 - `/admin/users` for user creation, user account review, role management, temporary passwords, bikes, and camera analysis review.
-- `/admin/nutrition-products` for editing global nutrition product composition values.
+- `/admin/nutrition-products` for creating and editing global nutrition products, including English and Spanish names plus composition values.
 
 When adding new admin functionality, add it as a dedicated admin route and link to it from the `/admin` hub. Keep privileged operations behind existing protected admin endpoints or RLS policies, depending on the operation.
 

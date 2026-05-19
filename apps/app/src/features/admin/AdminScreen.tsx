@@ -1,5 +1,6 @@
 import {
   createAdminManagedUser,
+  createGlobalNutritionProduct,
   getAdminUserDetail,
   listGlobalNutritionProducts,
   listAdminUsers,
@@ -42,11 +43,14 @@ type UserSort = "recent_analysis" | "name" | "created_at" | "analyses";
 
 type NutritionProductDraft = {
   caloriesPerServing: string;
+  category: NutritionProduct["category"];
   carbsPerServing: string;
   defaultServingSize: string;
   defaultServingUnit: string;
+  iconKey: NonNullable<NutritionProduct["icon_key"]>;
   liquidVolumeMlPerServing: string;
-  name: string;
+  nameEn: string;
+  nameEs: string;
   notes: string;
   sodiumMgPerServing: string;
   weightGPerServing: string;
@@ -64,11 +68,14 @@ const emptyProfileDraft: ProfileDraft = {
 
 const emptyNutritionProductDraft: NutritionProductDraft = {
   caloriesPerServing: "",
+  category: "solid_food",
   carbsPerServing: "",
   defaultServingSize: "",
   defaultServingUnit: "",
+  iconKey: "custom_food",
   liquidVolumeMlPerServing: "",
-  name: "",
+  nameEn: "",
+  nameEs: "",
   notes: "",
   sodiumMgPerServing: "",
   weightGPerServing: ""
@@ -77,15 +84,22 @@ const emptyNutritionProductDraft: NutritionProductDraft = {
 const adminNutritionCopy = {
   en: {
     calories: "Calories",
+    category: "Category",
     carbs: "Carbs",
+    createProduct: "New product",
+    editExistingProduct: "Edit existing product",
+    englishName: "English name",
+    icon: "Icon",
     liquid: "Liquid ml",
-    name: "Product name",
+    nameRequired: "English and Spanish names are required.",
     nutritionProductsAction: "Edit products",
     nutritionProducts: "Nutrition products",
     nutritionProductsBody: "Edit the global foods used by Nutrition Planning. These values affect new additions to user plans.",
     notes: "Notes",
     productSaved: "Nutrition product updated.",
+    productCreated: "Nutrition product created.",
     saveProduct: "Save product",
+    spanishName: "Spanish name",
     servingSize: "Serving size",
     servingUnit: "Serving unit",
     sodium: "Sodium mg",
@@ -93,15 +107,22 @@ const adminNutritionCopy = {
   },
   es: {
     calories: "Calorias",
+    category: "Categoria",
     carbs: "Carbohidratos",
+    createProduct: "Nuevo producto",
+    editExistingProduct: "Editar producto existente",
+    englishName: "Nombre en ingles",
+    icon: "Icono",
     liquid: "Liquido ml",
-    name: "Nombre del producto",
+    nameRequired: "El nombre en ingles y espanol es obligatorio.",
     nutritionProductsAction: "Editar productos",
     nutritionProducts: "Productos de nutricion",
     nutritionProductsBody: "Edita los alimentos globales usados en Plan de nutricion. Estos valores afectan nuevas adiciones en los planes.",
     notes: "Notas",
     productSaved: "Producto de nutricion actualizado.",
+    productCreated: "Producto de nutricion creado.",
     saveProduct: "Guardar producto",
+    spanishName: "Nombre en espanol",
     servingSize: "Tamano de porcion",
     servingUnit: "Unidad de porcion",
     sodium: "Sodio mg",
@@ -154,6 +175,7 @@ export function AdminScreen({ mode = "hub" }: { mode?: AdminMode }) {
   const [nutritionProducts, setNutritionProducts] = useState<NutritionProduct[]>([]);
   const [selectedUser, setSelectedUser] = useState<AdminUserDetail | null>(null);
   const [selectedNutritionProductId, setSelectedNutritionProductId] = useState<string>("");
+  const [creatingNutritionProductMode, setCreatingNutritionProductMode] = useState(false);
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const [profileDraft, setProfileDraft] = useState<ProfileDraft>(emptyProfileDraft);
   const [nutritionProductDraft, setNutritionProductDraft] = useState<NutritionProductDraft>(emptyNutritionProductDraft);
@@ -229,6 +251,10 @@ export function AdminScreen({ mode = "hub" }: { mode?: AdminMode }) {
   }, [mode]);
 
   useEffect(() => {
+    if (creatingNutritionProductMode) {
+      return;
+    }
+
     if (!selectedNutritionProduct) {
       setNutritionProductDraft(emptyNutritionProductDraft);
       return;
@@ -236,7 +262,7 @@ export function AdminScreen({ mode = "hub" }: { mode?: AdminMode }) {
 
     setNutritionProductDraft(toNutritionProductDraft(selectedNutritionProduct));
     setSelectedNutritionProductId(selectedNutritionProduct.id);
-  }, [selectedNutritionProduct]);
+  }, [creatingNutritionProductMode, selectedNutritionProduct]);
 
   async function loadUsers(selectUserId?: string) {
     setLoadingUsers(true);
@@ -262,6 +288,7 @@ export function AdminScreen({ mode = "hub" }: { mode?: AdminMode }) {
       const products = await listGlobalNutritionProducts();
       setNutritionProducts(products);
       setSelectedNutritionProductId(selectProductId ?? selectedNutritionProductId ?? products[0]?.id ?? "");
+      setCreatingNutritionProductMode(false);
     } catch (loadError) {
       setError(getErrorMessage(loadError));
     }
@@ -374,7 +401,7 @@ export function AdminScreen({ mode = "hub" }: { mode?: AdminMode }) {
   }
 
   async function saveNutritionProduct() {
-    if (!selectedNutritionProduct) {
+    if (!selectedNutritionProduct && !creatingNutritionProductMode) {
       return;
     }
 
@@ -383,26 +410,33 @@ export function AdminScreen({ mode = "hub" }: { mode?: AdminMode }) {
     setMessage(null);
 
     try {
-      if (!nutritionProductDraft.name.trim()) {
-        throw new Error(nutritionCopy.name);
+      const nameEn = nutritionProductDraft.nameEn.trim();
+      const nameEs = nutritionProductDraft.nameEs.trim();
+
+      if (!nameEn || !nameEs) {
+        throw new Error(nutritionCopy.nameRequired);
       }
 
       const input: NutritionProductInput = {
         calories_per_serving: parseOptionalNumber(nutritionProductDraft.caloriesPerServing) ?? 0,
         carbs_per_serving: parseOptionalNumber(nutritionProductDraft.carbsPerServing) ?? 0,
-        category: selectedNutritionProduct.category,
+        category: nutritionProductDraft.category,
         default_serving_size: parseOptionalNumber(nutritionProductDraft.defaultServingSize),
         default_serving_unit: nutritionProductDraft.defaultServingUnit.trim() || null,
-        icon_key: selectedNutritionProduct.icon_key,
+        icon_key: nutritionProductDraft.iconKey,
         liquid_volume_ml_per_serving: parseOptionalNumber(nutritionProductDraft.liquidVolumeMlPerServing) ?? 0,
-        name: nutritionProductDraft.name.trim(),
+        name: nameEn,
+        name_en: nameEn,
+        name_es: nameEs,
         notes: nutritionProductDraft.notes.trim() || null,
         sodium_mg_per_serving: parseOptionalNumber(nutritionProductDraft.sodiumMgPerServing) ?? 0,
         weight_g_per_serving: parseOptionalNumber(nutritionProductDraft.weightGPerServing) ?? 0
       };
-      const updated = await updateGlobalNutritionProduct(selectedNutritionProduct.id, input);
-      setMessage(nutritionCopy.productSaved);
-      await loadNutritionProducts(updated.id);
+      const saved = creatingNutritionProductMode
+        ? await createGlobalNutritionProduct(input)
+        : await updateGlobalNutritionProduct(selectedNutritionProduct!.id, input);
+      setMessage(creatingNutritionProductMode ? nutritionCopy.productCreated : nutritionCopy.productSaved);
+      await loadNutritionProducts(saved.id);
     } catch (saveError) {
       setError(getErrorMessage(saveError));
     } finally {
@@ -466,21 +500,64 @@ export function AdminScreen({ mode = "hub" }: { mode?: AdminMode }) {
             <View style={styles.productSelectField}>
               <SelectField
                 label={nutritionCopy.nutritionProducts}
-                onValueChange={setSelectedNutritionProductId}
+                onValueChange={(productId) => {
+                  setCreatingNutritionProductMode(false);
+                  setSelectedNutritionProductId(productId);
+                }}
                 options={nutritionProducts.map((product) => ({ label: getAdminProductDisplayName(product, language), value: product.id }))}
-                value={selectedNutritionProduct?.id ?? ""}
+                value={creatingNutritionProductMode ? "" : selectedNutritionProduct?.id ?? ""}
               />
             </View>
           </View>
-          {selectedNutritionProduct ? (
+          <Inline>
+            <Button
+              onPress={() => {
+                setCreatingNutritionProductMode(false);
+                setNutritionProductDraft(selectedNutritionProduct ? toNutritionProductDraft(selectedNutritionProduct) : emptyNutritionProductDraft);
+              }}
+              variant={creatingNutritionProductMode ? "secondary" : "ghost"}
+            >
+              {nutritionCopy.editExistingProduct}
+            </Button>
+            <Button
+              onPress={() => {
+                setCreatingNutritionProductMode(true);
+                setSelectedNutritionProductId("");
+                setNutritionProductDraft(emptyNutritionProductDraft);
+              }}
+              variant={creatingNutritionProductMode ? "ghost" : "secondary"}
+            >
+              {nutritionCopy.createProduct}
+            </Button>
+          </Inline>
+          {selectedNutritionProduct || creatingNutritionProductMode ? (
             <View style={styles.formGrid}>
               <View style={styles.productWideField}>
                 <Field
-                  label={nutritionCopy.name}
-                  onChangeText={(name) => setNutritionProductDraft((draft) => ({ ...draft, name }))}
-                  value={nutritionProductDraft.name}
+                  label={nutritionCopy.englishName}
+                  onChangeText={(nameEn) => setNutritionProductDraft((draft) => ({ ...draft, nameEn }))}
+                  value={nutritionProductDraft.nameEn}
                 />
               </View>
+              <View style={styles.productWideField}>
+                <Field
+                  label={nutritionCopy.spanishName}
+                  onChangeText={(nameEs) => setNutritionProductDraft((draft) => ({ ...draft, nameEs }))}
+                  value={nutritionProductDraft.nameEs}
+                />
+              </View>
+              <SelectField
+                label={nutritionCopy.category}
+                onValueChange={(category) => setNutritionProductDraft((draft) => ({ ...draft, category: toNutritionProductCategory(category) }))}
+                options={adminNutritionCategoryOptions(language)}
+                value={nutritionProductDraft.category}
+              />
+              <SelectField
+                label={nutritionCopy.icon}
+                onValueChange={(iconKey) => setNutritionProductDraft((draft) => ({ ...draft, iconKey: toNutritionIconKey(iconKey) }))}
+                options={adminNutritionIconOptions()}
+                value={nutritionProductDraft.iconKey}
+              />
               <Field
                 inputMode="numeric"
                 label={nutritionCopy.servingSize}
@@ -916,11 +993,14 @@ function toProfileDraft(user: AdminUserDetail): ProfileDraft {
 function toNutritionProductDraft(product: NutritionProduct): NutritionProductDraft {
   return {
     caloriesPerServing: numberToInput(product.calories_per_serving),
+    category: product.category,
     carbsPerServing: numberToInput(product.carbs_per_serving),
     defaultServingSize: numberToInput(product.default_serving_size),
     defaultServingUnit: product.default_serving_unit ?? "",
+    iconKey: product.icon_key ?? "custom_food",
     liquidVolumeMlPerServing: numberToInput(product.liquid_volume_ml_per_serving),
-    name: product.name,
+    nameEn: product.name_en ?? product.name,
+    nameEs: product.name_es ?? product.name,
     notes: product.notes ?? "",
     sodiumMgPerServing: numberToInput(product.sodium_mg_per_serving),
     weightGPerServing: numberToInput(product.weight_g_per_serving)
@@ -928,7 +1008,7 @@ function toNutritionProductDraft(product: NutritionProduct): NutritionProductDra
 }
 
 function getAdminProductDisplayName(product: NutritionProduct, language: "en" | "es") {
-  return adminProductNameTranslations[product.id]?.[language] ?? product.name;
+  return (language === "es" ? product.name_es : product.name_en) ?? adminProductNameTranslations[product.id]?.[language] ?? product.name;
 }
 
 function getUserDisplayName(user: AdminUserOverview) {
@@ -971,6 +1051,71 @@ function toUserSort(value: string): UserSort {
 
 function toLanguageCode(value: string): LanguageCode {
   return value === "es" ? "es" : "en";
+}
+
+function toNutritionProductCategory(value: string): NutritionProduct["category"] {
+  const categories = adminNutritionCategoryOptions("en").map((option) => option.value);
+
+  return categories.includes(value as NutritionProduct["category"]) ? (value as NutritionProduct["category"]) : "custom";
+}
+
+function toNutritionIconKey(value: string): NonNullable<NutritionProduct["icon_key"]> {
+  const iconKeys = adminNutritionIconOptions().map((option) => option.value);
+
+  return iconKeys.includes(value as NonNullable<NutritionProduct["icon_key"]>)
+    ? (value as NonNullable<NutritionProduct["icon_key"]>)
+    : "custom_food";
+}
+
+function adminNutritionCategoryOptions(language: "en" | "es"): { label: string; value: NutritionProduct["category"] }[] {
+  if (language === "es") {
+    return [
+      { label: "Ingrediente de caramañola", value: "bottle_ingredient" },
+      { label: "Gel", value: "gel" },
+      { label: "Barra", value: "bar" },
+      { label: "Comida solida", value: "solid_food" },
+      { label: "Bebida", value: "drink" },
+      { label: "Polvo", value: "powder" },
+      { label: "Fruta", value: "fruit" },
+      { label: "Dulce", value: "candy" },
+      { label: "Sandwich", value: "sandwich" },
+      { label: "Personalizado", value: "custom" }
+    ];
+  }
+
+  return [
+    { label: "Bottle ingredient", value: "bottle_ingredient" },
+    { label: "Gel", value: "gel" },
+    { label: "Bar", value: "bar" },
+    { label: "Solid food", value: "solid_food" },
+    { label: "Drink", value: "drink" },
+    { label: "Powder", value: "powder" },
+    { label: "Fruit", value: "fruit" },
+    { label: "Candy", value: "candy" },
+    { label: "Sandwich", value: "sandwich" },
+    { label: "Custom", value: "custom" }
+  ];
+}
+
+function adminNutritionIconOptions(): { label: string; value: NonNullable<NutritionProduct["icon_key"]> }[] {
+  return [
+    { label: "Bottle", value: "bottle" },
+    { label: "Gel", value: "gel" },
+    { label: "Bar", value: "bar" },
+    { label: "Banana", value: "banana" },
+    { label: "Candy", value: "candy" },
+    { label: "Sandwich", value: "sandwich" },
+    { label: "Powder", value: "powder" },
+    { label: "Salt", value: "salt" },
+    { label: "Sugar", value: "sugar" },
+    { label: "Honey", value: "honey" },
+    { label: "Drink", value: "drink" },
+    { label: "Rice", value: "rice" },
+    { label: "Dates", value: "dates" },
+    { label: "Raisins", value: "raisins" },
+    { label: "Pretzel", value: "pretzel" },
+    { label: "Custom food", value: "custom_food" }
+  ];
 }
 
 function formatDateTime(value: string | null) {

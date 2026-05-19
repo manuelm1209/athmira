@@ -3520,7 +3520,7 @@ function getProductDisplayName(product: NutritionProduct, language: "en" | "es")
     return product.name;
   }
 
-  return globalProductNameTranslations[product.id]?.[language] ?? product.name;
+  return (language === "es" ? product.name_es : product.name_en) ?? globalProductNameTranslations[product.id]?.[language] ?? product.name;
 }
 
 function isWaterProduct(product: NutritionProduct | null | undefined) {
