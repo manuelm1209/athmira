@@ -17,6 +17,7 @@ import { Pressable, StyleSheet, Text, View } from "react-native";
 
 import { useLanguage } from "@/providers/LanguageProvider";
 import { getErrorMessage, numberToInput, parseOptionalNumber } from "@/utils/form";
+import { NutritionIconPicker } from "@/features/nutrition/NutritionIcons";
 
 type ProfileDraft = {
   dateOfBirth: string;
@@ -552,12 +553,13 @@ export function AdminScreen({ mode = "hub" }: { mode?: AdminMode }) {
                 options={adminNutritionCategoryOptions(language)}
                 value={nutritionProductDraft.category}
               />
-              <SelectField
-                label={nutritionCopy.icon}
-                onValueChange={(iconKey) => setNutritionProductDraft((draft) => ({ ...draft, iconKey: toNutritionIconKey(iconKey) }))}
-                options={adminNutritionIconOptions()}
-                value={nutritionProductDraft.iconKey}
-              />
+              <View style={styles.productWideField}>
+                <NutritionIconPicker
+                  label={nutritionCopy.icon}
+                  onChange={(iconKey) => setNutritionProductDraft((draft) => ({ ...draft, iconKey }))}
+                  value={nutritionProductDraft.iconKey}
+                />
+              </View>
               <Field
                 inputMode="numeric"
                 label={nutritionCopy.servingSize}
@@ -1059,14 +1061,6 @@ function toNutritionProductCategory(value: string): NutritionProduct["category"]
   return categories.includes(value as NutritionProduct["category"]) ? (value as NutritionProduct["category"]) : "custom";
 }
 
-function toNutritionIconKey(value: string): NonNullable<NutritionProduct["icon_key"]> {
-  const iconKeys = adminNutritionIconOptions().map((option) => option.value);
-
-  return iconKeys.includes(value as NonNullable<NutritionProduct["icon_key"]>)
-    ? (value as NonNullable<NutritionProduct["icon_key"]>)
-    : "custom_food";
-}
-
 function adminNutritionCategoryOptions(language: "en" | "es"): { label: string; value: NutritionProduct["category"] }[] {
   if (language === "es") {
     return [
@@ -1094,27 +1088,6 @@ function adminNutritionCategoryOptions(language: "en" | "es"): { label: string; 
     { label: "Candy", value: "candy" },
     { label: "Sandwich", value: "sandwich" },
     { label: "Custom", value: "custom" }
-  ];
-}
-
-function adminNutritionIconOptions(): { label: string; value: NonNullable<NutritionProduct["icon_key"]> }[] {
-  return [
-    { label: "Bottle", value: "bottle" },
-    { label: "Gel", value: "gel" },
-    { label: "Bar", value: "bar" },
-    { label: "Banana", value: "banana" },
-    { label: "Candy", value: "candy" },
-    { label: "Sandwich", value: "sandwich" },
-    { label: "Powder", value: "powder" },
-    { label: "Salt", value: "salt" },
-    { label: "Sugar", value: "sugar" },
-    { label: "Honey", value: "honey" },
-    { label: "Drink", value: "drink" },
-    { label: "Rice", value: "rice" },
-    { label: "Dates", value: "dates" },
-    { label: "Raisins", value: "raisins" },
-    { label: "Pretzel", value: "pretzel" },
-    { label: "Custom food", value: "custom_food" }
   ];
 }
 
