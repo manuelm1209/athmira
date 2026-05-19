@@ -86,6 +86,8 @@ type ProductFormMode = {
   visible: boolean;
 };
 
+type NutritionPlanCardAction = "delete" | "duplicate" | "edit" | "view";
+
 const activityOptions: { label: string; value: NutritionActivityType }[] = [
   { label: "Cycling", value: "cycling" },
   { label: "Running", value: "running" },
@@ -503,7 +505,8 @@ export function NutritionPlansPage() {
   const [draft, setDraft] = useState<DraftPlan | null>(null);
   const [viewingDraft, setViewingDraft] = useState<DraftPlan | null>(null);
   const [loading, setLoading] = useState(true);
-  const [loadingPlanId, setLoadingPlanId] = useState<string | null>(null);
+  const [loadingPlanAction, setLoadingPlanAction] = useState<{ action: NutritionPlanCardAction; planId: string } | null>(null);
+  const [deletePlanId, setDeletePlanId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
@@ -556,12 +559,12 @@ export function NutritionPlansPage() {
     setDraft(createDefaultDraft(profile?.weight_kg ?? null, language));
   }
 
-  async function loadPlanDraft(planId: string) {
+  async function loadPlanDraft(planId: string, action: NutritionPlanCardAction) {
     if (!user) {
       return null;
     }
 
-    setLoadingPlanId(planId);
+    setLoadingPlanAction({ action, planId });
     setError(null);
     setMessage(null);
 
@@ -578,12 +581,12 @@ export function NutritionPlansPage() {
       setError(getErrorMessage(openError));
       return null;
     } finally {
-      setLoadingPlanId(null);
+      setLoadingPlanAction(null);
     }
   }
 
   async function openPlan(planId: string) {
-    const nextDraft = await loadPlanDraft(planId);
+    const nextDraft = await loadPlanDraft(planId, "edit");
 
     if (nextDraft) {
       setViewingDraft(null);
@@ -592,7 +595,7 @@ export function NutritionPlansPage() {
   }
 
   async function viewPlan(planId: string) {
-    const nextDraft = await loadPlanDraft(planId);
+    const nextDraft = await loadPlanDraft(planId, "view");
 
     if (nextDraft) {
       setDraft(null);
@@ -605,7 +608,7 @@ export function NutritionPlansPage() {
       return;
     }
 
-    setLoadingPlanId(planId);
+    setLoadingPlanAction({ action: "duplicate", planId });
     setError(null);
     setMessage(null);
 
@@ -640,15 +643,12 @@ export function NutritionPlansPage() {
     } catch (duplicateError) {
       setError(getErrorMessage(duplicateError));
     } finally {
-      setLoadingPlanId(null);
+      setLoadingPlanAction(null);
     }
   }
 
   function confirmDeletePlan(planId: string) {
-    Alert.alert(copy.deleteNutritionPlan, copy.deleteNutritionPlanBody, [
-      { text: copy.cancel, style: "cancel" },
-      { text: copy.delete, style: "destructive", onPress: () => void removePlan(planId) }
-    ]);
+    setDeletePlanId(planId);
   }
 
   async function removePlan(planId: string) {
@@ -657,15 +657,20 @@ export function NutritionPlansPage() {
     }
 
     setError(null);
+    setMessage(null);
+    setLoadingPlanAction({ action: "delete", planId });
 
     try {
       await deleteNutritionPlan(user.id, planId);
       setPlans((current) => current.filter((plan) => plan.id !== planId));
       setDraft((current) => (current?.id === planId ? null : current));
       setViewingDraft((current) => (current?.id === planId ? null : current));
+      setDeletePlanId(null);
       setMessage(copy.nutritionPlanDeleted);
     } catch (deleteError) {
       setError(getErrorMessage(deleteError));
+    } finally {
+      setLoadingPlanAction(null);
     }
   }
 
@@ -759,7 +764,7 @@ export function NutritionPlansPage() {
                 {plans.map((plan) => (
                   <NutritionPlanCard
                     key={plan.id}
-                    loading={loadingPlanId === plan.id}
+                    loadingAction={loadingPlanAction?.planId === plan.id ? loadingPlanAction.action : null}
                     onDelete={() => confirmDeletePlan(plan.id)}
                     onDuplicate={() => void duplicatePlan(plan.id)}
                     onOpen={() => void openPlan(plan.id)}
@@ -811,20 +816,69 @@ export function NutritionPlansPage() {
             )}
           </FadeInView>
         </View>
+
+        <DeletePlanConfirmModal
+          loading={loadingPlanAction?.action === "delete" && loadingPlanAction.planId === deletePlanId}
+          onCancel={() => setDeletePlanId(null)}
+          onConfirm={() => {
+            if (deletePlanId) {
+              void removePlan(deletePlanId);
+            }
+          }}
+          plan={plans.find((plan) => plan.id === deletePlanId) ?? null}
+        />
       </View>
     </Screen>
   );
 }
 
-export function NutritionPlanCard({
+function DeletePlanConfirmModal({
   loading,
+  onCancel,
+  onConfirm,
+  plan
+}: {
+  loading?: boolean;
+  onCancel: () => void;
+  onConfirm: () => void;
+  plan: NutritionPlan | null;
+}) {
+  const { language } = useLanguage();
+  const copy = nutritionCopy[language];
+
+  return (
+    <Modal animationType="fade" onRequestClose={onCancel} transparent visible={Boolean(plan)}>
+      <View style={styles.modalOverlay}>
+        <View style={styles.confirmModal}>
+          <View style={styles.confirmIcon}>
+            <Text style={styles.confirmIconText}>!</Text>
+          </View>
+          <Text style={styles.modalTitle}>{copy.deleteNutritionPlan}</Text>
+          <Text style={styles.confirmBody}>{copy.deleteNutritionPlanBody}</Text>
+          {plan ? <Text style={styles.confirmPlanName}>{plan.title}</Text> : null}
+          <Inline style={styles.confirmActions}>
+            <Button disabled={loading} onPress={onCancel} variant="secondary">
+              {copy.cancel}
+            </Button>
+            <Button loading={loading} onPress={onConfirm} variant="danger">
+              {copy.delete}
+            </Button>
+          </Inline>
+        </View>
+      </View>
+    </Modal>
+  );
+}
+
+export function NutritionPlanCard({
+  loadingAction,
   onDelete,
   onDuplicate,
   onOpen,
   onView,
   plan
 }: {
-  loading?: boolean;
+  loadingAction?: NutritionPlanCardAction | null;
   onDelete: () => void;
   onDuplicate: () => void;
   onOpen: () => void;
@@ -857,16 +911,16 @@ export function NutritionPlanCard({
       </View>
 
       <Inline style={styles.cardActions}>
-        <Button loading={loading} onPress={onView} variant="secondary">
+        <Button loading={loadingAction === "view"} onPress={onView} variant="secondary">
           {copy.viewPlan}
         </Button>
-        <Button loading={loading} onPress={onOpen} variant="ghost">
+        <Button loading={loadingAction === "edit"} onPress={onOpen} variant="ghost">
           {copy.editPlan}
         </Button>
-        <Button onPress={onDuplicate} variant="ghost">
+        <Button loading={loadingAction === "duplicate"} onPress={onDuplicate} variant="ghost">
           {copy.duplicate}
         </Button>
-        <Button onPress={onDelete} variant="danger">
+        <Button loading={loadingAction === "delete"} onPress={onDelete} variant="danger">
           {copy.delete}
         </Button>
       </Inline>
@@ -4597,6 +4651,56 @@ const styles = StyleSheet.create({
     padding: spacing.xl,
     width: "100%",
     ...shadows.medium
+  },
+  confirmModal: {
+    alignItems: "center",
+    backgroundColor: colors.surface,
+    borderColor: colors.border,
+    borderRadius: radii.xl,
+    borderWidth: 1,
+    gap: spacing.md,
+    maxWidth: 460,
+    padding: spacing.xl,
+    width: "100%",
+    ...shadows.medium
+  },
+  confirmIcon: {
+    alignItems: "center",
+    backgroundColor: "#ffe1dd",
+    borderRadius: radii.round,
+    height: 52,
+    justifyContent: "center",
+    width: 52
+  },
+  confirmIconText: {
+    color: colors.danger,
+    fontFamily,
+    fontSize: 28,
+    fontWeight: typography.weights.black,
+    lineHeight: 32
+  },
+  confirmBody: {
+    color: colors.inkMuted,
+    fontFamily,
+    fontSize: 15,
+    fontWeight: typography.weights.bold,
+    lineHeight: 22,
+    textAlign: "center"
+  },
+  confirmPlanName: {
+    backgroundColor: colors.surfaceMuted,
+    borderRadius: radii.md,
+    color: colors.ink,
+    fontFamily,
+    fontSize: 16,
+    fontWeight: typography.weights.black,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    textAlign: "center",
+    width: "100%"
+  },
+  confirmActions: {
+    justifyContent: "center"
   },
   modalHeader: {
     alignItems: "center",
