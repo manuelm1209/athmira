@@ -38,4 +38,4 @@ comment on table public.recommendations is
   'Structured educational bike-fit recommendations. Guidance is camera-based and does not replace medical care or a professional bike fit.';
 
 comment on column public.recommendations.is_primary is
-  'Marks the single main change Athmira recommends considering before a retest.';
+  'Marks the single main change athmira recommends considering before a retest.';

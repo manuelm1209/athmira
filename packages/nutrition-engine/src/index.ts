@@ -99,7 +99,7 @@ export function calculateSuggestedNutritionTargets(input: NutritionTargetInput):
     advisory:
       input.intensity === "race_effort" || input.durationMinutes >= 240
         ? "High carbohydrate targets should be practiced gradually in training before race day."
-        : "Athmira estimates sports fueling needs for planning. This is not medical or dietary advice.",
+        : "athmira estimates sports fueling needs for planning. This is not medical or dietary advice.",
     caloriesBurned,
     carbsPerHour,
     fluidsMlPerHour,

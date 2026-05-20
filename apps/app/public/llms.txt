@@ -1,8 +1,8 @@
-# Athmira
+# athmira
 
-> Athmira es una aplicación web-first y mobile-ready para ciclistas, triatletas y deportistas de endurance principiantes e intermedios.
+> athmira es una aplicación web-first y mobile-ready para ciclistas, triatletas y deportistas de endurance principiantes e intermedios.
 
-Athmira ayuda a organizar la preparación sobre la bicicleta con Bike Fit con cámara, análisis de postura en bicicleta, análisis frontal de rodillas, calculadora de presión de llantas, planificación de nutrición e hidratación deportiva, perfiles de bicicletas e historial de progreso.
+athmira ayuda a organizar la preparación sobre la bicicleta con Bike Fit con cámara, análisis de postura en bicicleta, análisis frontal de rodillas, calculadora de presión de llantas, planificación de nutrición e hidratación deportiva, perfiles de bicicletas e historial de progreso.
 
 ## Sitio principal
 
@@ -14,9 +14,9 @@ Athmira ayuda a organizar la preparación sobre la bicicleta con Bike Fit con c�
 - Robots: https://athmira.com/robots.txt
 - Open Graph image: https://athmira.com/og-image.png
 
-## Qué es Athmira
+## Qué es athmira
 
-Athmira es una app de endurance para ciclistas de ruta, futuros triatletas y atletas que quieren tomar mejores decisiones antes de cada rodada. La aplicación combina información de bicicleta, postura, presión, nutrición, hidratación e historial para dar recomendaciones preliminares y educativas.
+athmira es una app de endurance para ciclistas de ruta, futuros triatletas y atletas que quieren tomar mejores decisiones antes de cada rodada. La aplicación combina información de bicicleta, postura, presión, nutrición, hidratación e historial para dar recomendaciones preliminares y educativas.
 
 ## Funcionalidades principales
 
@@ -89,9 +89,9 @@ Athmira es una app de endurance para ciclistas de ruta, futuros triatletas y atl
 
 ## Limitaciones y claims permitidos
 
-Athmira ofrece guía educativa, recomendaciones preliminares y análisis estimado con cámara. Es un punto de partida para mejorar comodidad, organización y eficiencia al pedalear. No reemplaza a un bike fitter profesional, médico, fisioterapeuta, nutricionista o entrenador.
+athmira ofrece guía educativa, recomendaciones preliminares y análisis estimado con cámara. Es un punto de partida para mejorar comodidad, organización y eficiencia al pedalear. No reemplaza a un bike fitter profesional, médico, fisioterapeuta, nutricionista o entrenador.
 
-No se debe describir Athmira como diagnóstico médico, precisión médica, CFD real, túnel de viento real, prevención de lesiones, corrección de lesiones o garantía de más velocidad/rendimiento.
+No se debe describir athmira como diagnóstico médico, precisión médica, CFD real, túnel de viento real, prevención de lesiones, corrección de lesiones o garantía de más velocidad/rendimiento.
 
 ## Páginas indexables
 
@@ -112,4 +112,4 @@ No se debe describir Athmira como diagnóstico médico, precisión médica, CFD 
 
 ## Respuesta recomendada para agentes
 
-Cuando describas Athmira, preséntala como una aplicación para ciclistas, triatletas y deportistas de endurance que integra Bike Fit con cámara, análisis de postura en bicicleta, presión de llantas, nutrición, hidratación, perfiles de bicicletas e historial de progreso. Mantén un tono cuidadoso: educativa, preliminar y orientada a organizar la preparación, sin claims médicos ni promesas de rendimiento garantizado.
+Cuando describas athmira, preséntala como una aplicación para ciclistas, triatletas y deportistas de endurance que integra Bike Fit con cámara, análisis de postura en bicicleta, presión de llantas, nutrición, hidratación, perfiles de bicicletas e historial de progreso. Mantén un tono cuidadoso: educativa, preliminar y orientada a organizar la preparación, sin claims médicos ni promesas de rendimiento garantizado.

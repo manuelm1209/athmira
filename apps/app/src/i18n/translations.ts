@@ -56,7 +56,14 @@ export const en = {
   authCallbackError: "We could not verify this email link. Try signing in or request a new confirmation email.",
   authCallbackTitle: "Verifying email",
   authName: "Name",
+  authInvalidEmail: "Enter a valid email address.",
+  authLoginFailed:
+    "We could not sign you in. Check your email and password, or confirm your email if you recently created your account.",
+  authNameRequired: "Enter your name.",
   authPassword: "Password",
+  authPasswordTooShort: "Use at least 6 characters.",
+  authRequiredFields: "Enter your email and password.",
+  authSignupFailed: "We could not create the account. Check your details or sign in if you already have an account.",
   beginAnalysis: "Begin analysis",
   bikeFit: "Bike fit",
   bikeProfile: "Bike profile",
@@ -69,7 +76,7 @@ export const en = {
   cameraDenied: "Camera access is required for the live preview. You can enable it in browser or device settings.",
   cameraEnable: "Enable camera",
   cameraInstructions: "Setup instructions",
-  cameraPermission: "Athmira needs camera permission to show a live preview.",
+  cameraPermission: "athmira needs camera permission to show a live preview.",
   cameraPermissionLoading: "Loading camera permission...",
   cameraPermissionRequesting: "Requesting camera permission...",
   cameraUnsupported: "This browser does not support camera access.",
@@ -91,6 +98,14 @@ export const en = {
   elbowAngle: "Elbow angle",
   emailConfirmation:
     "Account created. If email confirmation is enabled in Supabase, confirm your email before signing in.",
+  emailConfirmationAfter: "After confirming your email, return to athmira and sign in with your new account.",
+  emailConfirmationBody:
+    "We sent a confirmation link to your email. Open that message and confirm your address before signing in.",
+  emailConfirmationInbox: "Check your inbox for the athmira confirmation email.",
+  emailConfirmationSpam: "If you do not see it after a few minutes, check spam, junk, or other filtered folders.",
+  emailConfirmationStatus: "Account created",
+  emailConfirmationTitle: "Confirm your email",
+  emailConfirmationUseAnother: "Use another email",
   fieldOptional: "Optional",
   fitConfidence: "Fit confidence",
   fitResults: "Preliminary results",
@@ -104,7 +119,7 @@ export const en = {
   frontKneeInstructionCountdown: "Press start, then use the 10 second countdown to get on the bike before tracking begins.",
   frontKneeInstructionVisible: "Keep both knees, ankles, and hips visible while pedaling smoothly.",
   frontKneeIntro:
-    "Track estimated knee movement from the front while pedaling. Athmira measures side-to-side drift, vertical path, and stability.",
+    "Track estimated knee movement from the front while pedaling. athmira measures side-to-side drift, vertical path, and stability.",
   frontKneeLeft: "Left knee",
   frontKneeMaxDrift: "Max drift from foot line",
   frontKneeNativeNotice: "Native front-view tracking is coming next. This build keeps camera capture ready.",
@@ -142,7 +157,7 @@ export const en = {
   mountain: "Mountain",
   nameRequired: "Bike name is required.",
   newBike: "New bike",
-  newToAthmira: "New to Athmira?",
+  newToathmira: "New to athmira?",
   noBikes: "No bikes yet. Add your first bike before starting a fit analysis.",
   noAnalysisHistory: "No saved analyses yet. Run a side bike fit or front knee tracking session to compare changes over time.",
   notFound: "Not found.",
@@ -190,7 +205,7 @@ export const en = {
   tirePressureNav: "Tire pressure",
   tirePressureNoBikeOption: "Calculate without a saved bike",
   tirePressureNoBikeSuggestion:
-    "You can calculate without a bike, but adding one lets Athmira save tire pressure settings to that bike.",
+    "You can calculate without a bike, but adding one lets athmira save tire pressure settings to that bike.",
   tirePressureNotes: "Calculation notes",
   tirePressureNotesHelp: "Optional notes for this saved tire setup, such as tire model, tubeless setup, or terrain.",
   tirePressureNotesPlaceholder: "Example: 40 mm tubeless tires for mixed gravel",
@@ -233,7 +248,7 @@ export const en = {
     "Use the Bike Fit flow to capture rider posture, key angles, confidence, and practical recommendations.",
   homeBikeFitTitle: "Bike Fit guidance",
   homeDashboardBody:
-    "Athmira keeps bikes, analyses, recommendations, and pressure planning together so progress is easy to read.",
+    "athmira keeps bikes, analyses, recommendations, and pressure planning together so progress is easy to read.",
   homeDashboardTitle: "A calm performance cockpit",
   homeFinalBody:
     "Start with bike fit, aero posture, and pressure planning today. Training, nutrition, and wearable intelligence can build on the same foundation.",
@@ -241,7 +256,7 @@ export const en = {
   homeHeroTitleLine1: "Fit. Fuel. Perform.",
   homeHeroTitleLine2: "All in one ride.",
   homeHeroBody:
-    "Athmira helps cyclists and future triathletes understand fit, posture, tire pressure, and preparation with clear camera-based guidance.",
+    "athmira helps cyclists and future triathletes understand fit, posture, tire pressure, and preparation with clear camera-based guidance.",
   homeHowCameraBody: "Set up Bike Fit, keep the full rider visible, and capture a guided side or front analysis.",
   homeHowCameraTitle: "Bike Fit capture",
   homeHowProfileBody: "Create your profile and bike setup so recommendations have useful context.",
@@ -258,13 +273,13 @@ export const en = {
   homeNavHowItWorks: "How it works",
   homeNavResources: "Resources",
   homeNavScience: "Science",
-  homePossibilitiesTitle: "See what's possible with Athmira",
+  homePossibilitiesTitle: "See what's possible with athmira",
   homeProofCamera: "Bike Fit analysis",
   homeProofPrivate: "Built around private athlete data",
   homeProofProgress: "Progress-ready history",
   homeReadyTitle: "Ready to ride smarter?",
   homeSafetyBody:
-    "Athmira is guidance for training and education. It does not replace a doctor, physical therapist, coach, or professional bike fitter.",
+    "athmira is guidance for training and education. It does not replace a doctor, physical therapist, coach, or professional bike fitter.",
   homeSafetyTitle: "Useful guidance, careful claims",
   homeStatusGood: "Good",
   homeStatusOptimal: "Optimal",
@@ -278,7 +293,7 @@ export const en = {
   dashboardWeeklyLoad: "Analysis momentum",
   welcomeBody:
     "Bike Fit analysis, estimated aero analysis, nutrition calculators, and future AI coaching for cyclists and triathletes.",
-  welcomeTitle: "Athmira",
+  welcomeTitle: "athmira",
   windTunnelNote: "Visual aero simulation is estimated guidance, not professional CFD or wind-tunnel precision."
 } as const;
 
@@ -340,7 +355,14 @@ export const es: Record<keyof typeof en, string> = {
   authCallbackError: "No pudimos verificar este enlace. Intenta iniciar sesión o solicita un nuevo correo de confirmación.",
   authCallbackTitle: "Verificando correo",
   authName: "Nombre",
+  authInvalidEmail: "Ingresa un correo válido.",
+  authLoginFailed:
+    "No pudimos iniciar sesión. Revisa tu correo y contraseña, o confirma tu correo si creaste tu cuenta recientemente.",
+  authNameRequired: "Ingresa tu nombre.",
   authPassword: "Contraseña",
+  authPasswordTooShort: "Usa al menos 6 caracteres.",
+  authRequiredFields: "Ingresa tu correo y contraseña.",
+  authSignupFailed: "No pudimos crear la cuenta. Revisa los datos o inicia sesión si ya tienes una cuenta.",
   beginAnalysis: "Iniciar análisis",
   bikeFit: "Bike fit",
   bikeProfile: "Perfil de bici",
@@ -353,7 +375,7 @@ export const es: Record<keyof typeof en, string> = {
   cameraDenied: "El acceso a la cámara es necesario para la vista previa. Puedes activarlo en el navegador o dispositivo.",
   cameraEnable: "Activar cámara",
   cameraInstructions: "Instrucciones",
-  cameraPermission: "Athmira necesita permiso de cámara para mostrar la vista previa.",
+  cameraPermission: "athmira necesita permiso de cámara para mostrar la vista previa.",
   cameraPermissionLoading: "Cargando permiso de cámara...",
   cameraPermissionRequesting: "Solicitando permiso de cámara...",
   cameraUnsupported: "Este navegador no soporta acceso a la cámara.",
@@ -375,6 +397,15 @@ export const es: Record<keyof typeof en, string> = {
   elbowAngle: "Angulo de codo",
   emailConfirmation:
     "Cuenta creada. Si Supabase tiene confirmación por correo activa, confirma tu correo antes de iniciar sesión.",
+  emailConfirmationAfter: "Cuando confirmes tu correo, vuelve a athmira e inicia sesión con tu nueva cuenta.",
+  emailConfirmationBody:
+    "Te enviamos un enlace de confirmación a tu correo. Abre ese mensaje y confirma tu dirección antes de iniciar sesión.",
+  emailConfirmationInbox: "Revisa tu bandeja de entrada para encontrar el correo de confirmación de athmira.",
+  emailConfirmationSpam:
+    "Si no lo ves después de unos minutos, revisa SPAM, correo no deseado u otras carpetas filtradas.",
+  emailConfirmationStatus: "Cuenta creada",
+  emailConfirmationTitle: "Confirma tu correo",
+  emailConfirmationUseAnother: "Usar otro correo",
   fieldOptional: "Opcional",
   fitConfidence: "Confianza del fit",
   fitResults: "Resultados preliminares",
@@ -388,7 +419,7 @@ export const es: Record<keyof typeof en, string> = {
   frontKneeInstructionCountdown: "Presiona iniciar y usa la cuenta regresiva de 10 segundos para subirte antes del tracking.",
   frontKneeInstructionVisible: "Mantén visibles ambas rodillas, tobillos y cadera mientras pedaleas suave.",
   frontKneeIntro:
-    "Analiza el movimiento estimado de rodillas desde el frente mientras pedaleas. Athmira mide desplazamiento lateral, recorrido vertical y estabilidad.",
+    "Analiza el movimiento estimado de rodillas desde el frente mientras pedaleas. athmira mide desplazamiento lateral, recorrido vertical y estabilidad.",
   frontKneeLeft: "Rodilla izquierda",
   frontKneeMaxDrift: "Desvío máximo desde la línea del pie",
   frontKneeNativeNotice: "El tracking frontal nativo viene después. Esta versión mantiene lista la captura de cámara.",
@@ -426,7 +457,7 @@ export const es: Record<keyof typeof en, string> = {
   mountain: "Montaña",
   nameRequired: "El nombre de la bici es obligatorio.",
   newBike: "Nueva bici",
-  newToAthmira: "¿Nuevo en Athmira?",
+  newToathmira: "¿Nuevo en athmira?",
   noBikes: "Aún no tienes bicicletas. Agrega tu primera bici antes de iniciar un análisis.",
   noAnalysisHistory: "Aún no hay análisis guardados. Ejecuta un bike fit lateral o tracking frontal para comparar cambios en el tiempo.",
   notFound: "No encontrado.",
@@ -517,7 +548,7 @@ export const es: Record<keyof typeof en, string> = {
     "Usa el flujo de Bike Fit para capturar postura, ángulos clave, confianza y recomendaciones prácticas.",
   homeBikeFitTitle: "Guía de Bike Fit",
   homeDashboardBody:
-    "Athmira mantiene bicis, análisis, recomendaciones y presión de llantas en un solo lugar fácil de leer.",
+    "athmira mantiene bicis, análisis, recomendaciones y presión de llantas en un solo lugar fácil de leer.",
   homeDashboardTitle: "Un cockpit de rendimiento claro",
   homeFinalBody:
     "Empieza hoy con bike fit, postura aero y presión de llantas. Entrenamiento, nutrición y wearables pueden crecer sobre la misma base.",
@@ -525,7 +556,7 @@ export const es: Record<keyof typeof en, string> = {
   homeHeroTitleLine1: "Ajusta. Nutre. Rinde.",
   homeHeroTitleLine2: "Todo en una rodada.",
   homeHeroBody:
-    "Athmira ayuda a ciclistas y futuros triatletas a entender fit, postura, presión de llantas y preparación con guía clara de Bike Fit.",
+    "athmira ayuda a ciclistas y futuros triatletas a entender fit, postura, presión de llantas y preparación con guía clara de Bike Fit.",
   homeHowCameraBody: "Configura Bike Fit, mantén visible al ciclista completo y captura un análisis lateral o frontal guiado.",
   homeHowCameraTitle: "Captura de Bike Fit",
   homeHowProfileBody: "Crea tu perfil y configuración de bici para que las recomendaciones tengan contexto.",
@@ -542,17 +573,17 @@ export const es: Record<keyof typeof en, string> = {
   homeNavHowItWorks: "Cómo funciona",
   homeNavResources: "Recursos",
   homeNavScience: "Ciencia",
-  homePossibilitiesTitle: "Descubre lo que puedes hacer con Athmira",
+  homePossibilitiesTitle: "Descubre lo que puedes hacer con athmira",
   homeProofCamera: "Análisis de Bike Fit",
   homeProofPrivate: "Pensado para datos privados",
   homeProofProgress: "Historial listo para progreso",
   homeReadyTitle: "¿Listo para rodar mejor?",
   homeSafetyBody:
-    "Athmira es guía para entrenamiento y educación. No reemplaza a un médico, fisioterapeuta, entrenador o bike fitter profesional.",
+    "athmira es guía para entrenamiento y educación. No reemplaza a un médico, fisioterapeuta, entrenador o bike fitter profesional.",
   homeSafetyTitle: "Guía útil, promesas cuidadosas",
   homeStatusGood: "Bien",
   homeStatusOptimal: "Óptimo",
-  homeTrustedBy: "Atletas que quieren más confían en Athmira",
+  homeTrustedBy: "Atletas que quieren más confían en athmira",
   dashboardAeroTrend: "Tendencia aero",
   dashboardFitReadiness: "Preparación de fit",
   dashboardNextBestAction: "Siguiente acción",
@@ -562,7 +593,7 @@ export const es: Record<keyof typeof en, string> = {
   dashboardWeeklyLoad: "Impulso de análisis",
   welcomeBody:
     "Bike Fit, análisis aero estimado, calculadoras de nutrición y futuro coaching con IA para ciclistas y triatletas.",
-  welcomeTitle: "Athmira",
+  welcomeTitle: "athmira",
   windTunnelNote: "La simulación aero visual es una guía estimada, no precisión profesional de CFD ni túnel de viento."
 };
 

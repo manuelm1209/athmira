@@ -7,6 +7,10 @@ The first target audience is cyclists and future triathletes who want help impro
 The first MVP is a web application, but the architecture must support future native iOS and Android apps with minimal rework.
 The main product idea is to help an athlete progress from beginner to more serious goals, such as completing a triathlon or Ironman-style event.
 
+## Brand Writing
+
+Always write the brand name as `athmira` and the domain as `athmira.com`, fully lowercase, matching the logo assets.
+
 ## Core Product Vision
 
 The app will eventually include:

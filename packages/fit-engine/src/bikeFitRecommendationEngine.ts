@@ -779,8 +779,8 @@ function getCaptureQualityAction(language: LanguageCode, view: "front" | "side")
 
 function getMedicalDisclaimer(language: LanguageCode) {
   return text(language, {
-    en: "Athmira provides educational computer-vision guidance. It does not replace medical, physical therapy, coaching, or professional bike-fit evaluation.",
-    es: "Athmira ofrece orientacion educativa basada en vision por computador. No reemplaza una evaluacion medica, fisioterapeutica, de coaching ni un bike fit profesional."
+    en: "athmira provides educational computer-vision guidance. It does not replace medical, physical therapy, coaching, or professional bike-fit evaluation.",
+    es: "athmira ofrece orientacion educativa basada en vision por computador. No reemplaza una evaluacion medica, fisioterapeutica, de coaching ni un bike fit profesional."
   });
 }
 

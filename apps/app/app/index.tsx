@@ -8,14 +8,14 @@ import { useAuth } from "@/providers/AuthProvider";
 import { useLanguage } from "@/providers/LanguageProvider";
 
 const homeHeroImage = require("../assets/home/image-home-bike-fit-hero.png");
-const homeSeoTitle = "Athmira | Bike Fit, presión de llantas y nutrición para ciclistas";
+const homeSeoTitle = "athmira | Bike Fit, presión de llantas y nutrición para ciclistas";
 const homeSeoDescription =
-  "Athmira ayuda a ciclistas y deportistas de endurance a mejorar su preparación con Bike Fit con cámara, análisis de postura, presión de llantas, nutrición, hidratación e historial de progreso.";
+  "athmira ayuda a ciclistas y deportistas de endurance a mejorar su preparación con Bike Fit con cámara, análisis de postura, presión de llantas, nutrición, hidratación e historial de progreso.";
 const homeStructuredData = [
   {
     "@context": "https://schema.org",
     "@type": "WebApplication",
-    name: "Athmira",
+    name: "athmira",
     url: "https://athmira.com",
     applicationCategory: "SportsApplication",
     operatingSystem: "Web, iOS, Android",
@@ -60,7 +60,7 @@ const homeStructuredData = [
   {
     "@context": "https://schema.org",
     "@type": "Organization",
-    name: "Athmira",
+    name: "athmira",
     url: "https://athmira.com",
     logo: "https://athmira.com/og-image.png",
     slogan: "Entrena mejor. Llega más lejos.",
@@ -70,7 +70,7 @@ const homeStructuredData = [
 
 const homeCopy = {
   en: {
-    heroTitle: "Athmira turns your bike setup into a ride system.",
+    heroTitle: "athmira turns your bike setup into a ride system.",
     heroBody:
       "Bike Fit, aero posture, tire pressure, nutrition planning, and progress history come together so every adjustment has context and every retest teaches you something useful.",
     heroBodyMobile:
@@ -84,10 +84,10 @@ const homeCopy = {
     ],
     systemTitle: "Everything a cyclist needs before the next ride.",
     systemBody:
-      "Athmira is built for cyclists moving from beginner confidence to serious goals. Start with the bike and the body, then layer in pressure, fueling, and training intelligence without losing the thread.",
+      "athmira is built for cyclists moving from beginner confidence to serious goals. Start with the bike and the body, then layer in pressure, fueling, and training intelligence without losing the thread.",
     systemTitleMobile: "Everything\na cyclist needs\nbefore the next\nride.",
     systemBodyMobile:
-      "Athmira is built for cyclists\nmoving from beginner confidence\nto serious goals.\nStart with the bike and the body,\nthen layer in pressure, fueling,\nand training intelligence.",
+      "athmira is built for cyclists\nmoving from beginner confidence\nto serious goals.\nStart with the bike and the body,\nthen layer in pressure, fueling,\nand training intelligence.",
     modules: [
       {
         body: "Capture side and front views, review joint angles, knee tracking, confidence, and a single practical adjustment to test next.",
@@ -116,7 +116,7 @@ const homeCopy = {
     ],
     workflowTitle: "A better fit happens in loops, not guesses.",
     workflowBody:
-      "Athmira guides the athlete through one clean capture, one main recommendation, one small change, and one retest. That keeps the process useful without pretending to replace a professional bike fit.",
+      "athmira guides the athlete through one clean capture, one main recommendation, one small change, and one retest. That keeps the process useful without pretending to replace a professional bike fit.",
     steps: [
       {
         body: "Save bike type, size, saddle height, setback, stem, crank length, handlebar width, and tire setup.",
@@ -127,7 +127,7 @@ const homeCopy = {
         title: "Measure the ride position"
       },
       {
-        body: "Athmira prioritizes capture quality, saddle height, knee stability, cockpit, and cleat review in that order.",
+        body: "athmira prioritizes capture quality, saddle height, knee stability, cockpit, and cleat review in that order.",
         title: "Choose one main change"
       },
       {
@@ -149,13 +149,13 @@ const homeCopy = {
       "The foundation already supports the next layers: AI coaching, Garmin, Strava, Apple Health, Google Fit, running, swimming, and triathlon modules. The product grows without rebuilding the athlete record.",
     safetyTitle: "Useful guidance, careful claims.",
     safetyBody:
-      "Athmira provides educational, camera-based guidance. It does not diagnose pain, replace a medical professional, or replace a professional bike fitter. If pain persists, consult a qualified professional.",
+      "athmira provides educational, camera-based guidance. It does not diagnose pain, replace a medical professional, or replace a professional bike fitter. If pain persists, consult a qualified professional.",
     finalTitle: "Make the next ride the start of a smarter system.",
     finalBody:
       "Create your profile, add a bike, run Bike Fit, save pressure and nutrition plans, then let every retest move the story forward."
   },
   es: {
-    heroTitle: "Athmira convierte tu bici en un sistema de progreso.",
+    heroTitle: "athmira convierte tu bici en un sistema de progreso.",
     heroBody:
       "Bike Fit, postura aero, presión de llantas, nutrición e historial de progreso viven juntos para que cada ajuste tenga contexto y cada re-test deje una señal útil.",
     heroBodyMobile:
@@ -169,10 +169,10 @@ const homeCopy = {
     ],
     systemTitle: "Todo lo que un ciclista necesita antes de la próxima rodada.",
     systemBody:
-      "Athmira está pensado para ciclistas que pasan de ganar confianza a perseguir metas serias. Empieza con la bici y el cuerpo, luego suma presión, fueling e inteligencia de entrenamiento sin perder el hilo.",
+      "athmira está pensado para ciclistas que pasan de ganar confianza a perseguir metas serias. Empieza con la bici y el cuerpo, luego suma presión, fueling e inteligencia de entrenamiento sin perder el hilo.",
     systemTitleMobile: "Todo lo que\nun ciclista necesita\nantes de la próxima\nrodada.",
     systemBodyMobile:
-      "Athmira está pensado para ciclistas\nque pasan de ganar confianza\na perseguir metas serias.\nEmpieza con la bici y el cuerpo,\nluego suma presión, fueling\ne inteligencia de entrenamiento.",
+      "athmira está pensado para ciclistas\nque pasan de ganar confianza\na perseguir metas serias.\nEmpieza con la bici y el cuerpo,\nluego suma presión, fueling\ne inteligencia de entrenamiento.",
     modules: [
       {
         body: "Captura vista lateral y frontal, revisa ángulos, tracking de rodilla, confianza y un ajuste principal para probar después.",
@@ -201,7 +201,7 @@ const homeCopy = {
     ],
     workflowTitle: "Un mejor fit ocurre en ciclos, no por intuición.",
     workflowBody:
-      "Athmira guía al atleta por una captura limpia, una recomendación principal, un cambio pequeño y un re-test. Así el proceso es útil sin pretender reemplazar a un bike fitter profesional.",
+      "athmira guía al atleta por una captura limpia, una recomendación principal, un cambio pequeño y un re-test. Así el proceso es útil sin pretender reemplazar a un bike fitter profesional.",
     steps: [
       {
         body: "Guarda tipo de bici, talla, altura de sillín, retroceso, potencia, bielas, ancho de manubrio y setup de llantas.",
@@ -212,7 +212,7 @@ const homeCopy = {
         title: "Mide la posición"
       },
       {
-        body: "Athmira prioriza calidad de captura, altura de sillín, estabilidad de rodilla, cockpit y revisión de calas.",
+        body: "athmira prioriza calidad de captura, altura de sillín, estabilidad de rodilla, cockpit y revisión de calas.",
         title: "Elige un cambio principal"
       },
       {
@@ -234,7 +234,7 @@ const homeCopy = {
       "La base ya soporta las próximas capas: coaching con IA, Garmin, Strava, Apple Health, Google Fit, running, natación y módulos de triatlón. El producto crece sin reconstruir el registro del atleta.",
     safetyTitle: "Guía útil, promesas cuidadosas.",
     safetyBody:
-      "Athmira ofrece orientación educativa basada en cámara. No diagnostica dolor, no reemplaza a un profesional médico ni a un bike fitter profesional. Si el dolor persiste, consulta con un profesional calificado.",
+      "athmira ofrece orientación educativa basada en cámara. No diagnostica dolor, no reemplaza a un profesional médico ni a un bike fitter profesional. Si el dolor persiste, consulta con un profesional calificado.",
     finalTitle: "Haz que la próxima rodada empiece un sistema más inteligente.",
     finalBody:
       "Crea tu perfil, agrega una bici, ejecuta Bike Fit, guarda presión y nutrición, y deja que cada re-test mueva la historia hacia adelante."
@@ -318,7 +318,7 @@ export default function WelcomeRoute() {
           {mobile ? null : (
             <View style={styles.heroMedia}>
               <Image
-                accessibilityLabel="Athmira Bike Fit analysis preview"
+                accessibilityLabel="athmira Bike Fit analysis preview"
                 resizeMode="cover"
                 source={homeHeroImage}
                 style={styles.heroImage}
@@ -428,7 +428,7 @@ export default function WelcomeRoute() {
           <View style={styles.dashboardMock}>
             <View style={styles.mockHeader}>
               <View>
-                <Text style={styles.mockTitle}>Athmira</Text>
+                <Text style={styles.mockTitle}>athmira</Text>
                 <Text style={styles.mockSubtitle}>{copy.cockpitTitle}</Text>
               </View>
               <View style={styles.scoreRing}>
@@ -470,7 +470,7 @@ export default function WelcomeRoute() {
 
         <FadeInView delayMs={350} style={styles.finalCta}>
           <Image
-            accessibilityLabel="Cyclist riding with Athmira planning context"
+            accessibilityLabel="Cyclist riding with athmira planning context"
             resizeMode="cover"
             source={{ uri: visualAssets.aeroTrack }}
             style={styles.finalImage}

@@ -108,12 +108,12 @@ export function AppShell({ children }: PropsWithChildren) {
           <Pressable accessibilityRole="link" style={styles.brand}>
             <Image
               accessibilityIgnoresInvertColors
-              accessibilityLabel="Athmira logo"
+              accessibilityLabel="athmira logo"
               source={brandMarkSource}
               style={styles.brandMark}
             />
             <View>
-              <Text style={styles.brandName}>Athmira</Text>
+              <Text style={styles.brandName}>athmira</Text>
               <Text style={styles.brandTagline}>{t("tagline")}</Text>
             </View>
           </Pressable>
@@ -221,8 +221,7 @@ const styles = StyleSheet.create({
     fontFamily,
     fontSize: 21,
     fontWeight: typography.weights.black,
-    letterSpacing: 1.2,
-    textTransform: "uppercase"
+    letterSpacing: 0
   },
   brandTagline: {
     color: colors.inkMuted,

@@ -6,9 +6,9 @@ export default function SignupRoute() {
     <>
       <SeoHead
         canonicalPath="/auth/signup"
-        description="Crear cuenta privada en Athmira para guardar perfiles de bicicletas, análisis e historial de progreso."
+        description="Crear cuenta privada en athmira para guardar perfiles de bicicletas, análisis e historial de progreso."
         noindex
-        title="Crear cuenta | Athmira"
+        title="Crear cuenta | athmira"
       />
       <AuthForm mode="signup" />
     </>

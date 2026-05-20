@@ -7,7 +7,6 @@ import { Platform, StyleSheet, Text, View } from "react-native";
 
 import { LinkButton } from "@/components/LinkButton";
 import { useLanguage } from "@/providers/LanguageProvider";
-import { getErrorMessage } from "@/utils/form";
 
 import { TurnstileChallenge } from "../../components/TurnstileChallenge";
 
@@ -24,13 +23,35 @@ export function AuthForm({ mode }: AuthFormProps) {
   const [password, setPassword] = useState("");
   const [captchaToken, setCaptchaToken] = useState<string | null>(null);
   const [challengeVersion, setChallengeVersion] = useState(0);
-  const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
   async function submit() {
     setError(null);
-    setMessage(null);
+
+    const normalizedEmail = email.trim().toLowerCase();
+
+    if (!normalizedEmail || !password) {
+      setError(t("authRequiredFields"));
+      return;
+    }
+
+    if (!isValidEmail(normalizedEmail)) {
+      setError(t("authInvalidEmail"));
+      return;
+    }
+
+    if (mode === "signup") {
+      if (!name.trim()) {
+        setError(t("authNameRequired"));
+        return;
+      }
+
+      if (password.length < 6) {
+        setError(t("authPasswordTooShort"));
+        return;
+      }
+    }
 
     if (turnstileEnabled && !captchaToken) {
       setError(t("turnstileRequired"));
@@ -41,12 +62,12 @@ export function AuthForm({ mode }: AuthFormProps) {
 
     try {
       if (mode === "login") {
-        await signInWithEmail(email, password, captchaToken);
+        await signInWithEmail(normalizedEmail, password, captchaToken);
         router.replace("/dashboard");
       } else {
         const result = await signUpWithEmail({
           captchaToken,
-          email,
+          email: normalizedEmail,
           name,
           password,
           preferredLanguage: language
@@ -55,11 +76,14 @@ export function AuthForm({ mode }: AuthFormProps) {
         if (result.session) {
           router.replace("/dashboard");
         } else {
-          setMessage(t("emailConfirmation"));
+          router.replace({
+            pathname: "/auth/confirm-email",
+            params: { email: normalizedEmail }
+          });
         }
       }
-    } catch (submitError) {
-      setError(getErrorMessage(submitError));
+    } catch {
+      setError(mode === "login" ? t("authLoginFailed") : t("authSignupFailed"));
       setCaptchaToken(null);
       setChallengeVersion((version) => version + 1);
     } finally {
@@ -102,12 +126,11 @@ export function AuthForm({ mode }: AuthFormProps) {
           />
         ) : null}
         {error ? <Text style={styles.error}>{error}</Text> : null}
-        {message ? <Text style={styles.message}>{message}</Text> : null}
         <Button disabled={turnstileEnabled && !captchaToken} loading={loading} onPress={submit}>
           {mode === "login" ? t("login") : t("createAccount")}
         </Button>
         <Inline style={styles.footer}>
-          <Body>{mode === "login" ? t("newToAthmira") : t("alreadyHaveAccount")}</Body>
+          <Body>{mode === "login" ? t("newToathmira") : t("alreadyHaveAccount")}</Body>
           <LinkButton href={mode === "login" ? "/auth/signup" : "/auth/login"} variant="ghost">
             {mode === "login" ? t("signUpCta") : t("signInCta")}
           </LinkButton>
@@ -115,6 +138,10 @@ export function AuthForm({ mode }: AuthFormProps) {
       </Card>
     </Screen>
   );
+}
+
+function isValidEmail(value: string) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
 }
 
 type AppExtra = {
@@ -143,11 +170,6 @@ const styles = StyleSheet.create({
   },
   error: {
     color: colors.danger,
-    fontSize: 14,
-    fontWeight: "700"
-  },
-  message: {
-    color: colors.primary,
     fontSize: 14,
     fontWeight: "700"
   },

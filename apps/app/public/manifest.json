@@ -1,6 +1,6 @@
 {
-  "name": "Athmira",
-  "short_name": "Athmira",
+  "name": "athmira",
+  "short_name": "athmira",
   "description": "Bike Fit con cámara, análisis de postura, presión de llantas, nutrición e hidratación para ciclistas y deportistas de endurance.",
   "start_url": "/",
   "scope": "/",

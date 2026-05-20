@@ -6,7 +6,6 @@ import { StyleSheet, Text, View } from "react-native";
 
 import { SeoHead } from "@/components/SeoHead";
 import { useLanguage } from "@/providers/LanguageProvider";
-import { getErrorMessage } from "@/utils/form";
 
 export default function AuthCallbackRoute() {
   const router = useRouter();
@@ -33,7 +32,7 @@ export default function AuthCallbackRoute() {
         clearSensitiveCallbackUrl();
 
         if (errorDescription) {
-          throw new Error(errorDescription);
+          throw new Error(t("authCallbackError"));
         }
 
         if (code) {
@@ -68,9 +67,9 @@ export default function AuthCallbackRoute() {
         if (!cancelled) {
           router.replace("/dashboard");
         }
-      } catch (callbackError) {
+      } catch {
         if (!cancelled) {
-          setError(getErrorMessage(callbackError, t("authCallbackError")));
+          setError(t("authCallbackError"));
         }
       }
     }
@@ -86,9 +85,9 @@ export default function AuthCallbackRoute() {
     <>
       <SeoHead
         canonicalPath="/auth/callback"
-        description="Ruta privada de verificación de autenticación de Athmira."
+        description="Ruta privada de verificación de autenticación de athmira."
         noindex
-        title="Verificación de acceso | Athmira"
+        title="Verificación de acceso | athmira"
       />
       <Screen centered maxWidth={560}>
         <Card style={styles.card}>

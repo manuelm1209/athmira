@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "Athmira",
+    "name": "athmira",
     "slug": "athmira",
     "scheme": "athmira",
     "version": "0.1.0",
@@ -23,7 +23,7 @@
       [
         "expo-camera",
         {
-          "cameraPermission": "Athmira uses the camera to provide preliminary bike fit and aero posture guidance."
+          "cameraPermission": "athmira uses the camera to provide preliminary bike fit and aero posture guidance."
         }
       ]
     ],
@@ -31,7 +31,7 @@
       "bundleIdentifier": "com.athmira.app",
       "supportsTablet": true,
       "infoPlist": {
-        "NSCameraUsageDescription": "Athmira uses the camera to provide preliminary bike fit and aero posture guidance."
+        "NSCameraUsageDescription": "athmira uses the camera to provide preliminary bike fit and aero posture guidance."
       }
     },
     "android": {

@@ -1,6 +1,6 @@
-# Athmira
+# athmira
 
-Athmira is a web-first, mobile-ready sports performance app for beginner and intermediate endurance athletes.
+athmira is a web-first, mobile-ready sports performance app for beginner and intermediate endurance athletes.
 
 English: **Train smarter. Go further.**  
 Spanish: **Entrena mejor. Llega más lejos.**
@@ -76,6 +76,8 @@ For Supabase email confirmation links, the app sends users to `/auth/callback`. 
 
 For local-only email verification, set `EXPO_PUBLIC_AUTH_REDIRECT_URL=http://localhost:8082/auth/callback`.
 
+Public auth forms intentionally avoid displaying raw Supabase Auth errors. Login failures use a generic message so the app does not reveal whether an email exists, a password is wrong, or an account has not been confirmed.
+
 4. Start the web app:
 
 ```bash
@@ -133,7 +135,7 @@ Nutrition products use two scopes:
 
 ## Security
 
-Cybersecurity is a required product constraint for Athmira. User identity, bike profiles, camera/media data, fit analysis history, and future wearable data should be treated as sensitive user data.
+Cybersecurity is a required product constraint for athmira. User identity, bike profiles, camera/media data, fit analysis history, and future wearable data should be treated as sensitive user data.
 
 - Keep secret keys out of Expo and React Native Web. Only `EXPO_PUBLIC_*` values should be available to the client.
 - Keep `SUPABASE_SERVICE_ROLE_KEY`, `TURNSTILE_SECRET_KEY`, database URLs, JWT secrets, and provider secrets in server-side provider settings only.
@@ -141,6 +143,7 @@ Cybersecurity is a required product constraint for Athmira. User identity, bike 
 - Keep nutrition plans, bottles, plan items, and custom products user-owned through RLS. Global nutrition products should only be changed by trusted admins or controlled seed migrations.
 - Use signed URLs for private media access.
 - Keep Cloudflare Turnstile enabled on auth forms in production and configure the Turnstile secret in Supabase Auth CAPTCHA/Bot Protection.
+- Keep public login and signup errors generic; do not expose raw Supabase Auth messages that reveal account existence or confirmation status.
 - Review Vercel security headers in `vercel.json` when adding camera, media, worker, or third-party script behavior.
 
 ## Admin Platform
@@ -208,4 +211,4 @@ npm run typecheck  # Run TypeScript checks
 
 ## Safety And Claims
 
-Athmira's early bike-fit and aero results are preliminary, estimated, camera-based guidance for training and educational purposes. They are not medically accurate, do not replace a professional bike fit, and do not provide real wind-tunnel or CFD precision.
+athmira's early bike-fit and aero results are preliminary, estimated, camera-based guidance for training and educational purposes. They are not medically accurate, do not replace a professional bike fit, and do not provide real wind-tunnel or CFD precision.

@@ -17,9 +17,9 @@ export function ProtectedRoute({ children, requireAdmin }: ProtectedRouteProps) 
     return (
       <>
         <SeoHead
-          description="Área privada de Athmira para atletas autenticados."
+          description="Área privada de athmira para atletas autenticados."
           noindex
-          title="Área privada | Athmira"
+          title="Área privada | athmira"
         />
         <Screen centered>
           <Body>Loading...</Body>
@@ -39,9 +39,9 @@ export function ProtectedRoute({ children, requireAdmin }: ProtectedRouteProps) 
   return (
     <>
       <SeoHead
-        description="Área privada de Athmira para atletas autenticados."
+        description="Área privada de athmira para atletas autenticados."
         noindex
-        title="Área privada | Athmira"
+        title="Área privada | athmira"
       />
       {children}
     </>

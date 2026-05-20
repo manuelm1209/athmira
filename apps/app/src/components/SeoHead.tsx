@@ -36,13 +36,13 @@ export function SeoHead({
       <link rel="manifest" href="/manifest.json" />
       <meta name="theme-color" content="#063f3d" />
       <meta property="og:type" content="website" />
-      <meta property="og:site_name" content="Athmira" />
+      <meta property="og:site_name" content="athmira" />
       <meta property="og:locale" content={lang === "es" ? "es_CO" : "en_US"} />
       <meta property="og:url" content={canonicalUrl} />
       <meta property="og:title" content={title} />
       <meta property="og:description" content={description} />
       <meta property="og:image" content={imageUrl} />
-      <meta property="og:image:alt" content="Athmira, app de Bike Fit, postura, presión de llantas y nutrición para ciclistas" />
+      <meta property="og:image:alt" content="athmira, app de Bike Fit, postura, presión de llantas y nutrición para ciclistas" />
       <meta name="twitter:card" content="summary_large_image" />
       <meta name="twitter:title" content={title} />
       <meta name="twitter:description" content={description} />

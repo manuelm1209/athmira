@@ -1,6 +1,6 @@
 # Security Policy
 
-Athmira handles account, profile, bike, camera, media, and performance-analysis data. Cybersecurity is required for every product change.
+athmira handles account, profile, bike, camera, media, and performance-analysis data. Cybersecurity is required for every product change.
 
 ## Sensitive Data
 
@@ -42,6 +42,13 @@ Server-only values include:
 - Set explicit `search_path` values on trigger/helper functions.
 - Store media in private Supabase Storage buckets.
 - Use signed URLs for private media access.
+
+## Authentication UX Requirements
+
+- Do not display raw Supabase Auth errors on public login or signup forms.
+- Use generic login failures so the app does not reveal whether an email exists, a password is wrong, or an account is unconfirmed.
+- Keep local validation messages limited to user-correctable input such as missing fields, invalid email format, or password length.
+- Keep email confirmation guidance generic and direct users to check inbox, spam, or junk folders without confirming account existence from the login flow.
 
 ## Admin API Requirements
 
