@@ -156,7 +156,7 @@ const homeCopy = {
       "Create your profile, add a bike, run Bike Fit, save pressure and nutrition plans, then let every retest move the story forward."
   },
   es: {
-    heroTitle: "athmira convierte tu bici en un sistema de progreso.",
+    heroTitle: "Convierte tu bici en un sistema de progreso.",
     heroBody:
       "Bike Fit, postura aero, presión de llantas, nutrición e historial de progreso viven juntos para que cada ajuste tenga contexto y cada re-test deje una señal útil.",
     heroBodyMobile:
