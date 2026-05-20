@@ -1,5 +1,6 @@
 import { Body, FadeInView, Heading, Inline, Screen, colors, radii, shadows, spacing, typography } from "@athmira/ui";
 import { Image, Platform, StyleSheet, Text, View, useWindowDimensions } from "react-native";
+import type { ImageSourcePropType } from "react-native";
 
 import { LinkButton } from "@/components/LinkButton";
 import { SeoHead } from "@/components/SeoHead";
@@ -243,7 +244,7 @@ const homeCopy = {
 
 type ModuleImageKey = "aero" | "hero" | "nutrition" | "pressure";
 
-const moduleImageMap: Record<ModuleImageKey, string | number> = {
+const moduleImageMap: Record<ModuleImageKey, ImageSourcePropType | string> = {
   aero: visualAssets.aeroTrack,
   hero: visualAssets.cyclistHero,
   nutrition: visualAssets.nutritionPlan,
@@ -387,12 +388,14 @@ export default function WelcomeRoute() {
         <FadeInView delayMs={150} style={[styles.moduleGrid, moduleGridWebStyle]}>
           {copy.modules.map((module) => (
             <View key={module.title} style={styles.modulePanel}>
-              <Image
-                accessibilityLabel={module.title}
-                resizeMode="cover"
-                source={getModuleImageSource(module.image)}
-                style={[styles.moduleImage, mobile && styles.moduleImageMobile]}
-              />
+              <View style={[styles.moduleImageFrame, mobile && styles.moduleImageFrameMobile]}>
+                <Image
+                  accessibilityLabel={module.title}
+                  resizeMode="cover"
+                  source={getModuleImageSource(module.image)}
+                  style={styles.moduleImage}
+                />
+              </View>
               <View style={styles.moduleCopy}>
                 <Text style={styles.moduleMetric}>{module.metric}</Text>
                 <Text style={styles.moduleTitle}>{module.title}</Text>
@@ -502,11 +505,11 @@ export default function WelcomeRoute() {
 function getModuleImageSource(key: string) {
   const source = moduleImageMap[key as ModuleImageKey];
 
-  if (typeof source === "number") {
-    return source;
+  if (typeof source === "string") {
+    return { uri: source };
   }
 
-  return { uri: source };
+  return source;
 }
 
 function MobileLines({ text, textStyle }: { text: string; textStyle: object }) {
@@ -832,12 +835,17 @@ const styles = StyleSheet.create({
     overflow: "hidden",
     ...shadows.soft
   },
-  moduleImage: {
+  moduleImageFrame: {
     aspectRatio: 1.48,
+    overflow: "hidden",
     width: "100%"
   },
-  moduleImageMobile: {
+  moduleImageFrameMobile: {
     aspectRatio: 1.62
+  },
+  moduleImage: {
+    height: "100%",
+    width: "100%"
   },
   moduleCopy: {
     gap: spacing.xs,
