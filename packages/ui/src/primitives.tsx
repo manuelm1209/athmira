@@ -198,10 +198,11 @@ export function Inline({ children, style }: { children: ReactNode; style?: Style
 type FadeInViewProps = PropsWithChildren<{
   delayMs?: number;
   distance?: number;
+  nativeID?: string;
   style?: StyleProp<ViewStyle>;
 }>;
 
-export function FadeInView({ children, delayMs = 0, distance = 16, style }: FadeInViewProps) {
+export function FadeInView({ children, delayMs = 0, distance = 16, nativeID, style }: FadeInViewProps) {
   const progress = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
@@ -216,6 +217,7 @@ export function FadeInView({ children, delayMs = 0, distance = 16, style }: Fade
 
   return (
     <Animated.View
+      nativeID={nativeID}
       style={[
         style,
         {

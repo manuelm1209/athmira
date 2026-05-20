@@ -4,6 +4,7 @@ import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
 
+import { SeoHead } from "@/components/SeoHead";
 import { useLanguage } from "@/providers/LanguageProvider";
 import { getErrorMessage } from "@/utils/form";
 
@@ -82,15 +83,23 @@ export default function AuthCallbackRoute() {
   }, [router, t]);
 
   return (
-    <Screen centered maxWidth={560}>
-      <Card style={styles.card}>
-        <View style={styles.header}>
-          <Heading>{t("authCallbackTitle")}</Heading>
-          <Body>{error ?? t("authCallbackBody")}</Body>
-        </View>
-        {error ? <Text style={styles.error}>{error}</Text> : null}
-      </Card>
-    </Screen>
+    <>
+      <SeoHead
+        canonicalPath="/auth/callback"
+        description="Ruta privada de verificación de autenticación de Athmira."
+        noindex
+        title="Verificación de acceso | Athmira"
+      />
+      <Screen centered maxWidth={560}>
+        <Card style={styles.card}>
+          <View style={styles.header}>
+            <Heading>{t("authCallbackTitle")}</Heading>
+            <Body>{error ?? t("authCallbackBody")}</Body>
+          </View>
+          {error ? <Text style={styles.error}>{error}</Text> : null}
+        </Card>
+      </Screen>
+    </>
   );
 }
 

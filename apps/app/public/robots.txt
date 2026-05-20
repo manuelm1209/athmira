@@ -1,0 +1,14 @@
+User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /analysis
+Disallow: /auth/
+Disallow: /bikes
+Disallow: /dashboard
+Disallow: /nutrition
+Disallow: /profile
+Disallow: /settings
+Disallow: /tire-pressure
+Disallow: /api/
+
+Sitemap: https://athmira.com/sitemap.xml

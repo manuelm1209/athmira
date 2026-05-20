@@ -308,8 +308,8 @@ const nutritionCopy = {
     addCustom: "Agregar personalizada",
     addFood: "Agregar comida",
     addIngredient: "Agregar ingrediente",
-    addNutritionItems: "Agregar items de nutricion",
-    addProductsTimeline: "Agrega productos para construir la linea de tiempo.",
+    addNutritionItems: "Agregar items de nutrición",
+    addProductsTimeline: "Agrega productos para construir la línea de tiempo.",
     addTargetBottle: "Agrega una caramañola antes de asignar productos dentro de una botella.",
     allProducts: "Todos los productos",
     atStart: "Al inicio",
@@ -322,24 +322,24 @@ const nutritionCopy = {
     bottleSizeMl: "Tamaño ml",
     bottlesTitle: "Botellas / Caramañolas",
     calculateSuggestedTargets: "Calcular objetivos sugeridos",
-    calories: "Calorias",
-    caloriesEstimate: "Calorias estimadas",
-    caloriesShort: "Calorias",
+    calories: "Calorías",
+    caloriesEstimate: "Calorías estimadas",
+    caloriesShort: "Calorías",
     cancel: "Cancelar",
     capacity: "Capacidad",
     carbs: "Carbohidratos",
-    carbsPerServing: "Carbos por porcion",
+    carbsPerServing: "Carbos por porción",
     carbsTarget: "Objetivo de carbos",
     carbsHr: "Carbos/h",
     carried: "Llevar",
     carriedTimedFood: "Comida para llevar y horarios",
-    category: "Categoria",
+    category: "Categoría",
     chooseBottle: "Elige botella",
     close: "Cerrar",
     collapse: "Colapsar",
     concentration: "Concentración",
     configurations: "Configuraciones",
-    composition: "Composicion",
+    composition: "Composición",
     createFirstPlan: "Crear primer plan",
     createProduct: "Crear producto",
     customBottleSize: "Tamaño personalizado (ml)",
@@ -349,20 +349,20 @@ const nutritionCopy = {
     customProductNameRequired: "El nombre del producto personalizado es obligatorio.",
     customProductUpdated: "Producto personalizado actualizado.",
     customProducts: "productos personalizados",
-    defaultLocation: "Ubicacion por defecto",
+    defaultLocation: "Ubicación por defecto",
     delete: "Eliminar",
     deleteCustomProduct: "Eliminar producto personalizado",
-    deleteCustomProductBody: (name: string) => `Eliminar ${name}? Los items del borrador que lo usen se quitaran.`,
-    deleteNutritionPlan: "Eliminar plan de nutricion",
-    deleteNutritionPlanBody: "Eliminar este plan de nutricion guardado?",
+    deleteCustomProductBody: (name: string) => `¿Eliminar ${name}? Los items del borrador que lo usen se quitarán.`,
+    deleteNutritionPlan: "Eliminar plan de nutrición",
+    deleteNutritionPlanBody: "¿Eliminar este plan de nutrición guardado?",
     duplicate: "Duplicar",
-    durationGreaterThanZero: "La duracion debe ser mayor que 0.",
-    durationMinutes: "Duracion (minutos)",
+    durationGreaterThanZero: "La duración debe ser mayor que 0.",
+    durationMinutes: "Duración (minutos)",
     edit: "Editar",
     editCustomProduct: "Editar producto personalizado",
     editPlan: "Editar plan",
     editTargets: "Ajustar objetivos",
-    estimatesDisclaimer: "Athmira estima necesidades de fueling deportivo para planificar. No es consejo medico ni nutricional.",
+    estimatesDisclaimer: "Athmira estima necesidades de fueling deportivo para planificar. No es consejo médico ni nutricional.",
     expand: "Expandir",
     every30: "Cada 30 min",
     every30Long: "Cada 30 minutos",
@@ -371,61 +371,61 @@ const nutritionCopy = {
     everyHour: "Cada hora",
     foodCarried: "Comida para llevar",
     foodCarriedBody: "Geles, barras, sandwiches, fruta u otra comida por fuera de las caramañolas.",
-    fluids: "Liquidos",
-    fluidsHr: "Liquidos/h",
-    fluidsTarget: "Objetivo de hidratacion",
-    fuelingTimeline: "Linea de tiempo de fueling",
+    fluids: "Líquidos",
+    fluidsHr: "Líquidos/h",
+    fluidsTarget: "Objetivo de hidratación",
+    fuelingTimeline: "Línea de tiempo de fueling",
     globalProducts: "Productos globales",
-    heroBody: "Planifica carbos, hidratacion, sodio, calorias, botellas, comida para llevar y horarios para sesiones de resistencia.",
+    heroBody: "Planifica carbos, hidratación, sodio, calorías, botellas, comida para llevar y horarios para sesiones de resistencia.",
     heroDisclaimer:
-      "Athmira estima necesidades de fueling e hidratacion deportiva como guia educativa y de entrenamiento. No es consejo medico ni una dieta prescrita.",
-    heroKicker: "Planificacion de nutricion",
+      "Athmira estima necesidades de fueling e hidratación deportiva como guía educativa y de entrenamiento. No es consejo médico ni una dieta prescrita.",
+    heroKicker: "Planificación de nutrición",
     heroTitle: "Construye planes de fueling listos para carrera",
     insideBottle: "Dentro de botella",
     insideThisBottle: "Dentro de esta botella",
     itemToAdd: "Item a agregar",
     intensity: "Intensidad",
     itemsAssignedBottleNeedBottle: "Los items dentro de una botella necesitan una botella seleccionada.",
-    liquidVolumeMl: "Volumen liquido ml",
-    loadingNutritionPlans: "Cargando planes de nutricion...",
-    location: "Ubicacion",
+    liquidVolumeMl: "Volumen líquido ml",
+    loadingNutritionPlans: "Cargando planes de nutrición...",
+    location: "Ubicación",
     minute: "Minuto",
     name: "Nombre",
-    newConfiguration: "Nueva configuracion",
+    newConfiguration: "Nueva configuración",
     newCustomProduct: "Nuevo producto personalizado",
     newPlan: "Nuevo plan",
-    noItemsAssigned: "Aun no hay productos asignados aqui.",
-    noItemsYet: "Sin items aun",
-    noPlansBody: "Crea configuraciones reutilizables para fondos, carreras, sesiones indoor o dias de running.",
-    noPlansYet: "Aun no hay planes",
+    noItemsAssigned: "Aún no hay productos asignados aquí.",
+    noItemsYet: "Sin items aún",
+    noPlansBody: "Crea configuraciones reutilizables para fondos, carreras, sesiones indoor o días de running.",
+    noPlansYet: "Aún no hay planes",
     notes: "Notas",
-    notesPlaceholder: "Ejemplo: Fondo largo con dos caramañolas y comida solida cada hora",
-    nutritionPlan: "Plan de nutricion",
-    nutritionPlanDeleted: "Plan de nutricion eliminado.",
-    nutritionPlanNotFound: "Plan de nutricion no encontrado.",
-    nutritionPlanSaved: "Plan de nutricion guardado.",
-    planSetup: "Configuracion del plan",
+    notesPlaceholder: "Ejemplo: Fondo largo con dos caramañolas y comida sólida cada hora",
+    nutritionPlan: "Plan de nutrición",
+    nutritionPlanDeleted: "Plan de nutrición eliminado.",
+    nutritionPlanNotFound: "Plan de nutrición no encontrado.",
+    nutritionPlanSaved: "Plan de nutrición guardado.",
+    planSetup: "Configuración del plan",
     planAndTargets: "Plan y objetivos",
-    planTitle: "Titulo del plan",
-    planTitleRequired: "El titulo del plan es obligatorio.",
+    planTitle: "Título del plan",
+    planTitleRequired: "El título del plan es obligatorio.",
     plannedCarbsPerHour: "Carbos planificados por hora",
     profileWeight: "Peso del perfil",
     quantityGreaterThanZero: "La cantidad debe ser mayor que 0.",
-    quickSetup: "Configuracion rapida",
+    quickSetup: "Configuración rápida",
     remainingWater: "Agua restante",
     remove: "Quitar",
     reviewPlan: "Revisar plan",
     savePlan: "Guardar plan",
-    savedNutritionPlans: "Planes de nutricion guardados",
+    savedNutritionPlans: "Planes de nutrición guardados",
     savedPlan: "Plan guardado",
-    servingSize: "Tamano porcion",
-    servingUnit: "Unidad porcion",
+    servingSize: "Tamaño porción",
+    servingUnit: "Unidad porción",
     sodium: "Sodio",
     sodiumHr: "Sodio/h",
     sodiumMg: "Sodio mg",
     sodiumTarget: "Objetivo de sodio",
-    strategyBoard: "Estrategia de alimentacion",
-    strategyBoardBody: "Agrega cada ingrediente desde la tarjeta de la caramañola que estas llenando. Desliza horizontalmente para manejar mas botellas o comida.",
+    strategyBoard: "Estrategia de alimentación",
+    strategyBoardBody: "Agrega cada ingrediente desde la tarjeta de la caramañola que estás llenando. Desliza horizontalmente para manejar más botellas o comida.",
     startCardBody:
       "Usa el constructor para combinar botellas, gels, barras, bocadillos, gomitas, bananos, sandwiches, rice cakes y productos personalizados en una estrategia completa de fueling.",
     startCardTitle: "Selecciona o crea un plan",
@@ -438,24 +438,24 @@ const nutritionCopy = {
     targets: "Objetivos",
     totalPlan: "Plan total",
     timing: "Horario",
-    totalCalories: "Calorias totales",
+    totalCalories: "Calorías totales",
     totalCarbs: "Carbos totales",
-    totalFluids: "Liquidos totales",
+    totalFluids: "Líquidos totales",
     totalSodium: "Sodio total",
     unit: "Unidad",
     updateProduct: "Actualizar producto",
     usedByIngredients: "Ingredientes",
     useSuggestedValues: "Usar valores sugeridos",
     viewPlan: "Ver plan",
-    waterBottlePrompt: "Agrega al menos una caramañola para planificar hidratacion y carbohidratos dentro de botella.",
+    waterBottlePrompt: "Agrega al menos una caramañola para planificar hidratación y carbohidratos dentro de botella.",
     weightGrams: "Peso gramos",
-    youMustSignInProducts: "Debes iniciar sesion para gestionar productos."
+    youMustSignInProducts: "Debes iniciar sesión para gestionar productos."
   }
 } as const;
 
 const globalProductNameTranslations: Record<string, { en: string; es: string }> = {
   "00000000-0000-4000-8000-000000000100": { en: "Water", es: "Agua" },
-  "00000000-0000-4000-8000-000000000101": { en: "Sugar", es: "Azucar" },
+  "00000000-0000-4000-8000-000000000101": { en: "Sugar", es: "Azúcar" },
   "00000000-0000-4000-8000-000000000102": { en: "Salt", es: "Sal" },
   "00000000-0000-4000-8000-000000000103": { en: "Maltodextrin", es: "Maltodextrina" },
   "00000000-0000-4000-8000-000000000104": { en: "Honey", es: "Miel" },
@@ -1023,7 +1023,7 @@ export function NutritionPlanEditor({
       quantity: itemQuantity,
       serving_multiplier: 1,
       timing_type: location === "bottle" || location === "during" || location === "carried" ? "hourly" : null,
-      unit: product.default_serving_unit ?? (language === "es" ? "porcion" : "serving")
+      unit: product.default_serving_unit ?? (language === "es" ? "porción" : "serving")
     });
   }
 
@@ -2204,7 +2204,7 @@ function IngredientComposition({
             <View style={styles.simpleItemCopy}>
               <Text style={styles.simpleItemTitle}>{getProductDisplayName(item.product, language)}</Text>
               <Text style={styles.simpleItemMeta}>
-                {item.quantity} {item.unit ?? (language === "es" ? "porcion" : "serving")} / {round(calculated.calculated_carbs, 0)} g {copy.carbs.toLowerCase()} / {round(calculated.calculated_sodium_mg, 0)} mg {copy.sodium.toLowerCase()}
+                {item.quantity} {item.unit ?? (language === "es" ? "porción" : "serving")} / {round(calculated.calculated_carbs, 0)} g {copy.carbs.toLowerCase()} / {round(calculated.calculated_sodium_mg, 0)} mg {copy.sodium.toLowerCase()}
               </Text>
             </View>
             {readonly ? null : (
@@ -2665,7 +2665,7 @@ function SimpleItemList({
             <View style={styles.simpleItemCopy}>
               <Text style={styles.simpleItemTitle}>{getProductDisplayName(item.product, language)}</Text>
               <Text style={styles.simpleItemMeta}>
-                {item.quantity} {item.unit ?? (language === "es" ? "porcion" : "serving")} / {round(calculated.calculated_carbs, 0)} g {copy.carbs.toLowerCase()} / {round(calculated.calculated_sodium_mg, 0)} mg {copy.sodium.toLowerCase()}
+                {item.quantity} {item.unit ?? (language === "es" ? "porción" : "serving")} / {round(calculated.calculated_carbs, 0)} g {copy.carbs.toLowerCase()} / {round(calculated.calculated_sodium_mg, 0)} mg {copy.sodium.toLowerCase()}
               </Text>
             </View>
             {readonly ? null : (
@@ -3156,7 +3156,7 @@ export function ProductCard({
             {round(product.sodium_mg_per_serving, 0)} mg sodium
           </Text>
           <Text style={styles.productMeta}>
-            {product.default_serving_size ?? 1} {product.default_serving_unit ?? (language === "es" ? "porcion" : "serving")} / {getCategoryLabel(product.category, language)}
+            {product.default_serving_size ?? 1} {product.default_serving_unit ?? (language === "es" ? "porción" : "serving")} / {getCategoryLabel(product.category, language)}
           </Text>
         </View>
       </Pressable>
@@ -3416,7 +3416,7 @@ export function NutritionTimeline({ items }: { items: DraftItem[] }) {
           <View style={styles.timelineCopy}>
             <Text style={styles.timelineTitle}>{formatTiming(item, language)}</Text>
             <Text style={styles.timelineMeta}>
-              {getProductDisplayName(item.product, language)} / {item.quantity} {item.unit ?? (language === "es" ? "porcion" : "serving")} / {getLocationLabel(item.location, language)}
+              {getProductDisplayName(item.product, language)} / {item.quantity} {item.unit ?? (language === "es" ? "porción" : "serving")} / {getLocationLabel(item.location, language)}
             </Text>
           </View>
         </View>
@@ -3738,7 +3738,7 @@ function getCategoryOptions(language: "en" | "es") {
       { label: "Ingrediente de botella", value: "bottle_ingredient" },
       { label: "Gel", value: "gel" },
       { label: "Barra", value: "bar" },
-      { label: "Comida solida", value: "solid_food" },
+      { label: "Comida sólida", value: "solid_food" },
       { label: "Bebida", value: "drink" },
       { label: "Polvo", value: "powder" },
       { label: "Fruta", value: "fruit" },
@@ -3847,15 +3847,15 @@ function translateNutritionWarning(message: string, language: "en" | "es") {
   }
 
   if (message === "Carbs per hour are well below the target for this session.") {
-    return "Los carbohidratos por hora estan bastante por debajo del objetivo para esta sesion.";
+    return "Los carbohidratos por hora están bastante por debajo del objetivo para esta sesión.";
   }
 
   if (message === "Carbs per hour are above target. Make sure this amount is trained gradually.") {
-    return "Los carbohidratos por hora estan por encima del objetivo. Entrena esta cantidad gradualmente.";
+    return "Los carbohidratos por hora están por encima del objetivo. Entrena esta cantidad gradualmente.";
   }
 
   if (message === "Hydration is below the current target for the planned duration.") {
-    return "La hidratacion esta por debajo del objetivo actual para la duracion planeada.";
+    return "La hidratación esta por debajo del objetivo actual para la duración planeada.";
   }
 
   if (message === "Sodium is lower than the target. Adjust for sweat rate, heat, and tolerance.") {
@@ -3863,7 +3863,7 @@ function translateNutritionWarning(message: string, language: "en" | "es") {
   }
 
   if (message === "This is an estimated sports fueling plan for training guidance, not medical advice.") {
-    return "Este es un plan estimado de fueling deportivo para guia de entrenamiento, no consejo medico.";
+    return "Este es un plan estimado de fueling deportivo para guía de entrenamiento, no consejo médico.";
   }
 
   return message

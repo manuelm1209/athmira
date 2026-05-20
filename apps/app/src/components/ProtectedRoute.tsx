@@ -4,6 +4,8 @@ import type { PropsWithChildren } from "react";
 
 import { useAuth } from "@/providers/AuthProvider";
 
+import { SeoHead } from "./SeoHead";
+
 type ProtectedRouteProps = PropsWithChildren<{
   requireAdmin?: boolean;
 }>;
@@ -13,9 +15,16 @@ export function ProtectedRoute({ children, requireAdmin }: ProtectedRouteProps) 
 
   if (loading || (requireAdmin && adminLoading)) {
     return (
-      <Screen centered>
-        <Body>Loading...</Body>
-      </Screen>
+      <>
+        <SeoHead
+          description="Área privada de Athmira para atletas autenticados."
+          noindex
+          title="Área privada | Athmira"
+        />
+        <Screen centered>
+          <Body>Loading...</Body>
+        </Screen>
+      </>
     );
   }
 
@@ -27,5 +36,14 @@ export function ProtectedRoute({ children, requireAdmin }: ProtectedRouteProps) 
     return <Redirect href="/dashboard" />;
   }
 
-  return children;
+  return (
+    <>
+      <SeoHead
+        description="Área privada de Athmira para atletas autenticados."
+        noindex
+        title="Área privada | Athmira"
+      />
+      {children}
+    </>
+  );
 }

@@ -26,6 +26,12 @@ type NavItem = {
   label: string;
 };
 
+type MarketingNavItem = {
+  href: Href;
+  key: string;
+  label: string;
+};
+
 export function AppShell({ children }: PropsWithChildren) {
   const pathname = usePathname();
   const { isAdmin, session, signOut } = useAuth();
@@ -85,6 +91,12 @@ export function AppShell({ children }: PropsWithChildren) {
         { href: "/auth/login", key: "login", label: t("login") },
         { href: "/auth/signup", key: "signup", label: t("createAccount") }
       ];
+  const marketingNavItems: MarketingNavItem[] = [
+    { href: "/#funciones" as Href, key: "features", label: t("homeNavFeatures") },
+    { href: "/#como-funciona" as Href, key: "howItWorks", label: t("homeNavHowItWorks") },
+    { href: "/#limitaciones" as Href, key: "science", label: t("homeNavScience") },
+    { href: "/#progreso" as Href, key: "resources", label: t("homeNavResources") }
+  ];
 
   return (
     <View style={styles.root}>
@@ -109,10 +121,13 @@ export function AppShell({ children }: PropsWithChildren) {
         <View style={[styles.nav, compact && styles.navCompact]}>
           {session || compact ? null : (
             <View style={styles.marketingNav}>
-              <Text style={styles.marketingNavText}>{t("homeNavFeatures")}</Text>
-              <Text style={styles.marketingNavText}>{t("homeNavHowItWorks")}</Text>
-              <Text style={styles.marketingNavText}>{t("homeNavScience")}</Text>
-              <Text style={styles.marketingNavText}>{t("homeNavResources")}</Text>
+              {marketingNavItems.map((item) => (
+                <Link href={item.href} asChild key={item.key}>
+                  <Pressable accessibilityRole="link">
+                    <Text style={styles.marketingNavText}>{item.label}</Text>
+                  </Pressable>
+                </Link>
+              ))}
             </View>
           )}
           {navItems.map((item) => (

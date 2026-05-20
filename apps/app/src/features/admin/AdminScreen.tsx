@@ -103,24 +103,24 @@ const adminNutritionCopy = {
     weight: "Weight g"
   },
   es: {
-    calories: "Calorias",
-    category: "Categoria",
+    calories: "Calorías",
+    category: "Categoría",
     carbs: "Carbohidratos",
     createProduct: "Nuevo producto",
     editExistingProduct: "Editar producto existente",
-    englishName: "Nombre en ingles",
-    liquid: "Liquido ml",
-    nameRequired: "El nombre en ingles y espanol es obligatorio.",
+    englishName: "Nombre en inglés",
+    liquid: "Líquido ml",
+    nameRequired: "El nombre en inglés y español es obligatorio.",
     nutritionProductsAction: "Editar productos",
-    nutritionProducts: "Productos de nutricion",
-    nutritionProductsBody: "Edita los alimentos globales usados en Plan de nutricion. Estos valores afectan nuevas adiciones en los planes.",
+    nutritionProducts: "Productos de nutrición",
+    nutritionProductsBody: "Edita los alimentos globales usados en Plan de nutrición. Estos valores afectan nuevas adiciones en los planes.",
     notes: "Notas",
-    productSaved: "Producto de nutricion actualizado.",
-    productCreated: "Producto de nutricion creado.",
+    productSaved: "Producto de nutrición actualizado.",
+    productCreated: "Producto de nutrición creado.",
     saveProduct: "Guardar producto",
-    spanishName: "Nombre en espanol",
-    servingSize: "Tamano de porcion",
-    servingUnit: "Unidad de porcion",
+    spanishName: "Nombre en español",
+    servingSize: "Tamaño de porción",
+    servingUnit: "Unidad de porción",
     sodium: "Sodio mg",
     weight: "Peso g"
   }
@@ -135,17 +135,17 @@ const adminHubCopy = {
     open: "Open"
   },
   es: {
-    createUsersBody: "Crea usuarios, revisa cuentas de atletas, gestiona roles, restablece contrasenas temporales e inspecciona bicicletas o analisis de Bike Fit.",
+    createUsersBody: "Crea usuarios, revisa cuentas de atletas, gestiona roles, restablece contraseñas temporales e inspecciona bicicletas o análisis de Bike Fit.",
     createUsersTitle: "Usuarios y roles",
-    hubBody: "Elige el area administrativa que quieres gestionar.",
-    nutritionBody: "Actualiza los valores de composicion de productos globales usados en los planes de alimentacion.",
+    hubBody: "Elige el área administrativa que quieres gestionar.",
+    nutritionBody: "Actualiza los valores de composición de productos globales usados en los planes de alimentación.",
     open: "Abrir"
   }
 };
 
 const adminProductNameTranslations: Record<string, { en: string; es: string }> = {
   "00000000-0000-4000-8000-000000000100": { en: "Water", es: "Agua" },
-  "00000000-0000-4000-8000-000000000101": { en: "Sugar", es: "Azucar" },
+  "00000000-0000-4000-8000-000000000101": { en: "Sugar", es: "Azúcar" },
   "00000000-0000-4000-8000-000000000102": { en: "Salt", es: "Sal" },
   "00000000-0000-4000-8000-000000000103": { en: "Maltodextrin", es: "Maltodextrina" },
   "00000000-0000-4000-8000-000000000104": { en: "Honey", es: "Miel" },
@@ -1054,7 +1054,7 @@ function adminNutritionCategoryOptions(language: "en" | "es"): { label: string; 
       { label: "Ingrediente de caramañola", value: "bottle_ingredient" },
       { label: "Gel", value: "gel" },
       { label: "Barra", value: "bar" },
-      { label: "Comida solida", value: "solid_food" },
+      { label: "Comida sólida", value: "solid_food" },
       { label: "Bebida", value: "drink" },
       { label: "Polvo", value: "powder" },
       { label: "Fruta", value: "fruit" },

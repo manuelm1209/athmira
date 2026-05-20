@@ -1,0 +1,17 @@
+{
+  "name": "Athmira",
+  "short_name": "Athmira",
+  "description": "Bike Fit con cámara, análisis de postura, presión de llantas, nutrición e hidratación para ciclistas y deportistas de endurance.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#f3f8fa",
+  "theme_color": "#063f3d",
+  "icons": [
+    {
+      "src": "/og-image.png",
+      "sizes": "1280x720",
+      "type": "image/png"
+    }
+  ]
+}
