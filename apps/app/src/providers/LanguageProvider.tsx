@@ -18,7 +18,7 @@ const LanguageContext = createContext<LanguageContextValue | null>(null);
 
 export function LanguageProvider({ children }: PropsWithChildren) {
   const { profile, updateProfile, user } = useAuth();
-  const [language, setLanguageState] = useState<LanguageCode>("en");
+  const [language, setLanguageState] = useState<LanguageCode>("es");
 
   useEffect(() => {
     let mounted = true;
@@ -27,7 +27,7 @@ export function LanguageProvider({ children }: PropsWithChildren) {
       const stored = await AsyncStorage.getItem(STORAGE_KEY);
       const deviceLanguage =
         typeof navigator !== "undefined" && "language" in navigator ? navigator.language : undefined;
-      const nextLanguage = normalizeLanguage(stored ?? deviceLanguage);
+      const nextLanguage = normalizeLanguage(stored ?? deviceLanguage ?? "es");
 
       if (mounted) {
         setLanguageState(nextLanguage);

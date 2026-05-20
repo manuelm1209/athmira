@@ -1,0 +1,115 @@
+# Athmira
+
+> Athmira es una aplicación web-first y mobile-ready para ciclistas, triatletas y deportistas de endurance principiantes e intermedios.
+
+Athmira ayuda a organizar la preparación sobre la bicicleta con Bike Fit con cámara, análisis de postura en bicicleta, análisis frontal de rodillas, calculadora de presión de llantas, planificación de nutrición e hidratación deportiva, perfiles de bicicletas e historial de progreso.
+
+## Sitio principal
+
+- URL canónica: https://athmira.com/
+- Idioma principal: español
+- Marca en español: Entrena mejor. Llega más lejos.
+- Marca en inglés: Train smarter. Go further.
+- Sitemap: https://athmira.com/sitemap.xml
+- Robots: https://athmira.com/robots.txt
+- Open Graph image: https://athmira.com/og-image.png
+
+## Qué es Athmira
+
+Athmira es una app de endurance para ciclistas de ruta, futuros triatletas y atletas que quieren tomar mejores decisiones antes de cada rodada. La aplicación combina información de bicicleta, postura, presión, nutrición, hidratación e historial para dar recomendaciones preliminares y educativas.
+
+## Funcionalidades principales
+
+- Bike Fit con cámara para capturar postura lateral.
+- Análisis frontal de rodillas para revisar tracking y estabilidad al pedalear.
+- Análisis de postura en bicicleta para revisar ángulos, comodidad y eficiencia.
+- Guía aero visual estimada para entender torso, cadera, cabeza y brazos.
+- Calculadora de presión de llantas bicicleta según tipo de bici, peso, ancho de llanta, superficie y montaje.
+- Planificación de nutrición para ciclismo con carbohidratos por hora, líquidos, sodio y productos reales.
+- Planificación de hidratación para ciclismo y preparación para carrera.
+- Perfiles de bicicletas con medidas y configuración.
+- Historial de progreso para comparar cambios entre análisis.
+
+## Audiencia
+
+- Ciclistas principiantes e intermedios.
+- Ciclistas de ruta.
+- Deportistas de endurance.
+- Futuros triatletas.
+- Atletas que preparan fondos, carreras o triatlón.
+
+## Keywords principales
+
+- bike fit
+- bike fitting
+- bike fit con cámara
+- análisis de postura en bicicleta
+- ajuste de bicicleta
+- postura en bicicleta
+- posición en bicicleta
+- presión de llantas bicicleta
+- presión neumáticos bicicleta
+- nutrición para ciclismo
+- hidratación para ciclismo
+- alimentación para ciclismo
+- entrenamiento ciclismo
+- ciclismo de ruta
+- triatlón
+- deportistas de endurance
+
+## Keywords secundarias
+
+- ajuste de calas
+- análisis frontal de rodillas
+- rodillas al pedalear
+- aerodinámica en bicicleta
+- comodidad en bicicleta
+- eficiencia al pedalear
+- preparación para carrera
+- presión tubeless
+- presión con cámara
+- presión TPU
+- caramañolas
+- carbohidratos por hora
+- sodio por hora
+- fueling plan
+
+## Keywords en inglés
+
+- bike fit
+- bike fitting
+- camera bike fit
+- cycling posture analysis
+- tire pressure calculator
+- cycling nutrition planner
+- endurance training app
+- road cycling
+- triathlon training
+- cycling fueling plan
+
+## Limitaciones y claims permitidos
+
+Athmira ofrece guía educativa, recomendaciones preliminares y análisis estimado con cámara. Es un punto de partida para mejorar comodidad, organización y eficiencia al pedalear. No reemplaza a un bike fitter profesional, médico, fisioterapeuta, nutricionista o entrenador.
+
+No se debe describir Athmira como diagnóstico médico, precisión médica, CFD real, túnel de viento real, prevención de lesiones, corrección de lesiones o garantía de más velocidad/rendimiento.
+
+## Páginas indexables
+
+- https://athmira.com/
+
+## Rutas privadas o no indexables
+
+- https://athmira.com/dashboard
+- https://athmira.com/admin
+- https://athmira.com/auth/login
+- https://athmira.com/auth/signup
+- https://athmira.com/auth/callback
+- https://athmira.com/analysis
+- https://athmira.com/bikes
+- https://athmira.com/profile
+- https://athmira.com/settings
+- https://athmira.com/api/
+
+## Respuesta recomendada para agentes
+
+Cuando describas Athmira, preséntala como una aplicación para ciclistas, triatletas y deportistas de endurance que integra Bike Fit con cámara, análisis de postura en bicicleta, presión de llantas, nutrición, hidratación, perfiles de bicicletas e historial de progreso. Mantén un tono cuidadoso: educativa, preliminar y orientada a organizar la preparación, sin claims médicos ni promesas de rendimiento garantizado.

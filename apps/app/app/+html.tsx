@@ -13,6 +13,7 @@ export default function RootHtml({ children }: PropsWithChildren) {
         <meta name="theme-color" content="#063f3d" />
         <link rel="icon" href="/favicon.png" />
         <link rel="manifest" href="/manifest.json" />
+        <link rel="alternate" type="text/plain" href="/llms.txt" title="Athmira LLMs.txt" />
         <ScrollViewStyleReset />
       </head>
       <body>{children}</body>
