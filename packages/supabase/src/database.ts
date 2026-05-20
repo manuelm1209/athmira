@@ -14,7 +14,9 @@ import type {
   NutritionProductCategory,
   NutritionProductScope,
   NutritionTimingType,
+  BikeFitZone,
   RecommendationCategory,
+  RecommendationConfidence,
   RecommendationPriority,
   TireSetup,
   TireWidthUnit
@@ -532,29 +534,56 @@ export type Database = {
         Row: {
           id: string;
           session_id: string;
+          recommendation_id: string | null;
           priority: RecommendationPriority;
           category: RecommendationCategory;
+          title: string | null;
           message: string;
+          explanation: string | null;
+          suggested_action: string | null;
+          retest_instruction: string | null;
+          medical_disclaimer: string | null;
           adjustment_mm: number | null;
           confidence_score: number | null;
+          confidence_label: RecommendationConfidence | null;
+          zone: BikeFitZone | null;
+          is_primary: boolean | null;
           created_at: string;
         };
         Insert: {
           id?: string;
           session_id: string;
+          recommendation_id?: string | null;
           priority: RecommendationPriority;
           category: RecommendationCategory;
+          title?: string | null;
           message: string;
+          explanation?: string | null;
+          suggested_action?: string | null;
+          retest_instruction?: string | null;
+          medical_disclaimer?: string | null;
           adjustment_mm?: number | null;
           confidence_score?: number | null;
+          confidence_label?: RecommendationConfidence | null;
+          zone?: BikeFitZone | null;
+          is_primary?: boolean | null;
           created_at?: string;
         };
         Update: {
+          recommendation_id?: string | null;
           priority?: RecommendationPriority;
           category?: RecommendationCategory;
+          title?: string | null;
           message?: string;
+          explanation?: string | null;
+          suggested_action?: string | null;
+          retest_instruction?: string | null;
+          medical_disclaimer?: string | null;
           adjustment_mm?: number | null;
           confidence_score?: number | null;
+          confidence_label?: RecommendationConfidence | null;
+          zone?: BikeFitZone | null;
+          is_primary?: boolean | null;
         };
         Relationships: [];
       };

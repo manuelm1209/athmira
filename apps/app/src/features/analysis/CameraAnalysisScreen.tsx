@@ -3,7 +3,8 @@ import {
   createAnalysisSummary,
   createFitMeasurement,
   createFitSession,
-  createRecommendations
+  createRecommendations,
+  getBike
 } from "@athmira/supabase";
 import type { DeviceType, PoseFrameResult } from "@athmira/types";
 import { Body, Button, Card, Heading, Inline, Screen, colors, spacing } from "@athmira/ui";
@@ -15,6 +16,7 @@ import { useAuth } from "@/providers/AuthProvider";
 import { useLanguage } from "@/providers/LanguageProvider";
 import { getErrorMessage } from "@/utils/form";
 
+import { parseBikeFitDiscipline, parseBikeFitGoal, parseBikeFitPainAreas } from "./analysisOptions";
 import { createBikeFitAnalysisSummary } from "./analysisSummary";
 import { BikeFitCamera } from "./BikeFitCamera";
 import type { BikeFitCameraHandle } from "./BikeFitCamera.types";
@@ -30,7 +32,8 @@ function getDeviceType(): DeviceType {
 export function CameraAnalysisScreen() {
   const cameraRef = useRef<BikeFitCameraHandle | null>(null);
   const router = useRouter();
-  const { bikeId } = useLocalSearchParams<{ bikeId?: string }>();
+  const params = useLocalSearchParams<{ bikeId?: string; discipline?: string; goal?: string; painAreas?: string }>();
+  const bikeId = params.bikeId;
   const { profile, user } = useAuth();
   const { language, t } = useLanguage();
   const [cameraReady, setCameraReady] = useState(false);
@@ -70,9 +73,17 @@ export function CameraAnalysisScreen() {
         throw new Error(t("poseNotReady"));
       }
 
+      const bike = bikeId ? await getBike(user.id, bikeId) : null;
+      const goal = parseBikeFitGoal(params.goal);
+      const discipline = parseBikeFitDiscipline(params.discipline, bike?.bike_type);
+      const painAreas = parseBikeFitPainAreas(params.painAreas);
       const summary = createBikeFitAnalysisSummary({
+        bike,
+        discipline,
         durationMs: 8000,
+        goal,
         language,
+        painAreas,
         profile,
         samples
       });
@@ -114,10 +125,14 @@ export function CameraAnalysisScreen() {
             hipAngleAvg: summary.angles.hipAngle ?? null,
             kneeAngleMax: summary.kneeAngleMax,
             kneeAngleMin: summary.kneeAngleMin,
+            bikeFitDiscipline: discipline,
+            bikeFitGoal: goal,
+            painAreas,
+            primaryRecommendationId: summary.recommendations.find((recommendation) => recommendation.isPrimary)?.id ?? null,
             shoulderAngleAvg: summary.angles.shoulderAngle ?? null,
             torsoAngleAvg: summary.angles.torsoAngle ?? null
           },
-          overallScore: summary.fitScore.comfortScore,
+          overallScore: summary.compositeScore,
           sampleCount: summary.sampleCount,
           sessionId: session.id,
           title: t("sideFitAnalysis"),

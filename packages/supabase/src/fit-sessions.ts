@@ -124,11 +124,20 @@ export async function createRecommendations(input: {
     .insert(
       input.recommendations.map((recommendation) => ({
         session_id: input.sessionId,
+        recommendation_id: recommendation.id ?? null,
         priority: recommendation.priority,
         category: recommendation.category,
+        title: recommendation.title ?? null,
         message: recommendation.message,
+        explanation: recommendation.explanation ?? null,
+        suggested_action: recommendation.suggestedAction ?? null,
+        retest_instruction: recommendation.retestInstruction ?? null,
+        medical_disclaimer: recommendation.medicalDisclaimer ?? null,
         adjustment_mm: recommendation.adjustmentMm ?? null,
-        confidence_score: recommendation.confidenceScore
+        confidence_score: recommendation.confidenceScore,
+        confidence_label: recommendation.confidence ?? null,
+        zone: recommendation.zone ?? null,
+        is_primary: recommendation.isPrimary ?? false
       }))
     )
     .select("*");

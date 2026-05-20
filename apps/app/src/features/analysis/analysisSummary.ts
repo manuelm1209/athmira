@@ -1,6 +1,10 @@
 import { calculateAeroScore } from "@athmira/aero-engine";
-import { calculateFitScore, generateFitRecommendations } from "@athmira/fit-engine";
+import { calculateFitScore, generateBikeFitRecommendations } from "@athmira/fit-engine";
 import type {
+  Bike,
+  BikeFitDiscipline,
+  BikeFitGoal,
+  BikeFitPainArea,
   CalculatedAeroScore,
   FitRecommendation,
   FitScore,
@@ -13,6 +17,7 @@ import type {
 export type BikeFitAnalysisSummary = {
   aeroScore: CalculatedAeroScore;
   angles: JointAngles;
+  compositeScore: number;
   confidenceScore: number;
   durationMs: number;
   fitScore: FitScore;
@@ -27,8 +32,12 @@ const angleKeys = ["kneeAngle", "hipAngle", "torsoAngle", "elbowAngle", "shoulde
 type AngleKey = (typeof angleKeys)[number];
 
 export function createBikeFitAnalysisSummary(input: {
+  bike?: Bike | null;
+  discipline?: BikeFitDiscipline;
   durationMs: number;
+  goal?: BikeFitGoal;
   language: LanguageCode;
+  painAreas?: BikeFitPainArea[];
   profile?: UserProfile | null;
   samples: PoseFrameResult[];
 }): BikeFitAnalysisSummary {
@@ -53,23 +62,29 @@ export function createBikeFitAnalysisSummary(input: {
     confidence_score: confidenceScore
   });
   const aeroScore = calculateAeroScore(pose, angles);
-  const recommendations = generateFitRecommendations(
-    { ...angles, kneeAngle: kneeAngleMax ?? angles.kneeAngle },
-    null,
-    input.profile,
-    input.language
-  );
+  const recommendationResult = generateBikeFitRecommendations({
+    angles,
+    bikeProfile: input.bike,
+    confidenceScore,
+    discipline: input.discipline,
+    goal: input.goal,
+    kneeAngleMax,
+    kneeAngleMin,
+    language: input.language,
+    painAreas: input.painAreas
+  });
 
   return {
     aeroScore,
     angles,
+    compositeScore: recommendationResult.compositeScore,
     confidenceScore,
     durationMs: input.durationMs,
     fitScore,
     kneeAngleMax,
     kneeAngleMin,
     pose,
-    recommendations,
+    recommendations: recommendationResult.recommendations,
     sampleCount: samples.length
   };
 }

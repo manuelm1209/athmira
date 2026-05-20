@@ -1,5 +1,8 @@
 import type {
   Bike,
+  BikeFitDiscipline,
+  BikeFitGoal,
+  BikeFitPainArea,
   FitMeasurement,
   FitRecommendation,
   FitScore,
@@ -12,6 +15,19 @@ import type {
   PoseKeypoint,
   UserProfile
 } from "@athmira/types";
+
+import {
+  generateBikeFitRecommendations,
+  type BikeFitRecommendationThresholds
+} from "./bikeFitRecommendationEngine";
+
+export {
+  defaultBikeFitRecommendationThresholds,
+  generateBikeFitRecommendations,
+  type BikeFitRecommendationInput,
+  type BikeFitRecommendationResult,
+  type BikeFitRecommendationThresholds
+} from "./bikeFitRecommendationEngine";
 
 export function calculateFitScore(measurements: Partial<FitMeasurement> | JointAngles): FitScore {
   const kneeAngle = isJointAngles(measurements) ? measurements.kneeAngle : measurements.knee_angle_max;
@@ -54,125 +70,43 @@ function isJointAngles(measurements: Partial<FitMeasurement> | JointAngles): mea
 
 export function generateFitRecommendations(
   measurements: JointAngles,
-  _bikeProfile?: Bike | null,
+  bikeProfile?: Bike | null,
   _userProfile?: UserProfile | null,
-  language: LanguageCode = "en"
+  language: LanguageCode = "en",
+  options: {
+    confidenceScore?: number | null;
+    discipline?: BikeFitDiscipline;
+    goal?: BikeFitGoal;
+    kneeAngleMax?: number | null;
+    kneeAngleMin?: number | null;
+    painAreas?: BikeFitPainArea[];
+    thresholds?: Partial<BikeFitRecommendationThresholds>;
+  } = {}
 ): FitRecommendation[] {
-  const isSpanish = language === "es";
-  const recommendations: FitRecommendation[] = [];
-  const kneeAngle = measurements.kneeAngle;
-  const hipAngle = measurements.hipAngle;
-  const torsoAngle = measurements.torsoAngle;
-  const elbowAngle = measurements.elbowAngle;
-
-  if (kneeAngle && kneeAngle > 156) {
-    recommendations.push({
-      priority: "high",
-      category: "saddle_height",
-      message: isSpanish
-        ? "La pierna se ve demasiado extendida en el punto mas bajo. Baja el sillin en pequenos pasos y repite el analisis."
-        : "Your leg looks overextended near the bottom of the stroke. Lower the saddle in small steps and repeat the analysis.",
-      adjustmentMm: -4,
-      confidenceScore: 0.78
-    });
-  } else if (kneeAngle && kneeAngle < 136) {
-    recommendations.push({
-      priority: "high",
-      category: "saddle_height",
-      message: isSpanish
-        ? "La rodilla queda demasiado cerrada. Sube el sillin gradualmente y vuelve a medir antes de hacer cambios grandes."
-        : "Your knee remains too closed. Raise the saddle gradually and re-measure before making larger changes.",
-      adjustmentMm: 4,
-      confidenceScore: 0.78
-    });
-  } else {
-    recommendations.push({
-      priority: "low",
-      category: "saddle_height",
-      message: isSpanish
-        ? "La extension de rodilla estimada esta cerca del rango objetivo. Mantén los cambios de sillin pequenos."
-        : "Your estimated knee extension is close to the target range. Keep saddle-height changes small.",
-      confidenceScore: 0.72
-    });
-  }
-
-  if (hipAngle && hipAngle < 42) {
-    recommendations.push({
-      priority: "medium",
-      category: "reach",
-      message: isSpanish
-        ? "La cadera se ve muy cerrada. Revisa alcance, altura frontal o rotacion de pelvis si sientes compresion al pedalear."
-        : "Your hip angle looks very closed. Check reach, front-end height, or pelvic rotation if you feel compressed while riding.",
-      confidenceScore: 0.72
-    });
-  } else if (hipAngle && hipAngle > 66) {
-    recommendations.push({
-      priority: "medium",
-      category: "torso",
-      message: isSpanish
-        ? "La postura se ve bastante abierta. Puede ser comoda, pero si buscas aero considera bajar la parte frontal poco a poco."
-        : "Your position looks fairly open. That may be comfortable, but if aero is the goal consider lowering the front end gradually.",
-      confidenceScore: 0.72
-    });
-  }
-
-  if (torsoAngle && torsoAngle > 52) {
-    recommendations.push({
-      priority: "medium",
-      category: "aero",
-      message: isSpanish
-        ? "El torso esta alto para una posicion aero. Prueba ajustes pequenos en cockpit antes de comprometer comodidad."
-        : "Your torso is high for an aero-oriented position. Try small cockpit changes before sacrificing comfort.",
-      confidenceScore: 0.7
-    });
-  } else if (torsoAngle && torsoAngle < 25) {
-    recommendations.push({
-      priority: "low",
-      category: "comfort",
-      message: isSpanish
-        ? "La posicion es agresiva. Vigila cuello, espalda y respiracion durante esfuerzos largos."
-        : "This is an aggressive position. Watch neck, back, and breathing comfort during longer efforts.",
-      confidenceScore: 0.68
-    });
-  }
-
-  if (elbowAngle && elbowAngle > 122) {
-    recommendations.push({
-      priority: "medium",
-      category: "arms",
-      message: isSpanish
-        ? "Los brazos se ven muy extendidos. Un codo ligeramente flexionado mejora control y reduce carga en hombros."
-        : "Your arms look too extended. A slight elbow bend improves control and reduces shoulder load.",
-      confidenceScore: 0.72
-    });
-  } else if (elbowAngle && elbowAngle < 72) {
-    recommendations.push({
-      priority: "low",
-      category: "reach",
-      message: isSpanish
-        ? "El codo se ve muy cerrado. Si sientes presion en manos o hombros, revisa alcance y apoyo."
-        : "Your elbow angle looks very closed. If you feel hand or shoulder pressure, review reach and support.",
-      confidenceScore: 0.68
-    });
-  }
-
-  recommendations.push({
-    priority: "low",
-    category: "head",
-    message: isSpanish
-      ? "Mantén la cabeza estable y la mirada al frente. La guia es educativa y no reemplaza un fit profesional."
-      : "Keep your head stable with eyes forward. This guidance is educational and does not replace a professional fit.",
-    confidenceScore: 0.66
-  });
-
-  return recommendations.slice(0, 5);
+  return generateBikeFitRecommendations({
+    angles: measurements,
+    bikeProfile,
+    confidenceScore: options.confidenceScore,
+    discipline: options.discipline,
+    goal: options.goal,
+    kneeAngleMax: options.kneeAngleMax,
+    kneeAngleMin: options.kneeAngleMin,
+    language,
+    painAreas: options.painAreas,
+    thresholds: options.thresholds
+  }).recommendations;
 }
 
 export function analyzeFrontKneeTracking(
   poseFrames: PoseFrameResult[],
   options: {
+    bikeProfile?: Bike | null;
+    discipline?: BikeFitDiscipline;
     durationMs?: number;
+    goal?: BikeFitGoal;
     language?: LanguageCode;
+    painAreas?: BikeFitPainArea[];
+    thresholds?: Partial<BikeFitRecommendationThresholds>;
     userProfile?: UserProfile | null;
   } = {}
 ): FrontKneeTrackingResult {
@@ -182,15 +116,29 @@ export function analyzeFrontKneeTracking(
   const left = calculateSideMetrics(samples, "left", estimatedMmPerPixel);
   const right = calculateSideMetrics(samples, "right", estimatedMmPerPixel);
   const confidenceScore = round((left.confidenceScore + right.confidenceScore) / 2, 2);
-  const overallScore = Math.round((left.stabilityScore + right.stabilityScore) / 2);
+  const trackingScore = Math.round((left.stabilityScore + right.stabilityScore) / 2);
+  const recommendationResult = generateBikeFitRecommendations({
+    bikeProfile: options.bikeProfile,
+    confidenceScore,
+    discipline: options.discipline,
+    frontKnee: {
+      left,
+      overallScore: trackingScore,
+      right
+    },
+    goal: options.goal,
+    language: options.language ?? "en",
+    painAreas: options.painAreas,
+    thresholds: options.thresholds
+  });
 
   return {
     confidenceScore,
     durationMs,
     estimatedMmPerPixel,
     left,
-    overallScore,
-    recommendations: generateFrontKneeRecommendations(left, right, overallScore, options.language ?? "en"),
+    overallScore: recommendationResult.compositeScore,
+    recommendations: recommendationResult.recommendations,
     right,
     sampleCount: Math.max(left.sampleCount, right.sampleCount)
   };

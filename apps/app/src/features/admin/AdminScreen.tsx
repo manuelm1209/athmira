@@ -128,14 +128,14 @@ const adminNutritionCopy = {
 
 const adminHubCopy = {
   en: {
-    createUsersBody: "Create users, review athlete accounts, manage roles, reset temporary passwords, and inspect bikes or camera tests.",
+    createUsersBody: "Create users, review athlete accounts, manage roles, reset temporary passwords, and inspect bikes or Bike Fit analyses.",
     createUsersTitle: "Users and roles",
     hubBody: "Choose the administrative area you want to manage.",
     nutritionBody: "Update global nutrition product composition values used by fueling plans.",
     open: "Open"
   },
   es: {
-    createUsersBody: "Crea usuarios, revisa cuentas de atletas, gestiona roles, restablece contrasenas temporales e inspecciona bicicletas o tests de camara.",
+    createUsersBody: "Crea usuarios, revisa cuentas de atletas, gestiona roles, restablece contrasenas temporales e inspecciona bicicletas o analisis de Bike Fit.",
     createUsersTitle: "Usuarios y roles",
     hubBody: "Elige el area administrativa que quieres gestionar.",
     nutritionBody: "Actualiza los valores de composicion de productos globales usados en los planes de alimentacion.",

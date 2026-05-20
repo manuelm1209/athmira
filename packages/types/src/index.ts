@@ -22,10 +22,41 @@ export type AnalysisType = "side_bike_fit" | "front_knee_tracking";
 
 export type RecommendationPriority = "low" | "medium" | "high";
 
+export type RecommendationConfidence = "low" | "medium" | "high";
+
+export type BikeFitZone = "ok" | "review" | "high_risk_adjustment" | "low_tracking_confidence";
+
+export type BikeFitGoal = "comfort" | "balanced" | "aggressive" | "competition";
+
+export type BikeFitDiscipline =
+  | "road_endurance"
+  | "road_race"
+  | "gravel_adventure"
+  | "gravel_race"
+  | "triathlon"
+  | "mtb_xc"
+  | "mtb_trail_enduro"
+  | "hybrid";
+
+export type BikeFitPainArea =
+  | "front_knee"
+  | "inner_knee"
+  | "outer_knee"
+  | "lower_back"
+  | "neck_shoulders"
+  | "hands"
+  | "none";
+
 export type RecommendationCategory =
   | "saddle_height"
   | "saddle_position"
+  | "saddle_setback"
   | "reach"
+  | "cockpit"
+  | "cleats"
+  | "knee_tracking"
+  | "hip_stability"
+  | "capture_quality"
   | "torso"
   | "arms"
   | "head"
@@ -365,21 +396,39 @@ export type AeroScore = {
 };
 
 export type FitRecommendation = {
+  id?: string;
   priority: RecommendationPriority;
   category: RecommendationCategory;
+  title?: string;
   message: string;
+  explanation?: string;
+  suggestedAction?: string;
+  retestInstruction?: string;
+  medicalDisclaimer?: string;
   adjustmentMm?: number;
   confidenceScore: number;
+  confidence?: RecommendationConfidence;
+  zone?: BikeFitZone;
+  isPrimary?: boolean;
 };
 
 export type Recommendation = {
   id: string;
   session_id: string;
+  recommendation_id: string | null;
   priority: RecommendationPriority;
   category: RecommendationCategory;
+  title: string | null;
   message: string;
+  explanation: string | null;
+  suggested_action: string | null;
+  retest_instruction: string | null;
+  medical_disclaimer: string | null;
   adjustment_mm: number | null;
   confidence_score: number | null;
+  confidence_label: RecommendationConfidence | null;
+  zone: BikeFitZone | null;
+  is_primary: boolean | null;
   created_at: string;
 };
 

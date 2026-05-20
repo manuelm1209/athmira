@@ -1,5 +1,5 @@
 import { listAnalysisHistory, listBikes } from "@athmira/supabase";
-import type { AnalysisHistoryItem, Bike } from "@athmira/types";
+import type { AnalysisHistoryItem, Bike, BikeFitDiscipline, BikeFitGoal, BikeFitPainArea } from "@athmira/types";
 import { Body, Button, Card, Heading, Inline, Screen, colors, radii, spacing } from "@athmira/ui";
 import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
@@ -11,14 +11,30 @@ import { useAuth } from "@/providers/AuthProvider";
 import { useLanguage } from "@/providers/LanguageProvider";
 import { getErrorMessage } from "@/utils/form";
 
+import {
+  bikeFitDisciplines,
+  bikeFitGoals,
+  bikeFitPainAreas,
+  getDefaultDiscipline,
+  getDisciplineLabel,
+  getGoalLabel,
+  getPainAreaLabel,
+  serializePainAreas,
+  togglePainArea
+} from "./analysisOptions";
+
 export function AnalysisStartScreen() {
   const router = useRouter();
   const { user } = useAuth();
-  const { t } = useLanguage();
+  const { language, t } = useLanguage();
   const [bikes, setBikes] = useState<Bike[]>([]);
   const [history, setHistory] = useState<AnalysisHistoryItem[]>([]);
   const [selectedBikeId, setSelectedBikeId] = useState<string | null>(null);
+  const [goal, setGoal] = useState<BikeFitGoal>("balanced");
+  const [discipline, setDiscipline] = useState<BikeFitDiscipline>("road_endurance");
+  const [painAreas, setPainAreas] = useState<BikeFitPainArea[]>(["none"]);
   const [error, setError] = useState<string | null>(null);
+  const selectedBike = bikes.find((bike) => bike.id === selectedBikeId) ?? null;
 
   useEffect(() => {
     if (!user) {
@@ -39,6 +55,7 @@ export function AnalysisStartScreen() {
           setBikes(nextBikes);
           setHistory(nextHistory);
           setSelectedBikeId(nextBikes[0]?.id ?? null);
+          setDiscipline(getDefaultDiscipline(nextBikes[0]?.bike_type));
         }
       } catch (loadError) {
         if (!cancelled) {
@@ -55,27 +72,47 @@ export function AnalysisStartScreen() {
   }, [user]);
 
   function openCamera() {
+    const params = {
+      bikeId: selectedBikeId ?? undefined,
+      discipline,
+      goal,
+      painAreas: serializePainAreas(painAreas)
+    };
+
     if (selectedBikeId) {
       router.push({
         pathname: "/analysis/camera",
-        params: { bikeId: selectedBikeId }
+        params
       });
       return;
     }
 
-    router.push("/analysis/camera");
+    router.push({
+      pathname: "/analysis/camera",
+      params
+    });
   }
 
   function openFrontKneeCamera() {
+    const params = {
+      bikeId: selectedBikeId ?? undefined,
+      discipline,
+      goal,
+      painAreas: serializePainAreas(painAreas)
+    };
+
     if (selectedBikeId) {
       router.push({
         pathname: "/analysis/front-knee",
-        params: { bikeId: selectedBikeId }
+        params
       });
       return;
     }
 
-    router.push("/analysis/front-knee");
+    router.push({
+      pathname: "/analysis/front-knee",
+      params
+    });
   }
 
   return (
@@ -104,7 +141,10 @@ export function AnalysisStartScreen() {
                 <Pressable
                   accessibilityRole="button"
                   key={bike.id}
-                  onPress={() => setSelectedBikeId(bike.id)}
+                  onPress={() => {
+                    setSelectedBikeId(bike.id);
+                    setDiscipline(getDefaultDiscipline(bike.bike_type));
+                  }}
                   style={[styles.bikeOption, selectedBikeId === bike.id && styles.selectedBike]}
                 >
                   <Text style={[styles.bikeName, selectedBikeId === bike.id && styles.selectedBikeText]}>
@@ -117,6 +157,44 @@ export function AnalysisStartScreen() {
               ))}
             </View>
           )}
+          <Text style={styles.sectionLabel}>{language === "es" ? "Objetivo" : "Goal"}</Text>
+          <View style={styles.optionGrid}>
+            {bikeFitGoals.map((nextGoal) => (
+              <OptionButton
+                key={nextGoal}
+                label={getGoalLabel(nextGoal, language)}
+                onPress={() => setGoal(nextGoal)}
+                selected={goal === nextGoal}
+              />
+            ))}
+          </View>
+          <Text style={styles.sectionLabel}>{language === "es" ? "Disciplina" : "Discipline"}</Text>
+          <View style={styles.optionGrid}>
+            {bikeFitDisciplines.map((nextDiscipline) => (
+              <OptionButton
+                key={nextDiscipline}
+                label={getDisciplineLabel(nextDiscipline, language)}
+                onPress={() => setDiscipline(nextDiscipline)}
+                selected={discipline === nextDiscipline}
+              />
+            ))}
+          </View>
+          <Text style={styles.helperText}>
+            {language === "es"
+              ? `Perfil seleccionado: ${selectedBike ? selectedBike.name : "sin bici"} / ${getGoalLabel(goal, language)} / ${getDisciplineLabel(discipline, language)}`
+              : `Selected profile: ${selectedBike ? selectedBike.name : "no bike"} / ${getGoalLabel(goal, language)} / ${getDisciplineLabel(discipline, language)}`}
+          </Text>
+          <Text style={styles.sectionLabel}>{language === "es" ? "Molestias actuales" : "Current discomfort"}</Text>
+          <View style={styles.optionGrid}>
+            {bikeFitPainAreas.map((painArea) => (
+              <OptionButton
+                key={painArea}
+                label={getPainAreaLabel(painArea, language)}
+                onPress={() => setPainAreas((current) => togglePainArea(current, painArea))}
+                selected={painAreas.includes(painArea)}
+              />
+            ))}
+          </View>
           {error ? <Text style={styles.error}>{error}</Text> : null}
           <Inline>
             <Button disabled={bikes.length === 0} onPress={openCamera}>
@@ -145,6 +223,18 @@ export function AnalysisStartScreen() {
         </Card>
       </View>
     </Screen>
+  );
+}
+
+function OptionButton({ label, onPress, selected }: { label: string; onPress: () => void; selected: boolean }) {
+  return (
+    <Pressable
+      accessibilityRole="button"
+      onPress={onPress}
+      style={[styles.optionButton, selected && styles.selectedBike]}
+    >
+      <Text style={[styles.optionText, selected && styles.selectedBikeText]}>{label}</Text>
+    </Pressable>
   );
 }
 
@@ -288,6 +378,11 @@ const styles = StyleSheet.create({
     flexWrap: "wrap",
     gap: spacing.md
   },
+  optionGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: spacing.sm
+  },
   bikeOption: {
     backgroundColor: colors.surface,
     borderColor: colors.border,
@@ -313,6 +408,24 @@ const styles = StyleSheet.create({
   },
   selectedBikeText: {
     color: "#ffffff"
+  },
+  optionButton: {
+    backgroundColor: colors.surface,
+    borderColor: colors.border,
+    borderRadius: radii.md,
+    borderWidth: 1,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm
+  },
+  optionText: {
+    color: colors.inkMuted,
+    fontSize: 14,
+    fontWeight: "900"
+  },
+  helperText: {
+    color: colors.inkMuted,
+    fontSize: 14,
+    lineHeight: 20
   },
   error: {
     color: colors.danger,

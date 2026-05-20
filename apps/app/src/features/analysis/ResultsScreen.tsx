@@ -2,8 +2,8 @@ import { calculateAeroScore } from "@athmira/aero-engine";
 import { createCoachSummary } from "@athmira/ai-engine";
 import { calculateFitScore, generateFitRecommendations } from "@athmira/fit-engine";
 import { analyzePoseFrame } from "@athmira/pose-engine";
-import { getFitAnalysisResults } from "@athmira/supabase";
-import type { FitMeasurement, FrontKneeMeasurement, Recommendation } from "@athmira/types";
+import { getFitAnalysisResults, listAnalysisHistory } from "@athmira/supabase";
+import type { AnalysisHistoryItem, FitMeasurement, FitRecommendation, FrontKneeMeasurement, Recommendation } from "@athmira/types";
 import { Body, Card, Heading, Inline, Screen, colors, spacing } from "@athmira/ui";
 import { useLocalSearchParams } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
@@ -19,6 +19,7 @@ export function ResultsScreen() {
   const { profile } = useAuth();
   const { language, t } = useLanguage();
   const [savedResult, setSavedResult] = useState<Awaited<ReturnType<typeof getFitAnalysisResults>> | null>(null);
+  const [previousResult, setPreviousResult] = useState<AnalysisHistoryItem | null>(null);
   const [loading, setLoading] = useState(Boolean(sessionId));
   const [error, setError] = useState<string | null>(null);
 
@@ -36,9 +37,17 @@ export function ResultsScreen() {
 
       try {
         const nextResult = await getFitAnalysisResults(sessionId);
+        const history =
+          nextResult.session?.user_id && nextResult.session?.bike_id
+            ? await listAnalysisHistory({ bikeId: nextResult.session.bike_id, limit: 10, userId: nextResult.session.user_id })
+            : [];
+        const currentType =
+          nextResult.summary?.analysis_type ?? (nextResult.session?.camera_angle === "front" ? "front_knee_tracking" : "side_bike_fit");
+        const previous = history.find((item) => item.session.id !== sessionId && getHistoryType(item) === currentType) ?? null;
 
         if (!cancelled) {
           setSavedResult(nextResult);
+          setPreviousResult(previous);
         }
       } catch (loadError) {
         if (!cancelled) {
@@ -110,6 +119,7 @@ export function ResultsScreen() {
         <View style={styles.header}>
           <Heading>{isFrontKneeResult ? t("frontKneeResults") : t("fitResults")}</Heading>
           <Body>{isFrontKneeResult ? t("frontKneeDisclaimer") : t("resultsDisclaimer")}</Body>
+          <Body>{getBikeFitDisclaimer(language)}</Body>
           {sessionId ? <Text style={styles.sessionId}>Session {sessionId}</Text> : null}
           {loading ? <Text style={styles.sessionId}>Loading saved analysis...</Text> : null}
           {error ? <Text style={styles.error}>{error}</Text> : null}
@@ -122,6 +132,22 @@ export function ResultsScreen() {
             </Card>
           ))}
         </View>
+        {previousResult ? (
+          <Card style={styles.summaryCard}>
+            <Text style={styles.sectionLabel}>{t("previousComparison")}</Text>
+            <View style={styles.metricsGrid}>
+              <MetricCard
+                label={isFrontKneeResult ? t("frontKneeOverallScore") : t("comfortScore")}
+                value={formatScore(getCurrentScore(savedResult, isFrontKneeResult))}
+              />
+              <MetricCard label={language === "es" ? "Anterior" : "Previous"} value={formatScore(getPrimaryScore(previousResult))} />
+              <MetricCard
+                label={language === "es" ? "Cambio" : "Change"}
+                value={formatDelta(getScoreDelta(getCurrentScore(savedResult, isFrontKneeResult), getPrimaryScore(previousResult)))}
+              />
+            </View>
+          </Card>
+        ) : null}
         {isFrontKneeResult ? null : (
           <Card style={styles.summaryCard}>
             <Text style={styles.sectionLabel}>{t("aiSummary")}</Text>
@@ -133,12 +159,7 @@ export function ResultsScreen() {
         <Card style={styles.summaryCard}>
           <Text style={styles.sectionLabel}>{t("recommendations")}</Text>
           {result.recommendations.map((recommendation) => (
-            <View key={`${recommendation.category}-${recommendation.message}`} style={styles.recommendation}>
-              <Text style={styles.recommendationTitle}>
-                {recommendation.priority.toUpperCase()} / {recommendation.category.replace("_", " ")}
-              </Text>
-              <Text style={styles.recommendationText}>{recommendation.message}</Text>
-            </View>
+            <RecommendationCard key={`${recommendation.category}-${recommendation.message}`} recommendation={recommendation} />
           ))}
         </Card>
         <Inline>
@@ -149,6 +170,32 @@ export function ResultsScreen() {
         </Inline>
       </View>
     </Screen>
+  );
+}
+
+function MetricCard({ label, value }: { label: string; value: string }) {
+  return (
+    <Card style={styles.metricCard}>
+      <Text style={styles.metricLabel}>{label}</Text>
+      <Text style={styles.metricValue}>{value}</Text>
+    </Card>
+  );
+}
+
+function RecommendationCard({ recommendation }: { recommendation: FitRecommendation }) {
+  return (
+    <View style={[styles.recommendation, recommendation.isPrimary && styles.primaryRecommendation]}>
+      <Text style={styles.recommendationMeta}>
+        {recommendation.isPrimary ? "MAIN / " : ""}
+        {recommendation.priority.toUpperCase()} / {(recommendation.confidence ?? "medium").toUpperCase()} /{" "}
+        {recommendation.category.replace("_", " ")}
+      </Text>
+      <Text style={styles.recommendationTitle}>{recommendation.title ?? recommendation.category.replace("_", " ")}</Text>
+      <Text style={styles.recommendationText}>{recommendation.explanation ?? recommendation.message}</Text>
+      {recommendation.suggestedAction ? <Text style={styles.recommendationAction}>{recommendation.suggestedAction}</Text> : null}
+      {recommendation.retestInstruction ? <Text style={styles.recommendationText}>{recommendation.retestInstruction}</Text> : null}
+      {recommendation.medicalDisclaimer ? <Text style={styles.disclaimerText}>{recommendation.medicalDisclaimer}</Text> : null}
+    </View>
   );
 }
 
@@ -166,9 +213,18 @@ function toFitRecommendation(recommendation: Recommendation) {
   return {
     adjustmentMm: recommendation.adjustment_mm ?? undefined,
     category: recommendation.category,
+    confidence: recommendation.confidence_label ?? undefined,
     confidenceScore: recommendation.confidence_score ?? 0,
+    explanation: recommendation.explanation ?? undefined,
+    id: recommendation.recommendation_id ?? undefined,
+    isPrimary: recommendation.is_primary ?? false,
     message: recommendation.message,
-    priority: recommendation.priority
+    medicalDisclaimer: recommendation.medical_disclaimer ?? undefined,
+    priority: recommendation.priority,
+    retestInstruction: recommendation.retest_instruction ?? undefined,
+    suggestedAction: recommendation.suggested_action ?? undefined,
+    title: recommendation.title ?? undefined,
+    zone: recommendation.zone ?? undefined
   };
 }
 
@@ -211,6 +267,51 @@ function formatNumber(value?: number | null) {
 
 function formatPercent(value?: number | null) {
   return typeof value === "number" ? `${Math.round(value * 100)}%` : "--";
+}
+
+function getBikeFitDisclaimer(language: "en" | "es") {
+  return language === "es"
+    ? "Athmira ofrece orientacion educativa basada en vision por computador. No reemplaza una evaluacion medica, fisioterapeutica ni un bike fit profesional. Si tienes dolor persistente, lesion o molestias importantes, consulta con un profesional."
+    : "Athmira provides educational guidance based on computer vision. It does not replace a medical, physical therapy, or professional bike-fit evaluation. If you have persistent pain, injury, or important discomfort, consult a professional.";
+}
+
+function getHistoryType(item: AnalysisHistoryItem) {
+  return item.summary?.analysis_type ?? (item.session.camera_angle === "front" ? "front_knee_tracking" : "side_bike_fit");
+}
+
+function getPrimaryScore(item: AnalysisHistoryItem) {
+  return item.summary?.overall_score ?? item.frontKneeMeasurement?.overall_score ?? item.aeroScore?.final_aero_score ?? null;
+}
+
+function getCurrentScore(
+  result: Awaited<ReturnType<typeof getFitAnalysisResults>> | null,
+  isFrontKneeResult: boolean
+) {
+  if (!result) {
+    return null;
+  }
+
+  return result.summary?.overall_score ?? (isFrontKneeResult ? result.frontKneeMeasurement?.overall_score : result.aeroScore?.final_aero_score) ?? null;
+}
+
+function formatScore(value: number | null | undefined) {
+  return typeof value === "number" ? String(Math.round(value)) : "--";
+}
+
+function getScoreDelta(current: number | null | undefined, previous: number | null | undefined) {
+  return typeof current === "number" && typeof previous === "number" ? current - previous : null;
+}
+
+function formatDelta(value: number | null) {
+  if (typeof value !== "number") {
+    return "--";
+  }
+
+  if (value === 0) {
+    return "0";
+  }
+
+  return `${value > 0 ? "+" : ""}${Math.round(value)}`;
 }
 
 const styles = StyleSheet.create({
@@ -264,14 +365,39 @@ const styles = StyleSheet.create({
     gap: spacing.xs,
     paddingTop: spacing.md
   },
+  primaryRecommendation: {
+    backgroundColor: "#eefaf7",
+    borderColor: colors.primary,
+    borderRadius: 8,
+    borderTopWidth: 0,
+    padding: spacing.md
+  },
+  recommendationMeta: {
+    color: colors.primary,
+    fontSize: 11,
+    fontWeight: "900",
+    textTransform: "uppercase"
+  },
   recommendationTitle: {
     color: colors.ink,
-    fontSize: 13,
+    fontSize: 16,
     fontWeight: "900"
   },
   recommendationText: {
     color: colors.inkMuted,
     fontSize: 15,
     lineHeight: 21
+  },
+  recommendationAction: {
+    color: colors.ink,
+    fontSize: 15,
+    fontWeight: "800",
+    lineHeight: 21
+  },
+  disclaimerText: {
+    color: colors.danger,
+    fontSize: 13,
+    fontWeight: "800",
+    lineHeight: 19
   }
 });

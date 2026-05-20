@@ -1,5 +1,5 @@
 import { analyzeFrontKneeTracking } from "@athmira/fit-engine";
-import { createAnalysisSummary, createFitSession, createFrontKneeMeasurement, createRecommendations } from "@athmira/supabase";
+import { createAnalysisSummary, createFitSession, createFrontKneeMeasurement, createRecommendations, getBike } from "@athmira/supabase";
 import type { DeviceType, FrontKneeTrackingResult, PoseFrameResult } from "@athmira/types";
 import { Body, Button, Card, Heading, Inline, Screen, colors, spacing } from "@athmira/ui";
 import { useLocalSearchParams } from "expo-router";
@@ -11,6 +11,7 @@ import { useAuth } from "@/providers/AuthProvider";
 import { useLanguage } from "@/providers/LanguageProvider";
 import { getErrorMessage } from "@/utils/form";
 
+import { parseBikeFitDiscipline, parseBikeFitGoal, parseBikeFitPainAreas } from "./analysisOptions";
 import { FrontKneeCamera } from "./FrontKneeCamera";
 import type { FrontKneeCameraHandle } from "./FrontKneeCamera.types";
 
@@ -24,7 +25,8 @@ function getDeviceType(): DeviceType {
 
 export function FrontKneeAnalysisScreen() {
   const cameraRef = useRef<FrontKneeCameraHandle | null>(null);
-  const { bikeId } = useLocalSearchParams<{ bikeId?: string }>();
+  const params = useLocalSearchParams<{ bikeId?: string; discipline?: string; goal?: string; painAreas?: string }>();
+  const bikeId = params.bikeId;
   const { profile, user } = useAuth();
   const { language, t } = useLanguage();
   const [cameraReady, setCameraReady] = useState(false);
@@ -73,9 +75,17 @@ export function FrontKneeAnalysisScreen() {
         throw new Error(t("poseNotReady"));
       }
 
+      const bike = bikeId ? await getBike(user.id, bikeId) : null;
+      const goal = parseBikeFitGoal(params.goal);
+      const discipline = parseBikeFitDiscipline(params.discipline, bike?.bike_type);
+      const painAreas = parseBikeFitPainAreas(params.painAreas);
       const nextResult = analyzeFrontKneeTracking(samples, {
+        bikeProfile: bike,
+        discipline,
         durationMs: 10000,
+        goal,
         language,
+        painAreas,
         userProfile: profile
       });
       const session = await createFitSession({
@@ -107,6 +117,10 @@ export function FrontKneeAnalysisScreen() {
             leftKneeDriftMm: nextResult.left.kneeDriftMm,
             leftStabilityScore: nextResult.left.stabilityScore,
             leftVerticalTravelMm: nextResult.left.verticalTravelMm,
+            bikeFitDiscipline: discipline,
+            bikeFitGoal: goal,
+            painAreas,
+            primaryRecommendationId: nextResult.recommendations.find((recommendation) => recommendation.isPrimary)?.id ?? null,
             rightHorizontalTravelMm: nextResult.right.horizontalTravelMm,
             rightKneeDriftMm: nextResult.right.kneeDriftMm,
             rightStabilityScore: nextResult.right.stabilityScore,
@@ -198,13 +212,18 @@ export function FrontKneeAnalysisScreen() {
 }
 
 function FrontKneeResultPanel({ result, sessionId }: { result: FrontKneeTrackingResult; sessionId: string | null }) {
-  const { t } = useLanguage();
+  const { language, t } = useLanguage();
 
   return (
     <View style={styles.stack}>
       <Card style={styles.summaryCard}>
         <Text style={styles.sectionLabel}>{t("frontKneeResults")}</Text>
         <Body>{t("frontKneeDisclaimer")}</Body>
+        <Body>
+          {language === "es"
+            ? "Athmira ofrece orientacion educativa basada en vision por computador. No reemplaza una evaluacion medica, fisioterapeutica ni un bike fit profesional. Si tienes dolor persistente, lesion o molestias importantes, consulta con un profesional."
+            : "Athmira provides educational guidance based on computer vision. It does not replace a medical, physical therapy, or professional bike-fit evaluation. If you have persistent pain, injury, or important discomfort, consult a professional."}
+        </Body>
         {sessionId ? <Text style={styles.sessionId}>Session {sessionId}</Text> : null}
         <View style={styles.metricsGrid}>
           <Metric label={t("frontKneeOverallScore")} value={`${result.overallScore}`} />
@@ -221,11 +240,20 @@ function FrontKneeResultPanel({ result, sessionId }: { result: FrontKneeTracking
       <Card style={styles.summaryCard}>
         <Text style={styles.sectionLabel}>{t("recommendations")}</Text>
         {result.recommendations.map((recommendation) => (
-          <View key={`${recommendation.category}-${recommendation.message}`} style={styles.recommendation}>
-            <Text style={styles.recommendationTitle}>
-              {recommendation.priority.toUpperCase()} / {recommendation.category.replace("_", " ")}
+          <View
+            key={`${recommendation.category}-${recommendation.message}`}
+            style={[styles.recommendation, recommendation.isPrimary && styles.primaryRecommendation]}
+          >
+            <Text style={styles.recommendationMeta}>
+              {recommendation.isPrimary ? "MAIN / " : ""}
+              {recommendation.priority.toUpperCase()} / {(recommendation.confidence ?? "medium").toUpperCase()} /{" "}
+              {recommendation.category.replace("_", " ")}
             </Text>
-            <Text style={styles.recommendationText}>{recommendation.message}</Text>
+            <Text style={styles.recommendationTitle}>{recommendation.title ?? recommendation.category.replace("_", " ")}</Text>
+            <Text style={styles.recommendationText}>{recommendation.explanation ?? recommendation.message}</Text>
+            {recommendation.suggestedAction ? <Text style={styles.recommendationAction}>{recommendation.suggestedAction}</Text> : null}
+            {recommendation.retestInstruction ? <Text style={styles.recommendationText}>{recommendation.retestInstruction}</Text> : null}
+            {recommendation.medicalDisclaimer ? <Text style={styles.disclaimerText}>{recommendation.medicalDisclaimer}</Text> : null}
           </View>
         ))}
       </Card>
@@ -338,14 +366,39 @@ const styles = StyleSheet.create({
     gap: spacing.xs,
     paddingTop: spacing.md
   },
+  primaryRecommendation: {
+    backgroundColor: "#eefaf7",
+    borderColor: colors.primary,
+    borderRadius: 8,
+    borderTopWidth: 0,
+    padding: spacing.md
+  },
+  recommendationMeta: {
+    color: colors.primary,
+    fontSize: 11,
+    fontWeight: "900",
+    textTransform: "uppercase"
+  },
   recommendationTitle: {
     color: colors.ink,
-    fontSize: 13,
+    fontSize: 16,
     fontWeight: "900"
   },
   recommendationText: {
     color: colors.inkMuted,
     fontSize: 15,
     lineHeight: 21
+  },
+  recommendationAction: {
+    color: colors.ink,
+    fontSize: 15,
+    fontWeight: "800",
+    lineHeight: 21
+  },
+  disclaimerText: {
+    color: colors.danger,
+    fontSize: 13,
+    fontWeight: "800",
+    lineHeight: 19
   }
 });
