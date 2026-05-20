@@ -2,158 +2,356 @@ import { Body, FadeInView, Heading, Inline, Screen, colors, radii, shadows, spac
 import { Image, Platform, StyleSheet, Text, View, useWindowDimensions } from "react-native";
 
 import { LinkButton } from "@/components/LinkButton";
+import { visualAssets } from "@/lib/visual-assets";
 import { useAuth } from "@/providers/AuthProvider";
 import { useLanguage } from "@/providers/LanguageProvider";
-import { visualAssets } from "@/lib/visual-assets";
 
-const homeHeroImage = require("../assets/home/image-home-athmira.png");
+const homeHeroImage = require("../assets/home/image-home-bike-fit-hero.png");
 
-const brandLogos = ["GIANT", "cervelo", "TREK", "SPECIALIZED", "wahoo", "GARMIN"];
+const homeCopy = {
+  en: {
+    heroTitle: "Athmira turns your bike setup into a ride system.",
+    heroBody:
+      "Bike Fit, aero posture, tire pressure, nutrition planning, and progress history come together so every adjustment has context and every retest teaches you something useful.",
+    heroBodyMobile:
+      "Bike Fit, aero posture,\npressure and fueling.\nEvery retest teaches\nthe next useful step.",
+    heroPrimary: "Start your ride system",
+    heroSecondary: "Sign in",
+    heroMetrics: [
+      { label: "Bike Fit", value: "side + front" },
+      { label: "Next change", value: "one at a time" },
+      { label: "Retest", value: "compare progress" }
+    ],
+    systemTitle: "Everything a cyclist needs before the next ride.",
+    systemBody:
+      "Athmira is built for cyclists moving from beginner confidence to serious goals. Start with the bike and the body, then layer in pressure, fueling, and training intelligence without losing the thread.",
+    systemTitleMobile: "Everything\na cyclist needs\nbefore the next\nride.",
+    systemBodyMobile:
+      "Athmira is built for cyclists\nmoving from beginner confidence\nto serious goals.\nStart with the bike and the body,\nthen layer in pressure, fueling,\nand training intelligence.",
+    modules: [
+      {
+        body: "Capture side and front views, review joint angles, knee tracking, confidence, and a single practical adjustment to test next.",
+        image: "hero",
+        metric: "137-147 deg",
+        title: "Bike Fit that explains the why"
+      },
+      {
+        body: "Understand torso, hip, head, and arm position with estimated visual aero guidance that avoids wind-tunnel claims.",
+        image: "aero",
+        metric: "estimated",
+        title: "Aero guidance for real riders"
+      },
+      {
+        body: "Calculate pressure from bike type, tire width, rider weight, surface, and tire setup, then save it to the bike profile.",
+        image: "pressure",
+        metric: "PSI by surface",
+        title: "Pressure planning with context"
+      },
+      {
+        body: "Plan carbs, fluids, sodium, and race-day fueling from products you actually use, in English or Spanish.",
+        image: "nutrition",
+        metric: "carbs + sodium",
+        title: "Nutrition that fits the session"
+      }
+    ],
+    workflowTitle: "A better fit happens in loops, not guesses.",
+    workflowBody:
+      "Athmira guides the athlete through one clean capture, one main recommendation, one small change, and one retest. That keeps the process useful without pretending to replace a professional bike fit.",
+    steps: [
+      {
+        body: "Save bike type, size, saddle height, setback, stem, crank length, handlebar width, and tire setup.",
+        title: "Build the bike profile"
+      },
+      {
+        body: "Capture lateral posture and front knee tracking with confidence checks before the system gives stronger guidance.",
+        title: "Measure the ride position"
+      },
+      {
+        body: "Athmira prioritizes capture quality, saddle height, knee stability, cockpit, and cleat review in that order.",
+        title: "Choose one main change"
+      },
+      {
+        body: "Repeat the analysis after a small adjustment and compare the new score, angles, and recommendation history.",
+        title: "Retest and compare"
+      }
+    ],
+    cockpitTitle: "The dashboard becomes the athlete's memory.",
+    cockpitBody:
+      "Bikes, fit sessions, aero scores, pressure plans, nutrition plans, and recommendations live together. The goal is not more data. The goal is a clearer next ride.",
+    dashboardCards: [
+      { label: "Fit readiness", value: "82", note: "confidence-limited guidance visible" },
+      { label: "Knee tracking", value: "front view", note: "left / right stability trend" },
+      { label: "Pressure plan", value: "73 psi", note: "saved to gravel bike" },
+      { label: "Fueling", value: "75 g/h", note: "carbs, fluids, sodium" }
+    ],
+    futureTitle: "Built for the road ahead.",
+    futureBody:
+      "The foundation already supports the next layers: AI coaching, Garmin, Strava, Apple Health, Google Fit, running, swimming, and triathlon modules. The product grows without rebuilding the athlete record.",
+    safetyTitle: "Useful guidance, careful claims.",
+    safetyBody:
+      "Athmira provides educational, camera-based guidance. It does not diagnose pain, replace a medical professional, or replace a professional bike fitter. If pain persists, consult a qualified professional.",
+    finalTitle: "Make the next ride the start of a smarter system.",
+    finalBody:
+      "Create your profile, add a bike, run Bike Fit, save pressure and nutrition plans, then let every retest move the story forward."
+  },
+  es: {
+    heroTitle: "Athmira convierte tu bici en un sistema de progreso.",
+    heroBody:
+      "Bike Fit, postura aero, presion de llantas, nutricion e historial de progreso viven juntos para que cada ajuste tenga contexto y cada re-test deje una senal util.",
+    heroBodyMobile:
+      "Bike Fit, postura aero,\npresion y fueling.\nCada re-test muestra\nel siguiente paso util.",
+    heroPrimary: "Crear mi sistema",
+    heroSecondary: "Iniciar sesion",
+    heroMetrics: [
+      { label: "Bike Fit", value: "lateral + frontal" },
+      { label: "Siguiente cambio", value: "uno a la vez" },
+      { label: "Re-test", value: "comparar progreso" }
+    ],
+    systemTitle: "Todo lo que un ciclista necesita antes de la proxima rodada.",
+    systemBody:
+      "Athmira esta pensado para ciclistas que pasan de ganar confianza a perseguir metas serias. Empieza con la bici y el cuerpo, luego suma presion, fueling e inteligencia de entrenamiento sin perder el hilo.",
+    systemTitleMobile: "Todo lo que\nun ciclista necesita\nantes de la proxima\nrodada.",
+    systemBodyMobile:
+      "Athmira esta pensado para ciclistas\nque pasan de ganar confianza\na perseguir metas serias.\nEmpieza con la bici y el cuerpo,\nluego suma presion, fueling\ne inteligencia de entrenamiento.",
+    modules: [
+      {
+        body: "Captura vista lateral y frontal, revisa angulos, tracking de rodilla, confianza y un ajuste principal para probar despues.",
+        image: "hero",
+        metric: "137-147 deg",
+        title: "Bike Fit que explica el por que"
+      },
+      {
+        body: "Entiende torso, cadera, cabeza y brazos con guia aero visual estimada, sin prometer precision de tunel de viento.",
+        image: "aero",
+        metric: "estimado",
+        title: "Guia aero para ciclistas reales"
+      },
+      {
+        body: "Calcula presion por tipo de bici, ancho de llanta, peso, superficie y montaje, y guardala en el perfil de bici.",
+        image: "pressure",
+        metric: "PSI por terreno",
+        title: "Presion con contexto"
+      },
+      {
+        body: "Planea carbohidratos, liquidos, sodio y fueling de carrera con productos reales, en ingles o espanol.",
+        image: "nutrition",
+        metric: "carbs + sodio",
+        title: "Nutricion que encaja con la sesion"
+      }
+    ],
+    workflowTitle: "Un mejor fit ocurre en ciclos, no por intuicion.",
+    workflowBody:
+      "Athmira guia al atleta por una captura limpia, una recomendacion principal, un cambio pequeno y un re-test. Asi el proceso es util sin pretender reemplazar a un bike fitter profesional.",
+    steps: [
+      {
+        body: "Guarda tipo de bici, talla, altura de sillin, retroceso, potencia, bielas, ancho de manubrio y setup de llantas.",
+        title: "Construye el perfil de bici"
+      },
+      {
+        body: "Captura postura lateral y tracking frontal de rodillas con validaciones de confianza antes de dar guia fuerte.",
+        title: "Mide la posicion"
+      },
+      {
+        body: "Athmira prioriza calidad de captura, altura de sillin, estabilidad de rodilla, cockpit y revision de calas.",
+        title: "Elige un cambio principal"
+      },
+      {
+        body: "Repite el analisis despues de un ajuste pequeno y compara puntaje, angulos e historial de recomendaciones.",
+        title: "Re-test y comparacion"
+      }
+    ],
+    cockpitTitle: "El dashboard se convierte en la memoria del atleta.",
+    cockpitBody:
+      "Bicis, sesiones de fit, puntajes aero, planes de presion, nutricion y recomendaciones viven juntos. El objetivo no es tener mas datos. Es saber mejor que hacer en la proxima rodada.",
+    dashboardCards: [
+      { label: "Preparacion de fit", value: "82", note: "guia visible segun confianza" },
+      { label: "Tracking de rodilla", value: "frontal", note: "tendencia izquierda / derecha" },
+      { label: "Plan de presion", value: "73 psi", note: "guardado en gravel" },
+      { label: "Fueling", value: "75 g/h", note: "carbs, liquidos, sodio" }
+    ],
+    futureTitle: "Construido para lo que viene.",
+    futureBody:
+      "La base ya soporta las proximas capas: coaching con IA, Garmin, Strava, Apple Health, Google Fit, running, natacion y modulos de triatlon. El producto crece sin reconstruir el registro del atleta.",
+    safetyTitle: "Guia util, promesas cuidadosas.",
+    safetyBody:
+      "Athmira ofrece orientacion educativa basada en camara. No diagnostica dolor, no reemplaza a un profesional medico ni a un bike fitter profesional. Si el dolor persiste, consulta con un profesional calificado.",
+    finalTitle: "Haz que la proxima rodada empiece un sistema mas inteligente.",
+    finalBody:
+      "Crea tu perfil, agrega una bici, ejecuta Bike Fit, guarda presion y nutricion, y deja que cada re-test mueva la historia hacia adelante."
+  }
+} as const;
+
+type ModuleImageKey = "aero" | "hero" | "nutrition" | "pressure";
+
+const moduleImageMap: Record<ModuleImageKey, string | number> = {
+  aero: visualAssets.aeroTrack,
+  hero: visualAssets.cyclistHero,
+  nutrition: visualAssets.nutritionPlan,
+  pressure: visualAssets.tireGauge
+};
+
 const heroFadeWebStyle = Platform.select({
   default: undefined,
   web: {
     backgroundImage:
-      "linear-gradient(90deg, #f3f8fa 0%, rgba(243,248,250,0.74) 38%, rgba(243,248,250,0) 100%)"
+      "linear-gradient(90deg, rgba(244,248,250,0.94) 0%, rgba(244,248,250,0.62) 34%, rgba(244,248,250,0) 100%)"
+  } as never
+});
+const mobilePageWebStyle = Platform.select({
+  default: undefined,
+  web: {
+    maxWidth: "calc(100vw - 32px)",
+    width: "calc(100vw - 32px)"
   } as never
 });
 
 export default function WelcomeRoute() {
   const { session } = useAuth();
-  const { t } = useLanguage();
+  const { language, t } = useLanguage();
+  const copy = homeCopy[language];
   const { width } = useWindowDimensions();
-  const mobile = width < 720;
-  const heroMediaMobileSize = Math.max(300, width - spacing.xxl);
-
-  const featureCards = [
-    {
-      body: t("homeBikeFitBody"),
-      image: visualAssets.cyclistHero,
-      link: t("homeLearnMore"),
-      stat: "146 deg",
-      title: t("homeBikeFitTitle")
-    },
-    {
-      body: t("homeAeroBody"),
-      image: visualAssets.aeroTrack,
-      link: t("homeLearnMore"),
-      stat: "Aero 76",
-      title: t("homeAeroTitle")
-    },
-    {
-      body: t("homeNutritionBody"),
-      image: visualAssets.tireGauge,
-      link: t("homeLearnMore"),
-      stat: "73 PSI",
-      title: t("homeNutritionTitle")
-    }
-  ];
-
-  const proofItems = [
-    { icon: "CV", title: t("homeProofCamera") },
-    { icon: "AI", title: t("homeProofPrivate") },
-    { icon: "UP", title: t("homeProofProgress") }
-  ];
-
-  const steps = [
-    { body: t("homeHowCameraBody"), icon: "01", title: t("homeHowCameraTitle") },
-    { body: t("homeHowResultsBody"), icon: "02", title: t("homeHowResultsTitle") },
-    { body: t("homeHowProfileBody"), icon: "03", title: t("homeHowProfileTitle") },
-    { body: t("homeFinalBody"), icon: "04", title: t("homeFinalTitle") }
-  ];
+  const mobile = width < 760;
+  const moduleColumns = mobile ? 1 : width < 1100 ? 2 : 4;
+  const moduleGridWebStyle = Platform.select({
+    default: undefined,
+    web: {
+      display: "grid",
+      gridTemplateColumns: `repeat(${moduleColumns}, minmax(0, 1fr))`
+    } as never
+  });
+  const mobilePageWidth = Math.max(320, width - spacing.xxl);
+  const mobileBox = mobile ? { maxWidth: mobilePageWidth, width: mobilePageWidth } : undefined;
 
   return (
     <Screen maxWidth={1280}>
-      <View style={styles.page}>
+      <View style={[styles.page, mobile && { maxWidth: mobilePageWidth, width: mobilePageWidth }, mobile && mobilePageWebStyle]}>
         <FadeInView style={[styles.hero, mobile && styles.heroMobile]}>
-          <View style={[styles.heroCopy, mobile && styles.heroCopyMobile]}>
-            <Heading style={[styles.heroTitle, mobile && styles.heroTitleMobile]}>
-              {t("homeHeroTitleLine1")}
-              {"\n"}
-              <Text style={styles.heroTitleAccent}>{t("homeHeroTitleLine2")}</Text>
-            </Heading>
-            <Body style={[styles.heroBody, mobile && styles.mobileBody]}>{t("homeHeroBody")}</Body>
-            <Inline style={styles.heroActions}>
+          <View style={[styles.heroCopy, mobile && styles.heroCopyMobile, mobileBox]}>
+            <Heading style={[styles.heroTitle, mobile && styles.heroTitleMobile, mobileBox]}>{copy.heroTitle}</Heading>
+            {!mobile ? (
+              <Body style={styles.heroBody}>{copy.heroBody}</Body>
+            ) : null}
+            {!mobile ? <Inline style={styles.heroActions}>
               {session ? (
                 <LinkButton href="/dashboard">{t("dashboard")}</LinkButton>
               ) : (
                 <>
-                  <LinkButton href="/auth/signup">{t("signUpCta")}</LinkButton>
+                  <LinkButton href="/auth/signup">{copy.heroPrimary}</LinkButton>
                   <LinkButton href="/auth/login" variant="secondary">
-                    {t("signInCta")}
+                    {copy.heroSecondary}
                   </LinkButton>
                 </>
               )}
-            </Inline>
-            {mobile ? null : (
-              <View style={styles.proofGrid}>
-                {proofItems.map((item) => (
-                  <View key={item.title} style={styles.proofCard}>
-                    <View style={styles.iconCircle}>
-                      <Text style={styles.iconText}>{item.icon}</Text>
+            </Inline> : null}
+            {mobile ? null : <View style={styles.heroMetricRow}>
+              {copy.heroMetrics.map((metric) => (
+                <View key={metric.label} style={styles.heroMetric}>
+                  <Text style={styles.heroMetricLabel}>{metric.label}</Text>
+                  <Text style={styles.heroMetricValue}>{metric.value}</Text>
+                </View>
+              ))}
+            </View>}
+          </View>
+
+          {mobile ? null : (
+            <View style={styles.heroMedia}>
+              <Image
+                accessibilityLabel="Athmira Bike Fit analysis preview"
+                resizeMode="cover"
+                source={homeHeroImage}
+                style={styles.heroImage}
+              />
+              <View style={[styles.heroFade, heroFadeWebStyle]} />
+              <View style={styles.analysisOverlay}>
+                <Text style={styles.overlayTitle}>Fit & Aero overview</Text>
+                <View style={styles.overlayMainRow}>
+                  <View style={styles.overlayScoreBlock}>
+                    <View style={styles.overlayScoreRing}>
+                      <Text style={styles.overlayScoreValue}>76</Text>
                     </View>
-                    <Text style={styles.proofTitle}>{item.title}</Text>
+                    <View style={styles.overlayScoreCopy}>
+                      <Text style={styles.overlayScoreLabel}>{language === "es" ? "Puntaje general" : "Overall score"}</Text>
+                      <Text style={styles.overlayScoreStatus}>Good</Text>
+                    </View>
                   </View>
-                ))}
-              </View>
-            )}
-          </View>
-
-          <View style={[styles.heroMedia, mobile && styles.heroMediaMobile, mobile && { height: heroMediaMobileSize }]}>
-            <Image
-              accessibilityLabel="Cyclist with Athmira posture intelligence dashboard"
-              resizeMode="cover"
-              source={homeHeroImage}
-              style={styles.heroImage}
-            />
-            <View style={[styles.heroFade, heroFadeWebStyle]} />
-          </View>
-        </FadeInView>
-
-        <FadeInView delayMs={100} style={styles.brandStrip}>
-          <Text style={styles.brandStripTitle}>{t("homeTrustedBy")}</Text>
-          <View style={styles.logoRow}>
-            {brandLogos.map((logo) => (
-              <Text key={logo} style={styles.logoText}>
-                {logo}
-              </Text>
-            ))}
-          </View>
-        </FadeInView>
-
-        <FadeInView delayMs={160} style={styles.featureSection}>
-          <View style={styles.centerHeader}>
-            <Text style={styles.sectionTitle}>{t("homePossibilitiesTitle")}</Text>
-            <Text style={styles.sectionBody}>{t("homeDashboardBody")}</Text>
-          </View>
-          <View style={styles.featureGrid}>
-            {featureCards.map((feature) => (
-              <View key={feature.title} style={styles.featureCard}>
-                <Image
-                  accessibilityLabel={feature.title}
-                  resizeMode="cover"
-                  source={{ uri: feature.image }}
-                  style={styles.featureImage}
-                />
-                <View style={styles.featureCopy}>
-                  <View style={styles.featureTopline}>
-                    <Text style={styles.featureTitle}>{feature.title}</Text>
-                    <Text style={styles.featureStatText}>{feature.stat}</Text>
+                  <View style={styles.overlayMetricStack}>
+                    {[
+                      { label: language === "es" ? "Comodidad" : "Comfort", value: 82, color: "#17a673" },
+                      { label: "Aero", value: 72, color: colors.primary },
+                      { label: language === "es" ? "Tracking rodilla" : "Knee tracking", value: 68, color: "#f58a20" },
+                      { label: language === "es" ? "Calidad captura" : "Capture quality", value: 78, color: "#17a673" }
+                    ].map((metric) => (
+                      <View key={metric.label} style={styles.overlayMetric}>
+                        <View style={styles.overlayMetricHeader}>
+                          <Text style={styles.overlayLabel}>{metric.label}</Text>
+                          <Text style={styles.overlayValue}>{metric.value}</Text>
+                        </View>
+                        <View style={styles.overlayTrack}>
+                          <View style={[styles.overlayTrackFill, { backgroundColor: metric.color, width: `${metric.value}%` }]} />
+                        </View>
+                      </View>
+                    ))}
                   </View>
-                  <Text style={styles.featureBody}>{feature.body}</Text>
-                  <Text style={styles.featureLink}>{feature.link} -&gt;</Text>
+                </View>
+                <View style={styles.overlayPressure}>
+                  <Text style={styles.overlayPressureTitle}>{language === "es" ? "Presion recomendada" : "Pressure recommended"}</Text>
+                  <View style={styles.overlayPressureRow}>
+                    <Text style={styles.overlayPressureValue}>73 psi</Text>
+                    <Text style={styles.overlayPressureValue}>75 psi</Text>
+                  </View>
+                  <View style={styles.overlayPressureRow}>
+                    <Text style={styles.overlayPressureLabel}>{language === "es" ? "Del." : "Front"}</Text>
+                    <Text style={styles.overlayPressureLabel}>{language === "es" ? "Tras." : "Rear"}</Text>
+                  </View>
                 </View>
               </View>
-            ))}
-          </View>
+            </View>
+          )}
         </FadeInView>
 
-        <FadeInView delayMs={220} style={styles.workflowSection}>
-          <Text style={styles.sectionTitle}>{t("homeHowTitle")}</Text>
-          <View style={styles.stepRail}>
-            {steps.map((step) => (
-              <View key={step.icon} style={styles.stepItem}>
-                <View style={styles.stepIcon}>
-                  <Text style={styles.stepIconText}>{step.icon}</Text>
+        <FadeInView delayMs={100} style={styles.storyIntro}>
+          {mobile ? (
+            <MobileLines text={copy.systemTitleMobile} textStyle={[styles.sectionTitle, styles.sectionTitleMobile]} />
+          ) : (
+            <Text style={styles.sectionTitle}>{copy.systemTitle}</Text>
+          )}
+          {mobile ? (
+            <MobileLines text={copy.systemBodyMobile} textStyle={styles.sectionBody} />
+          ) : (
+            <Text style={styles.sectionBody}>{copy.systemBody}</Text>
+          )}
+        </FadeInView>
+
+        <FadeInView delayMs={150} style={[styles.moduleGrid, moduleGridWebStyle]}>
+          {copy.modules.map((module) => (
+            <View key={module.title} style={styles.modulePanel}>
+              <Image
+                accessibilityLabel={module.title}
+                resizeMode="cover"
+                source={getModuleImageSource(module.image)}
+                style={[styles.moduleImage, mobile && styles.moduleImageMobile]}
+              />
+              <View style={styles.moduleCopy}>
+                <Text style={styles.moduleMetric}>{module.metric}</Text>
+                <Text style={styles.moduleTitle}>{module.title}</Text>
+                <Text style={styles.moduleBody}>{module.body}</Text>
+              </View>
+            </View>
+          ))}
+        </FadeInView>
+
+        <FadeInView delayMs={200} style={[styles.workflow, mobile && styles.workflowMobile]}>
+          <View style={styles.workflowCopy}>
+            <Text style={[styles.sectionTitleLeft, styles.workflowTitle, mobile && styles.sectionTitleMobile, mobileBox]}>
+              {copy.workflowTitle}
+            </Text>
+            <Text style={[styles.sectionBodyLeft, styles.workflowBody, mobileBox]}>{copy.workflowBody}</Text>
+          </View>
+          <View style={styles.stepStack}>
+            {copy.steps.map((step, index) => (
+              <View key={step.title} style={styles.stepItem}>
+                <View style={styles.stepNumber}>
+                  <Text style={styles.stepNumberText}>{String(index + 1).padStart(2, "0")}</Text>
                 </View>
                 <View style={styles.stepCopy}>
                   <Text style={styles.stepTitle}>{step.title}</Text>
@@ -164,61 +362,61 @@ export default function WelcomeRoute() {
           </View>
         </FadeInView>
 
-        <FadeInView delayMs={280} style={[styles.scienceSection, mobile && styles.scienceSectionMobile]}>
+        <FadeInView delayMs={250} style={[styles.cockpitSection, mobile && styles.cockpitSectionMobile]}>
           <View style={styles.dashboardMock}>
             <View style={styles.mockHeader}>
               <View>
-                <Text style={styles.mockTitle}>{t("dashboard")}</Text>
-                <Text style={styles.mockSubtitle}>{t("dashboardProgressSnapshot")}</Text>
+                <Text style={styles.mockTitle}>Athmira</Text>
+                <Text style={styles.mockSubtitle}>{copy.cockpitTitle}</Text>
               </View>
-              <View style={styles.mockStatus}>
-                <Text style={styles.mockStatusText}>92</Text>
+              <View style={styles.scoreRing}>
+                <Text style={styles.scoreRingValue}>82</Text>
               </View>
             </View>
-            <View style={styles.mockGrid}>
-              <MockMetric trend="+6%" trendSuffix={t("homeMetricTrendSuffix")} label="FTP" value="278 w" />
-              <MockMetric trend="+4%" trendSuffix={t("homeMetricTrendSuffix")} label="VO2max" value="58" />
-              <MockMetric
-                trend={t("homeStatusOptimal")}
-                trendSuffix={t("homeMetricTrendSuffix")}
-                label={t("tirePressureNav")}
-                value="73 psi"
-              />
+            <View style={styles.dashboardGrid}>
+              {copy.dashboardCards.map((card) => (
+                <View key={card.label} style={styles.dashboardCard}>
+                  <Text style={styles.dashboardLabel}>{card.label}</Text>
+                  <Text style={styles.dashboardValue}>{card.value}</Text>
+                  <Text style={styles.dashboardNote}>{card.note}</Text>
+                </View>
+              ))}
             </View>
-            <View style={styles.analysisPreview}>
-              <Image
-                accessibilityLabel="Bike fit analysis preview"
-                resizeMode="cover"
-                source={{ uri: visualAssets.cyclistHero }}
-                style={styles.analysisImage}
-              />
-              <View style={styles.analysisStats}>
-                <Text style={styles.analysisLabel}>{t("kneeAngle")}</Text>
-                <Text style={styles.analysisValue}>146 deg</Text>
-                <Text style={styles.analysisGood}>{t("homeStatusGood")}</Text>
-                <Text style={styles.analysisLabel}>{t("aeroScore")}</Text>
-                <Text style={styles.analysisValue}>76</Text>
-              </View>
+            <View style={styles.recommendationStrip}>
+              <Text style={styles.recommendationTitle}>
+                {language === "es" ? "Recomendacion principal" : "Primary recommendation"}
+              </Text>
+              <Text style={styles.recommendationBody}>
+                {language === "es"
+                  ? "Prueba un ajuste pequeno, repite el analisis y compara antes de tocar otra variable."
+                  : "Try one small adjustment, repeat the analysis, and compare before changing another variable."}
+              </Text>
             </View>
           </View>
-          <View style={styles.scienceCopy}>
-            <Text style={styles.sectionTitle}>{t("homeDashboardTitle")}</Text>
-            <Body style={[styles.sectionBody, mobile && styles.mobileBody]}>{t("homeDashboardBody")}</Body>
-            <Text style={styles.safetyNote}>{t("homeSafetyBody")}</Text>
+          <View style={styles.cockpitCopy}>
+            <Text style={[styles.sectionTitleLeft, mobile && styles.sectionTitleMobile, mobileBox]}>{copy.cockpitTitle}</Text>
+            <Text style={[styles.sectionBodyLeft, mobileBox]}>{copy.cockpitBody}</Text>
+            <Text style={styles.futureTitle}>{copy.futureTitle}</Text>
+            <Text style={styles.futureBody}>{copy.futureBody}</Text>
           </View>
         </FadeInView>
 
-        <FadeInView delayMs={340} style={styles.finalCta}>
+        <FadeInView delayMs={300} style={styles.safetySection}>
+          <Text style={styles.safetyTitle}>{copy.safetyTitle}</Text>
+          <Text style={styles.safetyBody}>{copy.safetyBody}</Text>
+        </FadeInView>
+
+        <FadeInView delayMs={350} style={styles.finalCta}>
           <Image
-            accessibilityLabel="Cyclist training outdoors"
+            accessibilityLabel="Cyclist riding with Athmira planning context"
             resizeMode="cover"
             source={{ uri: visualAssets.aeroTrack }}
             style={styles.finalImage}
           />
           <View style={styles.finalOverlay} />
           <View style={styles.finalCopy}>
-            <Text style={styles.finalTitle}>{t("homeReadyTitle")}</Text>
-            <Text style={styles.finalBody}>{t("homeFinalBody")}</Text>
+            <Text style={styles.finalTitle}>{copy.finalTitle}</Text>
+            <Text style={styles.finalBody}>{copy.finalBody}</Text>
           </View>
           <Inline style={styles.finalActions}>
             {session ? (
@@ -233,42 +431,29 @@ export default function WelcomeRoute() {
             )}
           </Inline>
         </FadeInView>
-
-        <View style={styles.disclaimer}>
-          <View style={styles.disclaimerIcon}>
-            <Text style={styles.disclaimerIconText}>OK</Text>
-          </View>
-          <View style={styles.disclaimerCopy}>
-            <Text style={styles.disclaimerTitle}>{t("homeSafetyTitle")}</Text>
-            <Text style={styles.disclaimerText}>{t("homeSafetyBody")}</Text>
-          </View>
-        </View>
       </View>
     </Screen>
   );
 }
 
-function MockMetric({
-  label,
-  trend,
-  trendSuffix,
-  value
-}: {
-  label: string;
-  trend: string;
-  trendSuffix: string;
-  value: string;
-}) {
+function getModuleImageSource(key: string) {
+  const source = moduleImageMap[key as ModuleImageKey];
+
+  if (typeof source === "number") {
+    return source;
+  }
+
+  return { uri: source };
+}
+
+function MobileLines({ text, textStyle }: { text: string; textStyle: object }) {
   return (
-    <View style={styles.mockMetric}>
-      <Text style={styles.mockMetricLabel}>{label}</Text>
-      <Text style={styles.mockMetricValue}>{value}</Text>
-      <Text style={styles.mockMetricTrend}>{`${trend} ${trendSuffix}`}</Text>
-      <View style={styles.sparkline}>
-        {[8, 14, 10, 18, 15, 24].map((height, index) => (
-          <View key={`${label}-${height}-${index}`} style={[styles.sparkBar, { height }]} />
-        ))}
-      </View>
+    <View style={styles.mobileLines}>
+      {text.split("\n").map((line) => (
+        <Text key={line} style={textStyle}>
+          {line}
+        </Text>
+      ))}
     </View>
   );
 }
@@ -277,49 +462,41 @@ const fontFamily = Platform.select({ default: undefined, web: typography.fontFam
 
 const styles = StyleSheet.create({
   page: {
-    gap: 54,
-    paddingBottom: spacing.xxxl
+    gap: 64,
+    overflow: "hidden",
+    paddingBottom: spacing.xxxl,
+    width: "100%"
   },
   hero: {
     alignItems: "center",
     flexDirection: "row",
-    gap: 0,
-    minHeight: 520,
-    overflow: "hidden",
-    paddingVertical: spacing.lg
+    gap: spacing.xxxl,
+    minHeight: 620,
+    paddingTop: spacing.xl
   },
   heroMobile: {
     alignItems: "stretch",
     flexDirection: "column",
-    minHeight: 0,
-    overflow: "visible",
-    paddingVertical: 0
+    gap: spacing.xl,
+    minHeight: 0
   },
   heroCopy: {
-    flex: 0.82,
+    flex: 0.92,
     gap: spacing.lg,
-    maxWidth: 520,
-    minWidth: 300,
-    paddingLeft: spacing.md,
-    zIndex: 2
+    minWidth: 300
   },
   heroCopyMobile: {
-    maxWidth: "100%",
     minWidth: 0,
-    paddingLeft: 0,
     width: "100%"
   },
   heroTitle: {
     color: colors.ink,
     fontFamily,
-    fontSize: 66,
+    fontSize: 60,
     fontWeight: typography.weights.black,
     letterSpacing: 0,
-    lineHeight: 70,
-    maxWidth: 560
-  },
-  heroTitleAccent: {
-    color: colors.primary
+    lineHeight: 64,
+    maxWidth: 680
   },
   heroTitleMobile: {
     fontSize: 39,
@@ -327,72 +504,67 @@ const styles = StyleSheet.create({
   },
   heroBody: {
     color: colors.inkMuted,
+    flexShrink: 1,
+    fontFamily,
     fontSize: 18,
     lineHeight: 28,
-    maxWidth: 470
+    maxWidth: 600
   },
-  mobileBody: {
-    maxWidth: 340,
+  textMobile: {
+    maxWidth: "100%",
+    width: "100%"
+  },
+  mobileLines: {
+    alignItems: "center",
+    flexShrink: 1,
     width: "100%"
   },
   heroActions: {
     gap: spacing.md,
     paddingTop: spacing.sm
   },
-  proofGrid: {
+  heroMetricRow: {
+    alignItems: "flex-start",
     borderTopColor: colors.border,
     borderTopWidth: 1,
     flexDirection: "row",
-    flexWrap: "wrap",
-    gap: spacing.md,
+    gap: spacing.xl,
+    justifyContent: "space-between",
     marginTop: spacing.lg,
     paddingTop: spacing.lg
   },
-  proofCard: {
-    alignItems: "center",
-    flexBasis: 96,
-    flexGrow: 1,
-    gap: spacing.sm,
-    justifyContent: "center",
-    maxWidth: 150
+  heroMetric: {
+    flex: 1,
+    minWidth: 0
   },
-  iconCircle: {
-    alignItems: "center",
-    borderColor: colors.primary,
-    borderRadius: radii.round,
-    borderWidth: 1,
-    height: 34,
-    justifyContent: "center",
-    width: 34
-  },
-  iconText: {
-    color: colors.primary,
+  heroMetricLabel: {
+    color: colors.inkSubtle,
     fontFamily,
     fontSize: 12,
-    fontWeight: typography.weights.black
-  },
-  proofTitle: {
-    color: colors.ink,
-    fontFamily,
-    fontSize: 11,
     fontWeight: typography.weights.black,
-    lineHeight: 16,
-    textAlign: "center"
+    textTransform: "uppercase"
+  },
+  heroMetricValue: {
+    color: colors.ink,
+    flexShrink: 1,
+    fontFamily,
+    fontSize: 19,
+    fontWeight: typography.weights.black,
+    lineHeight: 23,
+    marginTop: spacing.xs
   },
   heroMedia: {
-    borderRadius: 0,
-    flex: 1.14,
-    height: 520,
+    borderRadius: radii.xl,
+    flex: 1,
+    height: 560,
     minWidth: 420,
     overflow: "hidden",
-    position: "relative"
+    position: "relative",
+    ...shadows.medium
   },
   heroMediaMobile: {
-    borderRadius: radii.xl,
-    flexBasis: "auto",
-    flexGrow: 0,
-    flexShrink: 0,
-    marginTop: spacing.huge,
+    height: 430,
+    marginTop: spacing.xxxl,
     minWidth: 0,
     width: "100%"
   },
@@ -401,153 +573,277 @@ const styles = StyleSheet.create({
     width: "100%"
   },
   heroFade: {
-    backgroundColor: "rgba(244,248,250,0.18)",
+    backgroundColor: "rgba(244,248,250,0.08)",
     bottom: 0,
     left: 0,
     position: "absolute",
     top: 0,
-    width: "18%"
+    width: "22%"
   },
-  brandStrip: {
-    alignItems: "center",
-    gap: spacing.lg
-  },
-  brandStripTitle: {
-    color: colors.inkSubtle,
-    fontFamily,
-    fontSize: 12,
-    fontWeight: typography.weights.black,
-    letterSpacing: 4,
-    textAlign: "center"
-  },
-  logoRow: {
-    alignItems: "center",
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: spacing.xxxl,
-    justifyContent: "center"
-  },
-  logoText: {
-    color: "#8b969a",
-    fontFamily,
-    fontSize: 19,
-    fontStyle: "italic",
-    fontWeight: typography.weights.black,
-    letterSpacing: 1
-  },
-  featureSection: {
-    backgroundColor: "#eef5f7",
-    borderColor: "rgba(184,206,209,0.36)",
-    borderRadius: radii.xl,
-    borderWidth: 1,
-    gap: spacing.xl,
-    padding: spacing.xl,
-    ...shadows.soft
-  },
-  centerHeader: {
-    alignItems: "center",
-    gap: spacing.sm
-  },
-  sectionTitle: {
-    color: colors.ink,
-    fontFamily,
-    fontSize: 34,
-    fontWeight: typography.weights.black,
-    lineHeight: 40,
-    textAlign: "center"
-  },
-  sectionBody: {
-    color: colors.inkMuted,
-    fontFamily,
-    fontSize: 16,
-    lineHeight: 24,
-    maxWidth: 720,
-    textAlign: "center"
-  },
-  featureGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: spacing.lg
-  },
-  featureCard: {
-    backgroundColor: colors.surface,
-    borderColor: "rgba(184,206,209,0.62)",
+  analysisOverlay: {
+    backgroundColor: "rgba(255,255,255,0.96)",
+    borderColor: "rgba(184,206,209,0.82)",
     borderRadius: radii.lg,
     borderWidth: 1,
-    flexBasis: 260,
-    flexGrow: 1,
-    overflow: "hidden",
-    ...shadows.soft
-  },
-  featureImage: {
-    aspectRatio: 1.48,
-    width: "100%"
-  },
-  featureCopy: {
     gap: spacing.sm,
-    padding: spacing.lg
+    padding: spacing.md,
+    position: "absolute",
+    bottom: spacing.lg,
+    right: spacing.lg,
+    width: 360,
+    ...shadows.medium
   },
-  featureTopline: {
-    alignItems: "flex-start",
-    flexDirection: "row",
-    gap: spacing.md,
-    justifyContent: "space-between"
-  },
-  featureTitle: {
+  overlayTitle: {
     color: colors.ink,
-    flex: 1,
     fontFamily,
-    fontSize: 18,
-    fontWeight: typography.weights.black,
-    lineHeight: 24
+    fontSize: 15,
+    fontWeight: typography.weights.black
   },
-  featureStatText: {
-    color: colors.primary,
+  overlayMainRow: {
+    alignItems: "stretch",
+    flexDirection: "row",
+    gap: spacing.md
+  },
+  overlayScoreBlock: {
+    alignItems: "flex-start",
+    gap: spacing.xs,
+    width: 100
+  },
+  overlayScoreRing: {
+    alignItems: "center",
+    backgroundColor: colors.surface,
+    borderColor: colors.primary,
+    borderRadius: radii.round,
+    borderWidth: 5,
+    height: 64,
+    justifyContent: "center",
+    width: 64
+  },
+  overlayScoreValue: {
+    color: colors.ink,
+    fontFamily,
+    fontSize: 27,
+    fontWeight: typography.weights.black
+  },
+  overlayScoreCopy: {
+    gap: 3
+  },
+  overlayScoreLabel: {
+    color: colors.inkMuted,
+    fontFamily,
+    fontSize: 12,
+    fontWeight: typography.weights.bold
+  },
+  overlayScoreStatus: {
+    color: "#17a673",
     fontFamily,
     fontSize: 13,
     fontWeight: typography.weights.black
   },
-  featureBody: {
+  overlayMetricStack: {
+    flex: 1,
+    gap: spacing.xs
+  },
+  overlayMetric: {
+    gap: spacing.xs
+  },
+  overlayMetricHeader: {
+    alignItems: "center",
+    flexDirection: "row",
+    justifyContent: "space-between"
+  },
+  overlayLabel: {
     color: colors.inkMuted,
     fontFamily,
-    fontSize: 14,
-    lineHeight: 21
+    fontSize: 12,
+    fontWeight: typography.weights.black
   },
-  featureLink: {
-    color: colors.primary,
+  overlayValue: {
+    color: colors.ink,
     fontFamily,
     fontSize: 13,
+    fontWeight: typography.weights.black
+  },
+  overlayTrack: {
+    backgroundColor: "#e6eef0",
+    borderRadius: radii.round,
+    height: 5,
+    overflow: "hidden"
+  },
+  overlayTrackFill: {
+    borderRadius: radii.round,
+    height: "100%"
+  },
+  overlayPressure: {
+    backgroundColor: colors.surfaceMuted,
+    borderColor: colors.border,
+    borderRadius: radii.md,
+    borderWidth: 1,
+    gap: spacing.xs,
+    marginTop: spacing.xs,
+    padding: spacing.sm
+  },
+  overlayPressureTitle: {
+    color: colors.inkMuted,
+    fontFamily,
+    fontSize: 12,
+    fontWeight: typography.weights.black
+  },
+  overlayPressureRow: {
+    flexDirection: "row",
+    justifyContent: "space-between"
+  },
+  overlayPressureValue: {
+    color: colors.ink,
+    fontFamily,
+    fontSize: 17,
+    fontWeight: typography.weights.black
+  },
+  overlayPressureLabel: {
+    color: colors.inkMuted,
+    fontFamily,
+    fontSize: 11,
+    fontWeight: typography.weights.bold
+  },
+  storyIntro: {
+    alignItems: "center",
+    gap: spacing.md
+  },
+  sectionTitle: {
+    color: colors.ink,
+    flexShrink: 1,
+    fontFamily,
+    fontSize: 38,
     fontWeight: typography.weights.black,
-    marginTop: spacing.xs
+    letterSpacing: 0,
+    lineHeight: 44,
+    maxWidth: 830,
+    textAlign: "center"
   },
-  workflowSection: {
-    gap: spacing.xl
+  sectionTitleMobile: {
+    fontSize: 31,
+    lineHeight: 36,
+    maxWidth: "100%",
+    width: "100%"
   },
-  stepRail: {
+  sectionBody: {
+    color: colors.inkMuted,
+    flexShrink: 1,
+    fontFamily,
+    fontSize: 17,
+    lineHeight: 26,
+    maxWidth: 850,
+    textAlign: "center"
+  },
+  sectionTitleLeft: {
+    color: colors.ink,
+    flexShrink: 1,
+    fontFamily,
+    fontSize: 36,
+    fontWeight: typography.weights.black,
+    letterSpacing: 0,
+    lineHeight: 42
+  },
+  sectionBodyLeft: {
+    color: colors.inkMuted,
+    flexShrink: 1,
+    fontFamily,
+    fontSize: 17,
+    lineHeight: 26
+  },
+  moduleGrid: {
     flexDirection: "row",
     flexWrap: "wrap",
+    gap: spacing.lg,
+    width: "100%"
+  },
+  modulePanel: {
+    backgroundColor: colors.surface,
+    borderColor: colors.border,
+    borderRadius: radii.md,
+    borderWidth: 1,
+    flexBasis: 260,
+    flexGrow: 1,
+    flexShrink: 1,
+    minWidth: 0,
+    overflow: "hidden",
+    ...shadows.soft
+  },
+  moduleImage: {
+    aspectRatio: 1.48,
+    width: "100%"
+  },
+  moduleImageMobile: {
+    aspectRatio: 1.62
+  },
+  moduleCopy: {
+    gap: spacing.xs,
+    padding: spacing.md
+  },
+  moduleMetric: {
+    color: colors.primary,
+    fontFamily,
+    fontSize: 12,
+    fontWeight: typography.weights.black,
+    textTransform: "uppercase"
+  },
+  moduleTitle: {
+    color: colors.ink,
+    fontFamily,
+    fontSize: 18,
+    fontWeight: typography.weights.black,
+    lineHeight: 23
+  },
+  moduleBody: {
+    color: colors.inkMuted,
+    fontFamily,
+    fontSize: 13,
+    lineHeight: 20
+  },
+  workflow: {
+    alignItems: "flex-start",
+    backgroundColor: colors.primaryDark,
+    borderRadius: radii.xl,
+    flexDirection: "row",
+    gap: spacing.xxxl,
+    padding: spacing.xxxl
+  },
+  workflowMobile: {
+    flexDirection: "column",
+    padding: spacing.xl
+  },
+  workflowCopy: {
+    flex: 0.75,
+    gap: spacing.md,
+    minWidth: 260
+  },
+  workflowTitle: {
+    color: colors.white
+  },
+  workflowBody: {
+    color: "#c6e5e1"
+  },
+  stepStack: {
+    flex: 1,
     gap: spacing.lg
   },
   stepItem: {
     alignItems: "flex-start",
-    flexBasis: 250,
     flexDirection: "row",
-    flexGrow: 1,
     gap: spacing.md
   },
-  stepIcon: {
+  stepNumber: {
     alignItems: "center",
-    borderColor: colors.primary,
+    backgroundColor: colors.accent,
     borderRadius: radii.round,
-    borderWidth: 1,
-    height: 52,
+    height: 42,
     justifyContent: "center",
-    width: 52
+    width: 42
   },
-  stepIconText: {
-    color: colors.primary,
+  stepNumberText: {
+    color: colors.primaryDark,
     fontFamily,
-    fontSize: 15,
+    fontSize: 12,
     fontWeight: typography.weights.black
   },
   stepCopy: {
@@ -555,185 +851,176 @@ const styles = StyleSheet.create({
     gap: spacing.xs
   },
   stepTitle: {
-    color: colors.ink,
+    color: colors.white,
     fontFamily,
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: typography.weights.black
   },
   stepBody: {
-    color: colors.inkMuted,
+    color: "#c6e5e1",
     fontFamily,
-    fontSize: 13,
-    lineHeight: 19
+    fontSize: 14,
+    lineHeight: 21
   },
-  scienceSection: {
+  cockpitSection: {
     alignItems: "center",
     flexDirection: "row",
     gap: spacing.xxxl
   },
-  scienceSectionMobile: {
+  cockpitSectionMobile: {
     alignItems: "stretch",
     flexDirection: "column"
   },
   dashboardMock: {
     backgroundColor: colors.surface,
-    borderColor: "rgba(184,206,209,0.72)",
+    borderColor: colors.borderStrong,
     borderRadius: radii.xl,
     borderWidth: 1,
-    flexBasis: 620,
-    flexGrow: 1,
+    flex: 1.2,
     gap: spacing.lg,
-    minWidth: 300,
+    minWidth: 310,
     padding: spacing.xl,
     ...shadows.medium
   },
   mockHeader: {
     alignItems: "center",
     flexDirection: "row",
+    gap: spacing.lg,
     justifyContent: "space-between"
   },
   mockTitle: {
-    color: colors.ink,
+    color: colors.primary,
     fontFamily,
-    fontSize: 22,
-    fontWeight: typography.weights.black
+    fontSize: 24,
+    fontWeight: typography.weights.black,
+    letterSpacing: 1.2,
+    textTransform: "uppercase"
   },
   mockSubtitle: {
     color: colors.inkMuted,
     fontFamily,
     fontSize: 13,
-    fontWeight: typography.weights.bold
+    fontWeight: typography.weights.bold,
+    maxWidth: 360
   },
-  mockStatus: {
+  scoreRing: {
     alignItems: "center",
     backgroundColor: colors.primarySoft,
     borderColor: colors.primary,
     borderRadius: radii.round,
-    borderWidth: 5,
-    height: 74,
+    borderWidth: 6,
+    height: 78,
     justifyContent: "center",
-    width: 74
+    width: 78
   },
-  mockStatusText: {
+  scoreRingValue: {
     color: colors.ink,
     fontFamily,
-    fontSize: 28,
+    fontSize: 27,
     fontWeight: typography.weights.black
   },
-  mockGrid: {
+  dashboardGrid: {
     flexDirection: "row",
     flexWrap: "wrap",
     gap: spacing.md
   },
-  mockMetric: {
-    backgroundColor: colors.surface,
+  dashboardCard: {
+    backgroundColor: colors.surfaceMuted,
     borderColor: colors.border,
-    borderRadius: radii.lg,
+    borderRadius: radii.md,
     borderWidth: 1,
-    flexBasis: 150,
+    flexBasis: 190,
     flexGrow: 1,
     gap: spacing.xs,
     padding: spacing.md
   },
-  mockMetricLabel: {
-    color: colors.ink,
-    fontFamily,
-    fontSize: 13,
-    fontWeight: typography.weights.black
-  },
-  mockMetricValue: {
-    color: colors.ink,
-    fontFamily,
-    fontSize: 25,
-    fontWeight: typography.weights.black
-  },
-  mockMetricTrend: {
-    color: colors.primary,
-    fontFamily,
-    fontSize: 11,
-    fontWeight: typography.weights.bold
-  },
-  sparkline: {
-    alignItems: "flex-end",
-    flexDirection: "row",
-    gap: 5,
-    height: 28,
-    marginTop: spacing.xs
-  },
-  sparkBar: {
-    backgroundColor: colors.aqua,
-    borderRadius: radii.round,
-    flex: 1,
-    minHeight: 6
-  },
-  analysisPreview: {
-    borderColor: colors.border,
-    borderRadius: radii.lg,
-    borderWidth: 1,
-    flexDirection: "row",
-    gap: spacing.lg,
-    overflow: "hidden"
-  },
-  analysisImage: {
-    flex: 1.5,
-    minHeight: 210
-  },
-  analysisStats: {
-    flex: 0.8,
-    gap: spacing.xs,
-    justifyContent: "center",
-    padding: spacing.lg
-  },
-  analysisLabel: {
+  dashboardLabel: {
     color: colors.inkMuted,
     fontFamily,
     fontSize: 12,
     fontWeight: typography.weights.black,
     textTransform: "uppercase"
   },
-  analysisValue: {
+  dashboardValue: {
     color: colors.ink,
     fontFamily,
-    fontSize: 28,
+    fontSize: 27,
     fontWeight: typography.weights.black
   },
-  analysisGood: {
-    alignSelf: "flex-start",
-    backgroundColor: colors.accentSoft,
-    borderRadius: radii.round,
-    color: colors.primaryDark,
+  dashboardNote: {
+    color: colors.inkMuted,
     fontFamily,
     fontSize: 12,
-    fontWeight: typography.weights.black,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: spacing.xs
+    lineHeight: 17
   },
-  scienceCopy: {
-    flexBasis: 360,
-    flexGrow: 1,
-    gap: spacing.md
-  },
-  safetyNote: {
+  recommendationStrip: {
     backgroundColor: colors.amberSoft,
     borderColor: "#f4d08c",
-    borderRadius: radii.lg,
+    borderRadius: radii.md,
     borderWidth: 1,
+    gap: spacing.xs,
+    padding: spacing.lg
+  },
+  recommendationTitle: {
     color: colors.ink,
     fontFamily,
+    fontSize: 15,
+    fontWeight: typography.weights.black
+  },
+  recommendationBody: {
+    color: colors.inkMuted,
+    fontFamily,
     fontSize: 14,
-    fontWeight: typography.weights.bold,
-    lineHeight: 21,
-    padding: spacing.lg
+    lineHeight: 21
+  },
+  cockpitCopy: {
+    flex: 0.8,
+    gap: spacing.md,
+    minWidth: 300
+  },
+  futureTitle: {
+    color: colors.primary,
+    fontFamily,
+    fontSize: 17,
+    fontWeight: typography.weights.black,
+    marginTop: spacing.sm
+  },
+  futureBody: {
+    color: colors.inkMuted,
+    fontFamily,
+    fontSize: 15,
+    lineHeight: 23
+  },
+  safetySection: {
+    alignItems: "flex-start",
+    backgroundColor: "#fff8e8",
+    borderColor: "#f4d08c",
+    borderRadius: radii.md,
+    borderWidth: 1,
+    gap: spacing.sm,
+    padding: spacing.xl
+  },
+  safetyTitle: {
+    color: colors.ink,
+    fontFamily,
+    fontSize: 18,
+    fontWeight: typography.weights.black
+  },
+  safetyBody: {
+    color: colors.inkMuted,
+    fontFamily,
+    fontSize: 14,
+    lineHeight: 21
   },
   finalCta: {
     alignItems: "center",
-    backgroundColor: colors.primaryDark,
+    backgroundColor: colors.graphite,
     borderRadius: radii.xl,
     flexDirection: "row",
     flexWrap: "wrap",
     gap: spacing.xl,
     justifyContent: "space-between",
-    minHeight: 150,
+    minHeight: 230,
     overflow: "hidden",
     padding: spacing.xxl,
     position: "relative",
@@ -742,13 +1029,14 @@ const styles = StyleSheet.create({
   finalImage: {
     bottom: 0,
     left: 0,
-    opacity: 0.44,
+    opacity: 0.38,
     position: "absolute",
+    right: 0,
     top: 0,
-    width: 320
+    width: "100%"
   },
   finalOverlay: {
-    backgroundColor: "rgba(6,63,61,0.72)",
+    backgroundColor: "rgba(16,24,32,0.68)",
     bottom: 0,
     left: 0,
     position: "absolute",
@@ -764,56 +1052,18 @@ const styles = StyleSheet.create({
   finalTitle: {
     color: colors.white,
     fontFamily,
-    fontSize: 30,
+    fontSize: 32,
     fontWeight: typography.weights.black,
-    lineHeight: 36
+    lineHeight: 38
   },
   finalBody: {
     color: "#d9efed",
     fontFamily,
     fontSize: 16,
     lineHeight: 24,
-    maxWidth: 620
+    maxWidth: 660
   },
   finalActions: {
     zIndex: 2
-  },
-  disclaimer: {
-    alignItems: "flex-start",
-    flexDirection: "row",
-    gap: spacing.md,
-    justifyContent: "center",
-    marginTop: -spacing.xl
-  },
-  disclaimerIcon: {
-    alignItems: "center",
-    borderColor: colors.primary,
-    borderRadius: radii.round,
-    borderWidth: 1,
-    height: 32,
-    justifyContent: "center",
-    width: 32
-  },
-  disclaimerIconText: {
-    color: colors.primary,
-    fontFamily,
-    fontSize: 15,
-    fontWeight: typography.weights.black
-  },
-  disclaimerCopy: {
-    flex: 1,
-    maxWidth: 860
-  },
-  disclaimerTitle: {
-    color: colors.ink,
-    fontFamily,
-    fontSize: 14,
-    fontWeight: typography.weights.black
-  },
-  disclaimerText: {
-    color: colors.inkMuted,
-    fontFamily,
-    fontSize: 12,
-    lineHeight: 18
   }
 });

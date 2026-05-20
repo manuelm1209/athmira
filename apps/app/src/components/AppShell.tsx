@@ -90,7 +90,7 @@ export function AppShell({ children }: PropsWithChildren) {
     <View style={styles.root}>
       <View
         accessibilityLabel="Main navigation"
-        style={[styles.header, headerMotionStyle, headerDocked && styles.headerDocked]}
+        style={[styles.header, compact && styles.headerCompact, headerMotionStyle, headerDocked && styles.headerDocked]}
       >
         <Link href={session ? "/dashboard" : "/"} asChild>
           <Pressable accessibilityRole="link" style={styles.brand}>
@@ -106,7 +106,7 @@ export function AppShell({ children }: PropsWithChildren) {
             </View>
           </Pressable>
         </Link>
-        <View style={styles.nav}>
+        <View style={[styles.nav, compact && styles.navCompact]}>
           {session || compact ? null : (
             <View style={styles.marketingNav}>
               <Text style={styles.marketingNavText}>{t("homeNavFeatures")}</Text>
@@ -173,6 +173,12 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.md,
     ...shadows.soft
   },
+  headerCompact: {
+    alignItems: "flex-start",
+    gap: spacing.md,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md
+  },
   headerDocked: {
     backgroundColor: "rgba(255,255,255,0.86)",
     borderBottomColor: "rgba(184,206,209,0.78)",
@@ -214,6 +220,11 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     flexWrap: "wrap",
     gap: spacing.xl
+  },
+  navCompact: {
+    gap: spacing.sm,
+    justifyContent: "flex-start",
+    width: "100%"
   },
   marketingNav: {
     alignItems: "center",
