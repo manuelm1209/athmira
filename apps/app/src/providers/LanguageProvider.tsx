@@ -18,7 +18,7 @@ const LanguageContext = createContext<LanguageContextValue | null>(null);
 
 export function LanguageProvider({ children }: PropsWithChildren) {
   const { profile, updateProfile, user } = useAuth();
-  const [language, setLanguageState] = useState<LanguageCode>("es");
+  const [language, setLanguageState] = useState<LanguageCode>("en");
 
   useEffect(() => {
     let mounted = true;

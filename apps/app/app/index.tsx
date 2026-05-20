@@ -1,5 +1,4 @@
-import { Body, FadeInView, Inline, Screen, colors, radii, shadows, spacing, typography } from "@athmira/ui";
-import { createElement, type CSSProperties, type ReactNode } from "react";
+import { Body, FadeInView, Heading, Inline, Screen, colors, radii, shadows, spacing, typography } from "@athmira/ui";
 import { Image, Platform, StyleSheet, Text, View, useWindowDimensions } from "react-native";
 
 import { LinkButton } from "@/components/LinkButton";
@@ -9,6 +8,65 @@ import { useAuth } from "@/providers/AuthProvider";
 import { useLanguage } from "@/providers/LanguageProvider";
 
 const homeHeroImage = require("../assets/home/image-home-bike-fit-hero.png");
+const homeSeoTitle = "Athmira | Bike Fit, presión de llantas y nutrición para ciclistas";
+const homeSeoDescription =
+  "Athmira ayuda a ciclistas y deportistas de endurance a mejorar su preparación con Bike Fit con cámara, análisis de postura, presión de llantas, nutrición, hidratación e historial de progreso.";
+const homeStructuredData = [
+  {
+    "@context": "https://schema.org",
+    "@type": "WebApplication",
+    name: "Athmira",
+    url: "https://athmira.com",
+    applicationCategory: "SportsApplication",
+    operatingSystem: "Web, iOS, Android",
+    description: homeSeoDescription,
+    inLanguage: ["es", "en"],
+    offers: {
+      "@type": "Offer",
+      price: "0",
+      priceCurrency: "USD"
+    },
+    audience: {
+      "@type": "Audience",
+      audienceType: "Ciclistas, triatletas y deportistas de endurance principiantes e intermedios"
+    },
+    featureList: [
+      "Bike Fit con cámara",
+      "Análisis de postura en bicicleta",
+      "Análisis frontal de rodillas",
+      "Calculadora de presión de llantas bicicleta",
+      "Planificación de nutrición e hidratación para ciclismo",
+      "Perfiles de bicicletas",
+      "Historial de progreso"
+    ],
+    keywords: [
+      "bike fit",
+      "bike fitting",
+      "bike fit con cámara",
+      "análisis de postura en bicicleta",
+      "ajuste de bicicleta",
+      "postura en bicicleta",
+      "presión de llantas bicicleta",
+      "nutrición para ciclismo",
+      "hidratación para ciclismo",
+      "triatlón",
+      "endurance training app",
+      "camera bike fit",
+      "cycling posture analysis",
+      "tire pressure calculator",
+      "cycling nutrition planner"
+    ]
+  },
+  {
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    name: "Athmira",
+    url: "https://athmira.com",
+    logo: "https://athmira.com/og-image.png",
+    slogan: "Entrena mejor. Llega más lejos.",
+    sameAs: []
+  }
+] satisfies Record<string, unknown>[];
 
 const homeCopy = {
   en: {
@@ -97,64 +155,64 @@ const homeCopy = {
       "Create your profile, add a bike, run Bike Fit, save pressure and nutrition plans, then let every retest move the story forward."
   },
   es: {
-    heroTitle: "Entrena mejor sobre tu bicicleta",
+    heroTitle: "Athmira convierte tu bici en un sistema de progreso.",
     heroBody:
-      "Athmira combina Bike Fit con cámara, análisis de postura, presión de llantas, nutrición e historial de progreso para ayudar a ciclistas y deportistas de endurance a tomar mejores decisiones antes de cada rodada.",
+      "Bike Fit, postura aero, presión de llantas, nutrición e historial de progreso viven juntos para que cada ajuste tenga contexto y cada re-test deje una señal útil.",
     heroBodyMobile:
-      "Bike Fit con cámara,\npostura, presión\ny fueling para rodar\ncon más contexto.",
+      "Bike Fit, postura aero,\npresión y fueling.\nCada re-test muestra\nel siguiente paso útil.",
     heroPrimary: "Crear mi sistema",
     heroSecondary: "Iniciar sesión",
     heroMetrics: [
-      { label: "Bike Fit con cámara", value: "lateral + frontal" },
+      { label: "Bike Fit", value: "lateral + frontal" },
       { label: "Siguiente cambio", value: "uno a la vez" },
       { label: "Re-test", value: "comparar progreso" }
     ],
-    systemTitle: "Herramientas para ciclistas, triatletas y deportistas de endurance.",
+    systemTitle: "Todo lo que un ciclista necesita antes de la próxima rodada.",
     systemBody:
-      "Athmira está pensada para ciclistas de ruta, futuros triatletas y atletas que quieren organizar su preparación sin abrumarse. Empieza con el ajuste de bicicleta y la posición en bicicleta, luego suma presión de llantas, alimentación para ciclismo, hidratación y entrenamiento.",
-    systemTitleMobile: "Herramientas para\nciclistas, triatletas\ny deportistas\nde endurance.",
+      "Athmira está pensado para ciclistas que pasan de ganar confianza a perseguir metas serias. Empieza con la bici y el cuerpo, luego suma presión, fueling e inteligencia de entrenamiento sin perder el hilo.",
+    systemTitleMobile: "Todo lo que\nun ciclista necesita\nantes de la próxima\nrodada.",
     systemBodyMobile:
-      "Athmira está pensada para ciclistas\nde ruta, futuros triatletas\ny atletas de endurance.\nEmpieza con el ajuste de bicicleta,\nluego suma presión, fueling\ne historial de progreso.",
+      "Athmira está pensado para ciclistas\nque pasan de ganar confianza\na perseguir metas serias.\nEmpieza con la bici y el cuerpo,\nluego suma presión, fueling\ne inteligencia de entrenamiento.",
     modules: [
       {
-        body: "Captura vista lateral y frontal para revisar ángulos, rodillas al pedalear, análisis frontal de rodillas, confianza y un ajuste principal para probar después.",
+        body: "Captura vista lateral y frontal, revisa ángulos, tracking de rodilla, confianza y un ajuste principal para probar después.",
         image: "hero",
         metric: "137-147 deg",
-        title: "Bike Fit con cámara que explica el por qué"
+        title: "Bike Fit que explica el por qué"
       },
       {
-        body: "Entiende torso, cadera, cabeza y brazos con guía aero visual estimada para mejorar comodidad en bicicleta y eficiencia al pedalear, sin prometer precisión de túnel de viento.",
+        body: "Entiende torso, cadera, cabeza y brazos con guía aero visual estimada, sin prometer precisión de túnel de viento.",
         image: "aero",
         metric: "estimado",
-        title: "Análisis de postura en bicicleta"
+        title: "Guía aero para ciclistas reales"
       },
       {
-        body: "Calcula presión recomendada por tipo de bici, ancho de llanta, peso, superficie y montaje: tubeless, presión con cámara o presión TPU.",
+        body: "Calcula presión por tipo de bici, ancho de llanta, peso, superficie y montaje, y guárdala en el perfil de bici.",
         image: "pressure",
         metric: "PSI por terreno",
-        title: "Presión de llantas bicicleta"
+        title: "Presión con contexto"
       },
       {
-        body: "Planea carbohidratos por hora, líquidos, caramañolas, sodio por hora y un cycling fueling plan para fondos, carrera o entrenamiento de ciclismo.",
+        body: "Planea carbohidratos, líquidos, sodio y fueling de carrera con productos reales, en inglés o español.",
         image: "nutrition",
         metric: "carbs + sodio",
-        title: "Nutrición e hidratación para ciclismo"
+        title: "Nutrición que encaja con la sesión"
       }
     ],
     workflowTitle: "Un mejor fit ocurre en ciclos, no por intuición.",
     workflowBody:
-      "Athmira guía al atleta por una captura limpia, una recomendación preliminar, un cambio pequeño y un re-test. Así el proceso es útil como punto de partida para mejorar comodidad y eficiencia, sin pretender reemplazar a un bike fitter profesional.",
+      "Athmira guía al atleta por una captura limpia, una recomendación principal, un cambio pequeño y un re-test. Así el proceso es útil sin pretender reemplazar a un bike fitter profesional.",
     steps: [
       {
         body: "Guarda tipo de bici, talla, altura de sillín, retroceso, potencia, bielas, ancho de manubrio y setup de llantas.",
         title: "Construye el perfil de bici"
       },
       {
-        body: "Captura postura lateral y tracking frontal de rodillas con validaciones de confianza antes de dar una guía más específica.",
+        body: "Captura postura lateral y tracking frontal de rodillas con validaciones de confianza antes de dar guía fuerte.",
         title: "Mide la posición"
       },
       {
-        body: "Athmira prioriza calidad de captura, altura de sillín, estabilidad de rodilla, cockpit y revisión de ajuste de calas.",
+        body: "Athmira prioriza calidad de captura, altura de sillín, estabilidad de rodilla, cockpit y revisión de calas.",
         title: "Elige un cambio principal"
       },
       {
@@ -164,7 +222,7 @@ const homeCopy = {
     ],
     cockpitTitle: "El dashboard se convierte en la memoria del atleta.",
     cockpitBody:
-      "Bicis, sesiones de fit, puntajes aero, planes de presión, nutrición e hidratación y recomendaciones viven juntos. El objetivo no es tener más datos. Es saber mejor qué hacer en la próxima rodada.",
+      "Bicis, sesiones de fit, puntajes aero, planes de presión, nutrición y recomendaciones viven juntos. El objetivo no es tener más datos. Es saber mejor qué hacer en la próxima rodada.",
     dashboardCards: [
       { label: "Preparación de fit", value: "82", note: "guía visible según confianza" },
       { label: "Tracking de rodilla", value: "frontal", note: "tendencia izquierda / derecha" },
@@ -176,46 +234,12 @@ const homeCopy = {
       "La base ya soporta las próximas capas: coaching con IA, Garmin, Strava, Apple Health, Google Fit, running, natación y módulos de triatlón. El producto crece sin reconstruir el registro del atleta.",
     safetyTitle: "Guía útil, promesas cuidadosas.",
     safetyBody:
-      "Athmira ofrece orientación educativa basada en cámara. No diagnostica dolor, no reemplaza a un profesional médico, fisioterapeuta, entrenador ni a un bike fitter profesional. Si el dolor persiste, consulta con un profesional calificado.",
+      "Athmira ofrece orientación educativa basada en cámara. No diagnostica dolor, no reemplaza a un profesional médico ni a un bike fitter profesional. Si el dolor persiste, consulta con un profesional calificado.",
     finalTitle: "Haz que la próxima rodada empiece un sistema más inteligente.",
     finalBody:
-      "Crea tu perfil, agrega una bici, ejecuta Bike Fit, guarda presión, nutrición e hidratación, y deja que cada re-test mueva la historia hacia adelante."
+      "Crea tu perfil, agrega una bici, ejecuta Bike Fit, guarda presión y nutrición, y deja que cada re-test mueva la historia hacia adelante."
   }
 } as const;
-
-const homeSeoTitle = "Athmira | Bike Fit, presión de llantas y nutrición para ciclistas";
-const homeSeoDescription =
-  "Athmira ayuda a ciclistas y deportistas de endurance a mejorar su preparación con Bike Fit con cámara, análisis de postura, presión de llantas, nutrición, hidratación e historial de progreso.";
-const homeStructuredData = [
-  {
-    "@context": "https://schema.org",
-    "@type": "Organization",
-    name: "Athmira",
-    url: "https://athmira.com",
-    logo: "https://athmira.com/og-image.png",
-    slogan: "Entrena mejor. Llega más lejos."
-  },
-  {
-    "@context": "https://schema.org",
-    "@type": "WebApplication",
-    name: "Athmira",
-    url: "https://athmira.com",
-    applicationCategory: "SportsApplication",
-    operatingSystem: "Web, iOS, Android",
-    inLanguage: ["es", "en"],
-    description: homeSeoDescription,
-    featureList: [
-      "Bike Fit con cámara",
-      "Análisis de postura en bicicleta",
-      "Calculadora de presión de llantas para bicicleta",
-      "Planificación de nutrición e hidratación para ciclismo",
-      "Perfiles de bicicletas",
-      "Historial de progreso"
-    ],
-    keywords:
-      "bike fit, bike fitting, bike fit con cámara, análisis de postura en bicicleta, presión de llantas bicicleta, nutrición para ciclismo, hidratación para ciclismo, triatlón, endurance training app"
-  }
-] satisfies Record<string, unknown>[];
 
 type ModuleImageKey = "aero" | "hero" | "nutrition" | "pressure";
 
@@ -262,12 +286,10 @@ export default function WelcomeRoute() {
     <>
       <SeoHead description={homeSeoDescription} jsonLd={homeStructuredData} title={homeSeoTitle} />
       <Screen maxWidth={1280}>
-      <View style={[styles.page, mobile && { maxWidth: mobilePageWidth, width: mobilePageWidth }, mobile && mobilePageWebStyle]}>
-        <FadeInView nativeID="inicio" style={[styles.hero, mobile && styles.heroMobile]}>
+        <View style={[styles.page, mobile && { maxWidth: mobilePageWidth, width: mobilePageWidth }, mobile && mobilePageWebStyle]}>
+        <FadeInView style={[styles.hero, mobile && styles.heroMobile]}>
           <View style={[styles.heroCopy, mobile && styles.heroCopyMobile, mobileBox]}>
-            <SemanticText level={1} style={[styles.heroTitle, mobile && styles.heroTitleMobile, mobileBox]}>
-              {copy.heroTitle}
-            </SemanticText>
+            <Heading style={[styles.heroTitle, mobile && styles.heroTitleMobile, mobileBox]}>{copy.heroTitle}</Heading>
             {!mobile ? (
               <Body style={styles.heroBody}>{copy.heroBody}</Body>
             ) : null}
@@ -297,7 +319,6 @@ export default function WelcomeRoute() {
             <View style={styles.heroMedia}>
               <Image
                 accessibilityLabel="Athmira Bike Fit analysis preview"
-                alt="Vista previa de análisis de Bike Fit con cámara en Athmira para revisar postura en bicicleta"
                 resizeMode="cover"
                 source={homeHeroImage}
                 style={styles.heroImage}
@@ -350,11 +371,11 @@ export default function WelcomeRoute() {
           )}
         </FadeInView>
 
-        <FadeInView delayMs={100} nativeID="funciones" style={styles.storyIntro}>
+        <FadeInView delayMs={100} style={styles.storyIntro}>
           {mobile ? (
             <MobileLines text={copy.systemTitleMobile} textStyle={[styles.sectionTitle, styles.sectionTitleMobile]} />
           ) : (
-            <SemanticText level={2} style={styles.sectionTitle}>{copy.systemTitle}</SemanticText>
+            <Text style={styles.sectionTitle}>{copy.systemTitle}</Text>
           )}
           {mobile ? (
             <MobileLines text={copy.systemBodyMobile} textStyle={styles.sectionBody} />
@@ -363,30 +384,29 @@ export default function WelcomeRoute() {
           )}
         </FadeInView>
 
-        <FadeInView delayMs={150} nativeID="bike-fit" style={[styles.moduleGrid, moduleGridWebStyle]}>
+        <FadeInView delayMs={150} style={[styles.moduleGrid, moduleGridWebStyle]}>
           {copy.modules.map((module) => (
             <View key={module.title} style={styles.modulePanel}>
               <Image
                 accessibilityLabel={module.title}
-                alt={`${module.title} en Athmira para ciclistas de endurance`}
                 resizeMode="cover"
                 source={getModuleImageSource(module.image)}
                 style={[styles.moduleImage, mobile && styles.moduleImageMobile]}
               />
               <View style={styles.moduleCopy}>
                 <Text style={styles.moduleMetric}>{module.metric}</Text>
-                <SemanticText level={3} style={styles.moduleTitle}>{module.title}</SemanticText>
+                <Text style={styles.moduleTitle}>{module.title}</Text>
                 <Text style={styles.moduleBody}>{module.body}</Text>
               </View>
             </View>
           ))}
         </FadeInView>
 
-        <FadeInView delayMs={200} nativeID="como-funciona" style={[styles.workflow, mobile && styles.workflowMobile]}>
+        <FadeInView delayMs={200} style={[styles.workflow, mobile && styles.workflowMobile]}>
           <View style={styles.workflowCopy}>
-            <SemanticText level={2} style={[styles.sectionTitleLeft, styles.workflowTitle, mobile && styles.sectionTitleMobile, mobileBox]}>
+            <Text style={[styles.sectionTitleLeft, styles.workflowTitle, mobile && styles.sectionTitleMobile, mobileBox]}>
               {copy.workflowTitle}
-            </SemanticText>
+            </Text>
             <Text style={[styles.sectionBodyLeft, styles.workflowBody, mobileBox]}>{copy.workflowBody}</Text>
           </View>
           <View style={styles.stepStack}>
@@ -396,7 +416,7 @@ export default function WelcomeRoute() {
                   <Text style={styles.stepNumberText}>{String(index + 1).padStart(2, "0")}</Text>
                 </View>
                 <View style={styles.stepCopy}>
-                  <SemanticText level={3} style={styles.stepTitle}>{step.title}</SemanticText>
+                  <Text style={styles.stepTitle}>{step.title}</Text>
                   <Text style={styles.stepBody}>{step.body}</Text>
                 </View>
               </View>
@@ -404,7 +424,7 @@ export default function WelcomeRoute() {
           </View>
         </FadeInView>
 
-        <FadeInView delayMs={250} nativeID="progreso" style={[styles.cockpitSection, mobile && styles.cockpitSectionMobile]}>
+        <FadeInView delayMs={250} style={[styles.cockpitSection, mobile && styles.cockpitSectionMobile]}>
           <View style={styles.dashboardMock}>
             <View style={styles.mockHeader}>
               <View>
@@ -436,29 +456,28 @@ export default function WelcomeRoute() {
             </View>
           </View>
           <View style={styles.cockpitCopy}>
-            <SemanticText level={2} style={[styles.sectionTitleLeft, mobile && styles.sectionTitleMobile, mobileBox]}>{copy.cockpitTitle}</SemanticText>
+            <Text style={[styles.sectionTitleLeft, mobile && styles.sectionTitleMobile, mobileBox]}>{copy.cockpitTitle}</Text>
             <Text style={[styles.sectionBodyLeft, mobileBox]}>{copy.cockpitBody}</Text>
-            <SemanticText level={3} style={styles.futureTitle}>{copy.futureTitle}</SemanticText>
+            <Text style={styles.futureTitle}>{copy.futureTitle}</Text>
             <Text style={styles.futureBody}>{copy.futureBody}</Text>
           </View>
         </FadeInView>
 
-        <FadeInView delayMs={300} nativeID="limitaciones" style={styles.safetySection}>
-          <SemanticText level={2} style={styles.safetyTitle}>{copy.safetyTitle}</SemanticText>
+        <FadeInView delayMs={300} style={styles.safetySection}>
+          <Text style={styles.safetyTitle}>{copy.safetyTitle}</Text>
           <Text style={styles.safetyBody}>{copy.safetyBody}</Text>
         </FadeInView>
 
         <FadeInView delayMs={350} style={styles.finalCta}>
           <Image
             accessibilityLabel="Cyclist riding with Athmira planning context"
-            alt="Ciclista usando Athmira para planificar postura, presión de llantas y nutrición"
             resizeMode="cover"
             source={{ uri: visualAssets.aeroTrack }}
             style={styles.finalImage}
           />
           <View style={styles.finalOverlay} />
           <View style={styles.finalCopy}>
-            <SemanticText level={2} style={styles.finalTitle}>{copy.finalTitle}</SemanticText>
+            <Text style={styles.finalTitle}>{copy.finalTitle}</Text>
             <Text style={styles.finalBody}>{copy.finalBody}</Text>
           </View>
           <Inline style={styles.finalActions}>
@@ -474,7 +493,7 @@ export default function WelcomeRoute() {
             )}
           </Inline>
         </FadeInView>
-      </View>
+        </View>
       </Screen>
     </>
   );
@@ -499,26 +518,6 @@ function MobileLines({ text, textStyle }: { text: string; textStyle: object }) {
         </Text>
       ))}
     </View>
-  );
-}
-
-function SemanticText({
-  children,
-  level,
-  style
-}: {
-  children: ReactNode;
-  level: 1 | 2 | 3;
-  style: object;
-}) {
-  if (Platform.OS === "web") {
-    return createElement(`h${level}`, { style: StyleSheet.flatten([styles.semanticHeadingReset, style]) as CSSProperties }, children);
-  }
-
-  return (
-    <Text accessibilityRole="header" style={style}>
-      {children}
-    </Text>
   );
 }
 
@@ -582,9 +581,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     flexShrink: 1,
     width: "100%"
-  },
-  semanticHeadingReset: {
-    margin: 0
   },
   heroActions: {
     gap: spacing.md,

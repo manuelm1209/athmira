@@ -271,7 +271,7 @@ function formatPercent(value?: number | null) {
 
 function getBikeFitDisclaimer(language: "en" | "es") {
   return language === "es"
-    ? "Athmira ofrece orientacion educativa basada en vision por computador. No reemplaza una evaluacion medica, fisioterapeutica ni un bike fit profesional. Si tienes dolor persistente, lesion o molestias importantes, consulta con un profesional."
+    ? "Athmira ofrece orientación educativa basada en visión por computador. No reemplaza una evaluación médica, fisioterapéutica ni un bike fit profesional. Si tienes dolor persistente, lesión o molestias importantes, consulta con un profesional."
     : "Athmira provides educational guidance based on computer vision. It does not replace a medical, physical therapy, or professional bike-fit evaluation. If you have persistent pain, injury, or important discomfort, consult a professional.";
 }
 

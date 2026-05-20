@@ -3859,7 +3859,7 @@ function translateNutritionWarning(message: string, language: "en" | "es") {
   }
 
   if (message === "Sodium is lower than the target. Adjust for sweat rate, heat, and tolerance.") {
-    return "El sodio esta por debajo del objetivo. Ajusta segun sudoracion, calor y tolerancia.";
+    return "El sodio está por debajo del objetivo. Ajusta según sudoración, calor y tolerancia.";
   }
 
   if (message === "This is an estimated sports fueling plan for training guidance, not medical advice.") {

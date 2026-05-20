@@ -8,6 +8,11 @@ export default function RootHtml({ children }: PropsWithChildren) {
         <meta charSet="utf-8" />
         <meta httpEquiv="X-UA-Compatible" content="IE=edge" />
         <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+        <meta name="application-name" content="Athmira" />
+        <meta name="apple-mobile-web-app-title" content="Athmira" />
+        <meta name="theme-color" content="#063f3d" />
+        <link rel="icon" href="/favicon.png" />
+        <link rel="manifest" href="/manifest.json" />
         <ScrollViewStyleReset />
       </head>
       <body>{children}</body>
