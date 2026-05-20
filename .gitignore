@@ -44,6 +44,9 @@ local.properties
 *.mobileprovision
 *.provisionprofile
 
+# Local Supabase email templates
+supabase/email-templates/
+
 # Playwright artifacts and auth state
 playwright-report/
 test-results/
