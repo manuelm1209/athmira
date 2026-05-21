@@ -431,6 +431,19 @@ When updating the project:
 - Add useful README notes when introducing new setup steps.
 - Update this AGENTS.md file when the product direction changes.
 
+## Authenticated Playwright Access
+
+Codex and the Playwright skill should use the saved authenticated browser state when inspecting protected app screens.
+
+- Default local URL: `http://localhost:8081`.
+- Default storage state: `playwright/.auth/codex-user.json`.
+- Playwright test config reads `PLAYWRIGHT_BASE_URL` and `PLAYWRIGHT_STORAGE_STATE`, falling back to those defaults.
+- The `chromium` project uses the saved storage state directly by default, so protected routes can be tested without re-entering credentials.
+- To regenerate `playwright/.auth/codex-user.json`, put `CODEX_TEST_EMAIL` and `CODEX_TEST_PASSWORD` in `.env.local`, start the app, then run `PLAYWRIGHT_REFRESH_AUTH=1 npx playwright test --project=setup`.
+- The Playwright CLI skill reads `playwright-cli.json` from the repo root. Run CLI commands from `/Users/manuelmontoya/CODE/athmira` so the skill automatically uses `playwright/.auth/codex-user.json`.
+- When using the Playwright CLI skill, open protected pages with the localhost origin that matches the saved state, for example `http://localhost:8081/dashboard`, `http://localhost:8081/profile`, or `http://localhost:8081/admin/users`.
+- Do not commit `playwright/.auth/*.json`; these files contain user session tokens and are ignored by git.
+
 ## Deployment
 
 The web version should be deployable to Vercel.

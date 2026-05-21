@@ -1,0 +1,12 @@
+{
+  "browser": {
+    "contextOptions": {
+      "baseURL": "http://localhost:8081",
+      "storageState": "playwright/.auth/codex-user.json",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      }
+    }
+  }
+}

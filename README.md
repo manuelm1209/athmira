@@ -84,6 +84,37 @@ Public auth forms intentionally avoid displaying raw Supabase Auth errors. Login
 npm run web
 ```
 
+## Authenticated Playwright Access
+
+Codex and Playwright can inspect protected routes by reusing the saved browser state in `playwright/.auth/codex-user.json`. That file contains session tokens, is ignored by git, and should stay local.
+
+Run the app at the same origin used by the saved state:
+
+```bash
+npm run web
+```
+
+Then open protected pages from the repository root with the Playwright CLI skill. The repo-level `playwright-cli.json` points the skill at `playwright/.auth/codex-user.json`:
+
+```bash
+"$HOME/.codex/skills/playwright/scripts/playwright_cli.sh" open http://localhost:8081/dashboard
+"$HOME/.codex/skills/playwright/scripts/playwright_cli.sh" snapshot
+```
+
+The Playwright test config also uses that storage state by default:
+
+```bash
+npx playwright test --project=chromium
+```
+
+To regenerate the authenticated state, add only these private values to `.env.local`, start the app, and run the setup project:
+
+```bash
+CODEX_TEST_EMAIL=
+CODEX_TEST_PASSWORD=
+PLAYWRIGHT_REFRESH_AUTH=1 npx playwright test --project=setup
+```
+
 ## Supabase Setup
 
 Run the SQL migrations in `supabase/migrations` against your Supabase project in filename order. They create:

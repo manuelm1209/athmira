@@ -6,6 +6,8 @@ dotenv.config({ path: path.resolve(process.cwd(), ".env.local") });
 dotenv.config({ path: path.resolve(process.cwd(), ".env") });
 
 const baseURL = process.env.PLAYWRIGHT_BASE_URL ?? "http://localhost:8081";
+const storageStatePath =
+  process.env.PLAYWRIGHT_STORAGE_STATE ?? "playwright/.auth/codex-user.json";
 
 setup("authenticate Codex test user", async ({ page }) => {
   const email = process.env.CODEX_TEST_EMAIL;
@@ -47,6 +49,6 @@ setup("authenticate Codex test user", async ({ page }) => {
   await expect(page).not.toHaveURL(/\/auth\/login/);
 
   await page.context().storageState({
-    path: "playwright/.auth/codex-user.json",
+    path: storageStatePath,
   });
 });
