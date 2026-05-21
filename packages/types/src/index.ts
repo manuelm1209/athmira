@@ -119,6 +119,7 @@ export type UserProfile = {
   email: string;
   name: string | null;
   preferred_language: LanguageCode;
+  newsletter_opt_in: boolean;
   gender: string | null;
   height_cm: number | null;
   weight_kg: number | null;
@@ -575,7 +576,10 @@ export type AdminUserDetail = AdminUserOverview & {
 };
 
 export type AdminProfileUpdate = Partial<
-  Pick<UserProfile, "email" | "name" | "preferred_language" | "gender" | "height_cm" | "weight_kg" | "date_of_birth">
+  Pick<
+    UserProfile,
+    "email" | "name" | "preferred_language" | "newsletter_opt_in" | "gender" | "height_cm" | "weight_kg" | "date_of_birth"
+  >
 >;
 
 export type FitScore = {

@@ -22,7 +22,10 @@ type AuthContextValue = {
   signOut: () => Promise<void>;
   updateProfile: (
     updates: Partial<
-      Pick<UserProfile, "email" | "name" | "preferred_language" | "gender" | "height_cm" | "weight_kg" | "date_of_birth">
+      Pick<
+        UserProfile,
+        "email" | "name" | "preferred_language" | "newsletter_opt_in" | "gender" | "height_cm" | "weight_kg" | "date_of_birth"
+      >
     >
   ) => Promise<UserProfile>;
   user: User | null;

@@ -33,6 +33,7 @@ export type Database = {
           email: string;
           name: string | null;
           preferred_language: LanguageCode;
+          newsletter_opt_in: boolean;
           gender: string | null;
           height_cm: number | null;
           weight_kg: number | null;
@@ -45,6 +46,7 @@ export type Database = {
           email: string;
           name?: string | null;
           preferred_language?: LanguageCode;
+          newsletter_opt_in?: boolean;
           gender?: string | null;
           height_cm?: number | null;
           weight_kg?: number | null;
@@ -56,6 +58,7 @@ export type Database = {
           email?: string;
           name?: string | null;
           preferred_language?: LanguageCode;
+          newsletter_opt_in?: boolean;
           gender?: string | null;
           height_cm?: number | null;
           weight_kg?: number | null;

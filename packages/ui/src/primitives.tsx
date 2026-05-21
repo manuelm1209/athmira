@@ -87,6 +87,40 @@ export function Field({ label, helper, style, ...props }: FieldProps) {
   );
 }
 
+type CheckboxProps = {
+  checked: boolean;
+  disabled?: boolean;
+  helper?: string;
+  label: string;
+  onChange: (checked: boolean) => void;
+  style?: StyleProp<ViewStyle>;
+};
+
+export function Checkbox({ checked, disabled, helper, label, onChange, style }: CheckboxProps) {
+  return (
+    <Pressable
+      accessibilityRole="checkbox"
+      accessibilityState={{ checked, disabled }}
+      disabled={disabled}
+      onPress={() => onChange(!checked)}
+      style={({ pressed }) => [
+        styles.checkboxRow,
+        pressed && !disabled ? styles.pressed : null,
+        disabled ? styles.disabledButton : null,
+        style
+      ]}
+    >
+      <View style={[styles.checkboxBox, checked && styles.checkboxBoxChecked]}>
+        {checked ? <Text style={styles.checkboxMark}>✓</Text> : null}
+      </View>
+      <View style={styles.checkboxCopy}>
+        <Text style={styles.checkboxLabel}>{label}</Text>
+        {helper ? <Text style={styles.helper}>{helper}</Text> : null}
+      </View>
+    </Pressable>
+  );
+}
+
 export type SelectFieldOption = {
   label: string;
   value: string;
@@ -360,6 +394,44 @@ const styles = StyleSheet.create({
     fontFamily,
     fontSize: 12,
     lineHeight: 16
+  },
+  checkboxRow: {
+    alignItems: "flex-start",
+    flexDirection: "row",
+    gap: spacing.sm
+  },
+  checkboxBox: {
+    alignItems: "center",
+    backgroundColor: colors.surface,
+    borderColor: colors.borderStrong,
+    borderRadius: radii.sm,
+    borderWidth: 1,
+    height: 22,
+    justifyContent: "center",
+    marginTop: 1,
+    width: 22
+  },
+  checkboxBoxChecked: {
+    backgroundColor: colors.primary,
+    borderColor: colors.primary
+  },
+  checkboxMark: {
+    color: colors.white,
+    fontFamily,
+    fontSize: 15,
+    fontWeight: typography.weights.black,
+    lineHeight: 18
+  },
+  checkboxCopy: {
+    flex: 1,
+    gap: spacing.xs
+  },
+  checkboxLabel: {
+    color: colors.ink,
+    fontFamily,
+    fontSize: 14,
+    fontWeight: typography.weights.bold,
+    lineHeight: 20
   },
   optionGrid: {
     flexDirection: "row",

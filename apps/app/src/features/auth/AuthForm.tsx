@@ -1,5 +1,5 @@
 import { signInWithEmail, signUpWithEmail } from "@athmira/supabase";
-import { Body, Button, Card, Field, Heading, Inline, Screen, colors, spacing } from "@athmira/ui";
+import { Body, Button, Card, Checkbox, Field, Heading, Inline, Screen, colors, spacing } from "@athmira/ui";
 import Constants from "expo-constants";
 import { useRouter } from "expo-router";
 import { useState } from "react";
@@ -20,6 +20,7 @@ export function AuthForm({ mode }: AuthFormProps) {
   const turnstileEnabled = isTurnstileEnabled();
   const [email, setEmail] = useState("");
   const [name, setName] = useState("");
+  const [newsletterOptIn, setNewsletterOptIn] = useState(false);
   const [password, setPassword] = useState("");
   const [captchaToken, setCaptchaToken] = useState<string | null>(null);
   const [challengeVersion, setChallengeVersion] = useState(0);
@@ -69,6 +70,7 @@ export function AuthForm({ mode }: AuthFormProps) {
           captchaToken,
           email: normalizedEmail,
           name,
+          newsletterOptIn,
           password,
           preferredLanguage: language
         });
@@ -117,6 +119,9 @@ export function AuthForm({ mode }: AuthFormProps) {
           secureTextEntry
           value={password}
         />
+        {mode === "signup" ? (
+          <Checkbox checked={newsletterOptIn} label={t("newsletterOptIn")} onChange={setNewsletterOptIn} />
+        ) : null}
         {turnstileEnabled ? (
           <TurnstileChallenge
             errorLabel={t("turnstileError")}

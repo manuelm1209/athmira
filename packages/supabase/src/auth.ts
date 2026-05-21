@@ -30,6 +30,7 @@ export async function signUpWithEmail(input: {
   email: string;
   password: string;
   name?: string;
+  newsletterOptIn?: boolean;
   preferredLanguage?: LanguageCode;
 }) {
   assertSupabaseConfigured();
@@ -41,6 +42,7 @@ export async function signUpWithEmail(input: {
     options: {
       data: {
         name: input.name?.trim() || null,
+        newsletter_opt_in: input.newsletterOptIn === true,
         preferred_language: input.preferredLanguage ?? "en"
       },
       emailRedirectTo: getAuthRedirectUrl(),
@@ -57,6 +59,7 @@ export async function signUpWithEmail(input: {
       id: data.user.id,
       email,
       name: input.name?.trim() || null,
+      newsletterOptIn: input.newsletterOptIn,
       preferredLanguage: input.preferredLanguage
     });
   }
@@ -90,6 +93,7 @@ export async function ensureProfile(input: {
   id: string;
   email: string;
   name?: string | null;
+  newsletterOptIn?: boolean;
   preferredLanguage?: LanguageCode;
 }): Promise<UserProfile> {
   assertSupabaseConfigured();
@@ -110,6 +114,7 @@ export async function ensureProfile(input: {
       id: input.id,
       email: input.email,
       name: input.name ?? null,
+      newsletter_opt_in: input.newsletterOptIn === true,
       preferred_language: input.preferredLanguage ?? "en"
     })
     .select("*")
@@ -125,7 +130,10 @@ export async function ensureProfile(input: {
 export async function updateProfile(
   userId: string,
   updates: Partial<
-    Pick<UserProfile, "email" | "name" | "preferred_language" | "gender" | "height_cm" | "weight_kg" | "date_of_birth">
+    Pick<
+      UserProfile,
+      "email" | "name" | "preferred_language" | "newsletter_opt_in" | "gender" | "height_cm" | "weight_kg" | "date_of_birth"
+    >
   >
 ): Promise<UserProfile> {
   assertSupabaseConfigured();
