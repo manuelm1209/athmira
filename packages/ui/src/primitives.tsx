@@ -91,7 +91,7 @@ type CheckboxProps = {
   checked: boolean;
   disabled?: boolean;
   helper?: string;
-  label: string;
+  label: ReactNode;
   onChange: (checked: boolean) => void;
   style?: StyleProp<ViewStyle>;
 };
@@ -430,7 +430,7 @@ const styles = StyleSheet.create({
     color: colors.ink,
     fontFamily,
     fontSize: 14,
-    fontWeight: typography.weights.bold,
+    fontWeight: typography.weights.regular,
     lineHeight: 20
   },
   optionGrid: {

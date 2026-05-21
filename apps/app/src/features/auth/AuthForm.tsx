@@ -1,7 +1,7 @@
 import { signInWithEmail, signUpWithEmail } from "@athmira/supabase";
 import { Body, Button, Card, Checkbox, Field, Heading, Inline, Screen, colors, spacing } from "@athmira/ui";
 import Constants from "expo-constants";
-import { useRouter } from "expo-router";
+import { Link, useRouter } from "expo-router";
 import { useState } from "react";
 import { Platform, StyleSheet, Text, View } from "react-native";
 
@@ -22,6 +22,7 @@ export function AuthForm({ mode }: AuthFormProps) {
   const [name, setName] = useState("");
   const [newsletterOptIn, setNewsletterOptIn] = useState(false);
   const [password, setPassword] = useState("");
+  const [legalAccepted, setLegalAccepted] = useState(false);
   const [captchaToken, setCaptchaToken] = useState<string | null>(null);
   const [challengeVersion, setChallengeVersion] = useState(0);
   const [error, setError] = useState<string | null>(null);
@@ -50,6 +51,11 @@ export function AuthForm({ mode }: AuthFormProps) {
 
       if (password.length < 6) {
         setError(t("authPasswordTooShort"));
+        return;
+      }
+
+      if (!legalAccepted) {
+        setError(t("authLegalRequired"));
         return;
       }
     }
@@ -122,6 +128,25 @@ export function AuthForm({ mode }: AuthFormProps) {
         {mode === "signup" ? (
           <Checkbox checked={newsletterOptIn} label={t("newsletterOptIn")} onChange={setNewsletterOptIn} />
         ) : null}
+        {mode === "signup" ? (
+          <Checkbox
+            checked={legalAccepted}
+            label={
+              <>
+                {t("signupLegalPrefix")}{" "}
+                <Link href="/terms" asChild>
+                  <Text style={styles.inlineLink}>{t("signupLegalTerms")}</Text>
+                </Link>{" "}
+                {t("signupLegalAnd")}{" "}
+                <Link href="/privacy" asChild>
+                  <Text style={styles.inlineLink}>{t("signupLegalPrivacy")}</Text>
+                </Link>
+                .
+              </>
+            }
+            onChange={setLegalAccepted}
+          />
+        ) : null}
         {turnstileEnabled ? (
           <TurnstileChallenge
             errorLabel={t("turnstileError")}
@@ -180,5 +205,11 @@ const styles = StyleSheet.create({
   },
   footer: {
     justifyContent: "center"
+  },
+  inlineLink: {
+    color: colors.primary,
+    fontSize: 14,
+    fontWeight: "700",
+    textDecorationLine: "underline"
   }
 });
