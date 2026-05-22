@@ -50,7 +50,20 @@ import {
   typography
 } from "@athmira/ui";
 import { useEffect, useMemo, useState } from "react";
-import { ActivityIndicator, Alert, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from "react-native";
+import {
+  ActivityIndicator,
+  Alert,
+  Modal,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+  type StyleProp,
+  type ViewStyle,
+  useWindowDimensions
+} from "react-native";
 
 import { LinkButton } from "@/components/LinkButton";
 import { useAuth } from "@/providers/AuthProvider";
@@ -277,6 +290,7 @@ const nutritionCopy = {
     sodiumTarget: "Sodium target",
     strategyBoard: "Fueling strategy",
     strategyBoardBody: "Add each ingredient from the bottle card you are filling. Swipe horizontally to manage more bottles or carried food.",
+    scrollHint: "Swipe sideways for more bottles and carried food.",
     startCardBody:
       "Use the builder to combine bottles, gels, bars, bocadillos, gummies, bananas, sandwiches, rice cakes, and custom products into a complete endurance fueling strategy.",
     startCardTitle: "Select or create a plan",
@@ -426,6 +440,7 @@ const nutritionCopy = {
     sodiumTarget: "Objetivo de sodio",
     strategyBoard: "Estrategia de alimentación",
     strategyBoardBody: "Agrega cada ingrediente desde la tarjeta de la caramañola que estás llenando. Desliza horizontalmente para manejar más botellas o comida.",
+    scrollHint: "Desliza hacia los lados para ver más caramañolas y comida.",
     startCardBody:
       "Usa el constructor para combinar botellas, gels, barras, bocadillos, gomitas, bananos, sandwiches, rice cakes y productos personalizados en una estrategia completa de fueling.",
     startCardTitle: "Selecciona o crea un plan",
@@ -1045,10 +1060,10 @@ export function NutritionPlanEditor({
 
   return (
     <View style={styles.editorStack}>
-      <View style={styles.editorHeader}>
-        <View>
+      <View style={[styles.editorHeader, compact && styles.editorHeaderMobile]}>
+        <View style={styles.editorHeaderCopy}>
           <Text style={styles.sectionKicker}>{draft.id ? copy.savedPlan : copy.newConfiguration}</Text>
-          <Text style={styles.editorTitle}>{draft.title || copy.nutritionPlan}</Text>
+          <Text style={[styles.editorTitle, compact && styles.editorTitleCompact]}>{draft.title || copy.nutritionPlan}</Text>
         </View>
         <Inline>
           <Button loading={saving} onPress={() => void handleSave()}>
@@ -1110,15 +1125,17 @@ function NutritionPlanViewer({
 }) {
   const { language } = useLanguage();
   const copy = nutritionCopy[language];
+  const { width } = useWindowDimensions();
+  const compact = width < 760;
   const calculations = useMemo(() => calculateDraft(draft), [draft]);
   const visibleItems = useMemo(() => draft.items.filter((item) => !isWaterProduct(item.product)), [draft.items]);
 
   return (
     <View style={styles.editorStack}>
-      <View style={styles.editorHeader}>
-        <View>
+      <View style={[styles.editorHeader, compact && styles.editorHeaderMobile]}>
+        <View style={styles.editorHeaderCopy}>
           <Text style={styles.sectionKicker}>{copy.viewPlan}</Text>
-          <Text style={styles.editorTitle}>{draft.title || copy.nutritionPlan}</Text>
+          <Text style={[styles.editorTitle, compact && styles.editorTitleCompact]}>{draft.title || copy.nutritionPlan}</Text>
           <Text style={styles.planControlMeta}>
             {getActivityLabel(draft.activity_type, language)} / {formatDuration(draft.duration_minutes)} / {getIntensityLabel(draft.intensity, language)}
           </Text>
@@ -1566,7 +1583,15 @@ function TargetRing({
     <View style={styles.targetRingBlock}>
       <View style={[styles.targetRing, ringStyle]}>
         <View style={styles.targetRingInner}>
-          <Text style={styles.targetRingValue}>{round(percent, 0)}%</Text>
+          <Text
+            adjustsFontSizeToFit
+            allowFontScaling={false}
+            minimumFontScale={0.72}
+            numberOfLines={1}
+            style={styles.targetRingValue}
+          >
+            {round(percent, 0)}%
+          </Text>
         </View>
       </View>
     </View>
@@ -1642,6 +1667,17 @@ function BottleSizeSelect({
   );
 }
 
+function HorizontalScrollHint({ text }: { text: string }) {
+  return (
+    <View style={styles.scrollHint}>
+      <Text style={styles.scrollHintText}>{text}</Text>
+      <View style={styles.scrollHintTrack}>
+        <View style={styles.scrollHintThumb} />
+      </View>
+    </View>
+  );
+}
+
 function FuelingCanvas({
   activeBottleId,
   bottleCalculations,
@@ -1667,13 +1703,19 @@ function FuelingCanvas({
 }) {
   const { language } = useLanguage();
   const copy = nutritionCopy[language];
+  const { width } = useWindowDimensions();
+  const compact = width < 760;
+  const mobileCardWidth = Math.max(300, width - spacing.xl * 2);
+  const mobileCardStyle: StyleProp<ViewStyle> | undefined = compact
+    ? [styles.fuelCardMobile, { width: mobileCardWidth }]
+    : undefined;
   const carriedItems = items.filter((item) => item.location !== "bottle");
 
   return (
-    <Card style={styles.fuelingCanvas}>
-      <View style={styles.canvasToolbar}>
-        <View>
-          <Text style={styles.canvasTitle}>{copy.strategyBoard}</Text>
+    <Card style={[styles.fuelingCanvas, compact && styles.fuelingCanvasMobile]}>
+      <View style={[styles.canvasToolbar, compact && styles.canvasToolbarMobile]}>
+        <View style={styles.canvasTitleBlock}>
+          <Text style={[styles.canvasTitle, compact && styles.canvasTitleMobile]}>{copy.strategyBoard}</Text>
           <Text style={styles.canvasSubtitle}>{language === "es" ? "Llena caramañolas y separa lo que vas a llevar." : "Fill bottles and separate what you carry."}</Text>
         </View>
         <Button onPress={() => onAddBottle()} variant="secondary">
@@ -1681,7 +1723,9 @@ function FuelingCanvas({
         </Button>
       </View>
 
-      <ScrollView horizontal showsHorizontalScrollIndicator contentContainerStyle={styles.fuelingScroller}>
+      <HorizontalScrollHint text={copy.scrollHint} />
+
+      <ScrollView horizontal showsHorizontalScrollIndicator contentContainerStyle={[styles.fuelingScroller, compact && styles.fuelingScrollerMobile]}>
         {bottles.map((bottle) => {
           const calculation = bottleCalculations.find((entry) => entry.bottle.id === bottle.id) ?? calculateBottleTotals(bottle, []);
           const bottleItems = items.filter((item) => item.location === "bottle" && item.bottle_id === bottle.id);
@@ -1690,7 +1734,9 @@ function FuelingCanvas({
             <BottleFuelCard
               active={bottle.id === activeBottleId}
               bottle={bottle}
+              cardStyle={mobileCardStyle}
               calculation={calculation}
+              compact={compact}
               items={bottleItems}
               key={bottle.id}
               onAddIngredient={() => onOpenAddModal({ bottleId: bottle.id, mode: "bottle" })}
@@ -1701,8 +1747,8 @@ function FuelingCanvas({
             />
           );
         })}
-        <CarriedFuelCard items={carriedItems} onAddFood={() => onOpenAddModal({ mode: "carried" })} onRemoveItem={onRemoveItem} />
-        <Pressable accessibilityRole="button" onPress={() => onAddBottle()} style={styles.addBottleTile}>
+        <CarriedFuelCard cardStyle={mobileCardStyle} compact={compact} items={carriedItems} onAddFood={() => onOpenAddModal({ mode: "carried" })} onRemoveItem={onRemoveItem} />
+        <Pressable accessibilityRole="button" onPress={() => onAddBottle()} style={[styles.addBottleTile, compact && { width: mobileCardWidth }]}>
           <Text style={styles.addBottleTileMark}>+</Text>
           <Text style={styles.addBottleTileText}>{copy.addBottle}</Text>
         </Pressable>
@@ -1722,25 +1768,32 @@ function ReadOnlyFuelingCanvas({
 }) {
   const { language } = useLanguage();
   const copy = nutritionCopy[language];
+  const { width } = useWindowDimensions();
+  const compact = width < 760;
+  const mobileCardStyle: StyleProp<ViewStyle> | undefined = compact
+    ? [styles.fuelCardMobile, { width: Math.max(300, width - spacing.xl * 2) }]
+    : undefined;
   const carriedItems = items.filter((item) => item.location !== "bottle");
 
   return (
-    <Card style={styles.fuelingCanvas}>
-      <View style={styles.canvasToolbar}>
-        <View>
-          <Text style={styles.canvasTitle}>{copy.strategyBoard}</Text>
+    <Card style={[styles.fuelingCanvas, compact && styles.fuelingCanvasMobile]}>
+      <View style={[styles.canvasToolbar, compact && styles.canvasToolbarMobile]}>
+        <View style={styles.canvasTitleBlock}>
+          <Text style={[styles.canvasTitle, compact && styles.canvasTitleMobile]}>{copy.strategyBoard}</Text>
           <Text style={styles.canvasSubtitle}>{language === "es" ? "Esto es lo que debes preparar y llevar." : "What to prepare and carry."}</Text>
         </View>
       </View>
 
-      <ScrollView horizontal showsHorizontalScrollIndicator contentContainerStyle={styles.fuelingScroller}>
+      <HorizontalScrollHint text={copy.scrollHint} />
+
+      <ScrollView horizontal showsHorizontalScrollIndicator contentContainerStyle={[styles.fuelingScroller, compact && styles.fuelingScrollerMobile]}>
         {bottles.map((bottle) => {
           const calculation = bottleCalculations.find((entry) => entry.bottle.id === bottle.id) ?? calculateBottleTotals(bottle, []);
           const bottleItems = items.filter((item) => item.location === "bottle" && item.bottle_id === bottle.id);
 
-          return <ReadOnlyBottleCard bottle={bottle} calculation={calculation} items={bottleItems} key={bottle.id} />;
+          return <ReadOnlyBottleCard bottle={bottle} cardStyle={mobileCardStyle} calculation={calculation} compact={compact} items={bottleItems} key={bottle.id} />;
         })}
-        <ReadOnlyCarriedCard items={carriedItems} />
+        <ReadOnlyCarriedCard cardStyle={mobileCardStyle} compact={compact} items={carriedItems} />
       </ScrollView>
     </Card>
   );
@@ -1748,19 +1801,23 @@ function ReadOnlyFuelingCanvas({
 
 function ReadOnlyBottleCard({
   bottle,
+  cardStyle,
   calculation,
+  compact,
   items
 }: {
   bottle: DraftBottle;
+  cardStyle?: StyleProp<ViewStyle>;
   calculation: BottleCalculation;
+  compact?: boolean;
   items: DraftItem[];
 }) {
   const { language } = useLanguage();
   const copy = nutritionCopy[language];
 
   return (
-    <View style={[styles.fuelCard, styles.readOnlyFuelCard]}>
-      <View style={styles.fuelCardHeader}>
+    <View style={[styles.fuelCard, styles.readOnlyFuelCard, cardStyle]}>
+      <View style={[styles.fuelCardHeader, compact && styles.fuelCardHeaderMobile]}>
         <View style={styles.fuelTitleBlock}>
           <Text style={styles.fuelCardKicker}>{copy.bottle}</Text>
           <Text style={styles.fuelCardTitle}>{bottle.name}</Text>
@@ -1769,7 +1826,7 @@ function ReadOnlyBottleCard({
           </Text>
         </View>
       </View>
-      <VirtualBottle bottle={bottle} calculation={calculation} items={items} large showBadges={false} />
+      <VirtualBottle bottle={bottle} calculation={calculation} items={items} large={!compact} showBadges={false} />
       <BottleQuickStats bottle={bottle} calculation={calculation} />
       <NutrientBars
         calories={calculation.totalCalories}
@@ -1782,7 +1839,7 @@ function ReadOnlyBottleCard({
   );
 }
 
-function ReadOnlyCarriedCard({ items }: { items: DraftItem[] }) {
+function ReadOnlyCarriedCard({ cardStyle, compact, items }: { cardStyle?: StyleProp<ViewStyle>; compact?: boolean; items: DraftItem[] }) {
   const { language } = useLanguage();
   const copy = nutritionCopy[language];
   const calculated = items.map((item) => calculateNutritionItem(item.product, stripDraftItem(item)));
@@ -1792,8 +1849,8 @@ function ReadOnlyCarriedCard({ items }: { items: DraftItem[] }) {
   const fluids = calculated.reduce((total, item) => total + item.calculated_volume_ml, 0);
 
   return (
-    <View style={[styles.fuelCard, styles.carriedFuelCard, styles.readOnlyFuelCard]}>
-      <View style={styles.fuelCardHeader}>
+    <View style={[styles.fuelCard, styles.carriedFuelCard, styles.readOnlyFuelCard, cardStyle]}>
+      <View style={[styles.fuelCardHeader, compact && styles.fuelCardHeaderMobile]}>
         <View style={styles.fuelTitleBlock}>
           <Text style={styles.fuelCardKicker}>{copy.carried}</Text>
           <Text style={styles.fuelCardTitle}>{copy.foodCarried}</Text>
@@ -1809,7 +1866,9 @@ function ReadOnlyCarriedCard({ items }: { items: DraftItem[] }) {
 function BottleFuelCard({
   active,
   bottle,
+  cardStyle,
   calculation,
+  compact,
   items,
   onAddIngredient,
   onRemoveBottle,
@@ -1819,7 +1878,9 @@ function BottleFuelCard({
 }: {
   active: boolean;
   bottle: DraftBottle;
+  cardStyle?: StyleProp<ViewStyle>;
   calculation: BottleCalculation;
+  compact?: boolean;
   items: DraftItem[];
   onAddIngredient: () => void;
   onRemoveBottle: () => void;
@@ -1831,8 +1892,8 @@ function BottleFuelCard({
   const copy = nutritionCopy[language];
 
   return (
-    <Pressable accessibilityRole="button" onPress={onSelect} style={[styles.fuelCard, active && styles.fuelCardActive]}>
-      <View style={styles.fuelCardHeader}>
+    <Pressable accessibilityRole="button" onPress={onSelect} style={[styles.fuelCard, cardStyle, active && styles.fuelCardActive]}>
+      <View style={[styles.fuelCardHeader, compact && styles.fuelCardHeaderMobile]}>
         <View style={styles.fuelTitleBlock}>
           <Text style={styles.fuelCardKicker}>{active ? (language === "es" ? "Seleccionada" : "Selected") : copy.bottle}</Text>
           <Text style={styles.fuelCardTitle}>{bottle.name}</Text>
@@ -1843,7 +1904,7 @@ function BottleFuelCard({
         <Button onPress={onAddIngredient}>{copy.addIngredient}</Button>
       </View>
 
-      <VirtualBottle bottle={bottle} calculation={calculation} items={items} large showBadges={false} />
+      <VirtualBottle bottle={bottle} calculation={calculation} items={items} large={!compact} showBadges={false} />
       <BottleQuickStats bottle={bottle} calculation={calculation} />
 
       <View style={styles.compactEditRow}>
@@ -1875,10 +1936,14 @@ function BottleFuelCard({
 }
 
 function CarriedFuelCard({
+  cardStyle,
+  compact,
   items,
   onAddFood,
   onRemoveItem
 }: {
+  cardStyle?: StyleProp<ViewStyle>;
+  compact?: boolean;
   items: DraftItem[];
   onAddFood: () => void;
   onRemoveItem: (itemId: string) => void;
@@ -1892,8 +1957,8 @@ function CarriedFuelCard({
   const fluids = calculated.reduce((total, item) => total + item.calculated_volume_ml, 0);
 
   return (
-    <View style={[styles.fuelCard, styles.carriedFuelCard]}>
-      <View style={styles.fuelCardHeader}>
+    <View style={[styles.fuelCard, styles.carriedFuelCard, cardStyle]}>
+      <View style={[styles.fuelCardHeader, compact && styles.fuelCardHeaderMobile]}>
         <View style={styles.fuelTitleBlock}>
           <Text style={styles.fuelCardKicker}>{copy.carried}</Text>
           <Text style={styles.fuelCardTitle}>{copy.foodCarried}</Text>
@@ -2252,6 +2317,11 @@ export function BottleStrategyBoard({
 }) {
   const { language } = useLanguage();
   const copy = nutritionCopy[language];
+  const { width } = useWindowDimensions();
+  const compact = width < 760;
+  const mobileCardStyle: StyleProp<ViewStyle> | undefined = compact
+    ? [styles.strategyCardMobile, { width: Math.max(300, width - spacing.xl * 2) }]
+    : undefined;
   const [customBottleSize, setCustomBottleSize] = useState("");
   const [productForm, setProductForm] = useState<ProductFormMode>({ visible: false });
   const [error, setError] = useState<string | null>(null);
@@ -2292,7 +2362,7 @@ export function BottleStrategyBoard({
   }
 
   return (
-    <Card style={styles.strategyBoardCard}>
+    <Card style={[styles.strategyBoardCard, compact && styles.strategyBoardCardMobile]}>
       <View style={styles.strategyBoardHeader}>
         <View style={styles.strategyBoardCopy}>
           <Text style={styles.sectionKicker}>{copy.step2}</Text>
@@ -2359,10 +2429,12 @@ export function BottleStrategyBoard({
         </ScrollView>
       ) : null}
 
+      <HorizontalScrollHint text={copy.scrollHint} />
+
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator
-        contentContainerStyle={styles.strategyScroller}
+        contentContainerStyle={[styles.strategyScroller, compact && styles.strategyScrollerMobile]}
       >
         {bottles.map((bottle) => {
           const calculation = bottleCalculations.find((entry) => entry.bottle.id === bottle.id) ?? calculateBottleTotals(bottle, []);
@@ -2372,6 +2444,7 @@ export function BottleStrategyBoard({
             <BottleStrategyCard
               active={bottle.id === activeBottleId}
               bottle={bottle}
+              cardStyle={mobileCardStyle}
               calculation={calculation}
               items={bottleItems}
               key={bottle.id}
@@ -2385,6 +2458,7 @@ export function BottleStrategyBoard({
           );
         })}
         <CarriedFoodStrategyCard
+          cardStyle={mobileCardStyle}
           items={items.filter((item) => item.location !== "bottle")}
           onAddProduct={onAddProduct}
           onRemoveItem={onRemoveItem}
@@ -2398,6 +2472,7 @@ export function BottleStrategyBoard({
 function BottleStrategyCard({
   active,
   bottle,
+  cardStyle,
   calculation,
   items,
   onAddProduct,
@@ -2409,6 +2484,7 @@ function BottleStrategyCard({
 }: {
   active: boolean;
   bottle: DraftBottle;
+  cardStyle?: StyleProp<ViewStyle>;
   calculation: BottleCalculation;
   items: DraftItem[];
   onAddProduct: (product: NutritionProduct, location: NutritionPlanItemLocation, bottleId?: string | null, quantity?: number) => void;
@@ -2452,7 +2528,7 @@ function BottleStrategyCard({
     <Pressable
       accessibilityRole="button"
       onPress={onSelect}
-      style={[styles.strategyCard, active && styles.strategyCardActive]}
+      style={[styles.strategyCard, cardStyle, active && styles.strategyCardActive]}
     >
       <View style={styles.strategyCardHeader}>
         <View style={styles.strategyCardTitleBlock}>
@@ -2508,11 +2584,13 @@ function BottleStrategyCard({
 }
 
 function CarriedFoodStrategyCard({
+  cardStyle,
   items,
   onAddProduct,
   onRemoveItem,
   products
 }: {
+  cardStyle?: StyleProp<ViewStyle>;
   items: DraftItem[];
   onAddProduct: (product: NutritionProduct, location: NutritionPlanItemLocation, bottleId?: string | null, quantity?: number) => void;
   onRemoveItem: (itemId: string) => void;
@@ -2550,7 +2628,7 @@ function CarriedFoodStrategyCard({
   }
 
   return (
-    <View style={[styles.strategyCard, styles.carriedStrategyCard]}>
+    <View style={[styles.strategyCard, styles.carriedStrategyCard, cardStyle]}>
       <View style={styles.strategyCardHeader}>
         <View style={styles.strategyCardTitleBlock}>
           <Text style={styles.strategyCardKicker}>{copy.step3}</Text>
@@ -4183,12 +4261,26 @@ const styles = StyleSheet.create({
     padding: spacing.lg,
     ...shadows.soft
   },
+  editorHeaderMobile: {
+    alignItems: "stretch",
+    flexDirection: "column"
+  },
+  editorHeaderCopy: {
+    flex: 1,
+    gap: spacing.xs,
+    minWidth: 0
+  },
   editorTitle: {
     color: colors.ink,
     fontFamily,
     fontSize: 30,
     fontWeight: typography.weights.black,
-    lineHeight: 36
+    lineHeight: 36,
+    maxWidth: "100%"
+  },
+  editorTitleCompact: {
+    fontSize: 27,
+    lineHeight: 33
   },
   planControlBar: {
     gap: spacing.md,
@@ -4428,30 +4520,32 @@ const styles = StyleSheet.create({
   targetRingBlock: {
     alignItems: "center",
     gap: spacing.xs,
-    width: 54
+    width: 58
   },
   targetRing: {
     alignItems: "center",
     backgroundColor: colors.surfaceStrong,
     borderRadius: radii.round,
-    height: 54,
+    height: 58,
     justifyContent: "center",
-    width: 54
+    width: 58
   },
   targetRingInner: {
     alignItems: "center",
     backgroundColor: colors.surface,
     borderRadius: radii.round,
-    height: 36,
+    height: 40,
     justifyContent: "center",
-    width: 36
+    width: 40
   },
   targetRingValue: {
     color: colors.ink,
     fontFamily,
-    fontSize: 12,
+    fontSize: 11,
     fontVariant: ["tabular-nums"],
-    fontWeight: typography.weights.black
+    fontWeight: typography.weights.black,
+    textAlign: "center",
+    width: "100%"
   },
   targetRingLabel: {
     color: colors.ink,
@@ -4472,10 +4566,47 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
     paddingRight: spacing.md
   },
+  scrollHint: {
+    alignItems: "center",
+    flexDirection: "row",
+    gap: spacing.sm,
+    opacity: 0.78
+  },
+  scrollHintText: {
+    color: colors.inkMuted,
+    fontFamily,
+    fontSize: 12,
+    fontWeight: typography.weights.black,
+    lineHeight: 16
+  },
+  scrollHintTrack: {
+    backgroundColor: colors.surfaceStrong,
+    borderRadius: radii.round,
+    flex: 1,
+    height: 4,
+    overflow: "hidden"
+  },
+  scrollHintThumb: {
+    backgroundColor: colors.primary,
+    borderRadius: radii.round,
+    height: "100%",
+    width: 56
+  },
   fuelingCanvas: {
     gap: spacing.lg,
     overflow: "hidden",
     padding: spacing.lg
+  },
+  fuelingCanvasMobile: {
+    backgroundColor: "transparent",
+    borderColor: "transparent",
+    borderRadius: 0,
+    borderWidth: 0,
+    elevation: 0,
+    marginHorizontal: -spacing.lg,
+    overflow: "visible",
+    paddingHorizontal: spacing.lg,
+    shadowOpacity: 0
   },
   canvasToolbar: {
     alignItems: "center",
@@ -4484,12 +4615,24 @@ const styles = StyleSheet.create({
     gap: spacing.md,
     justifyContent: "space-between"
   },
+  canvasToolbarMobile: {
+    alignItems: "flex-start"
+  },
+  canvasTitleBlock: {
+    flex: 1,
+    gap: spacing.xs,
+    minWidth: 0
+  },
   canvasTitle: {
     color: colors.ink,
     fontFamily,
     fontSize: 26,
     fontWeight: typography.weights.black,
     lineHeight: 32
+  },
+  canvasTitleMobile: {
+    fontSize: 23,
+    lineHeight: 29
   },
   canvasSubtitle: {
     color: colors.inkMuted,
@@ -4513,6 +4656,10 @@ const styles = StyleSheet.create({
     paddingBottom: spacing.md,
     paddingRight: spacing.lg
   },
+  fuelingScrollerMobile: {
+    gap: spacing.md,
+    paddingRight: spacing.lg
+  },
   fuelCard: {
     backgroundColor: colors.surface,
     borderColor: colors.border,
@@ -4523,6 +4670,10 @@ const styles = StyleSheet.create({
     padding: spacing.lg,
     width: 440,
     ...shadows.soft
+  },
+  fuelCardMobile: {
+    minHeight: 0,
+    padding: spacing.md
   },
   fuelCardActive: {
     borderColor: colors.primary,
@@ -4542,6 +4693,9 @@ const styles = StyleSheet.create({
     gap: spacing.md,
     justifyContent: "space-between"
   },
+  fuelCardHeaderMobile: {
+    flexDirection: "column"
+  },
   fuelTitleBlock: {
     flex: 1,
     gap: spacing.xs,
@@ -4559,14 +4713,16 @@ const styles = StyleSheet.create({
     fontFamily,
     fontSize: 28,
     fontWeight: typography.weights.black,
-    lineHeight: 34
+    lineHeight: 34,
+    maxWidth: "100%"
   },
   fuelCardMeta: {
     color: colors.inkMuted,
     fontFamily,
     fontSize: 13,
     fontWeight: typography.weights.bold,
-    lineHeight: 18
+    lineHeight: 18,
+    maxWidth: "100%"
   },
   bottleHeroRow: {
     alignItems: "center",
@@ -4602,8 +4758,9 @@ const styles = StyleSheet.create({
     backgroundColor: "transparent",
     borderRightColor: colors.border,
     borderRightWidth: 1,
-    flexBasis: 92,
+    flexBasis: 130,
     flexGrow: 1,
+    minWidth: 130,
     paddingHorizontal: spacing.sm,
     paddingVertical: spacing.xs
   },
@@ -4658,24 +4815,29 @@ const styles = StyleSheet.create({
     padding: spacing.md
   },
   compactBarRow: {
-    gap: spacing.xs
+    gap: spacing.xs,
+    minWidth: 0
   },
   compactBarLabelRow: {
     alignItems: "center",
     flexDirection: "row",
+    gap: spacing.sm,
     justifyContent: "space-between"
   },
   compactBarLabel: {
     color: colors.ink,
+    flex: 1,
     fontFamily,
     fontSize: 12,
-    fontWeight: typography.weights.black
+    fontWeight: typography.weights.black,
+    minWidth: 0
   },
   compactBarValue: {
     color: colors.inkMuted,
     fontFamily,
     fontSize: 11,
-    fontWeight: typography.weights.black
+    fontWeight: typography.weights.black,
+    flexShrink: 0
   },
   compactBarTrack: {
     backgroundColor: colors.surfaceStrong,
@@ -4703,6 +4865,7 @@ const styles = StyleSheet.create({
     borderRadius: radii.md,
     flexDirection: "row",
     gap: spacing.md,
+    minWidth: 0,
     padding: spacing.md
   },
   ingredientDot: {
@@ -4870,6 +5033,9 @@ const styles = StyleSheet.create({
     gap: spacing.lg,
     minWidth: 0
   },
+  strategyBoardCardMobile: {
+    overflow: "visible"
+  },
   strategyBoardHeader: {
     alignItems: "flex-start",
     flexDirection: "row",
@@ -4895,6 +5061,9 @@ const styles = StyleSheet.create({
     paddingBottom: spacing.sm,
     paddingRight: spacing.md
   },
+  strategyScrollerMobile: {
+    paddingRight: spacing.lg
+  },
   strategyCard: {
     backgroundColor: colors.surface,
     borderColor: colors.border,
@@ -4904,6 +5073,10 @@ const styles = StyleSheet.create({
     minHeight: 520,
     padding: spacing.lg,
     width: 360
+  },
+  strategyCardMobile: {
+    minHeight: 0,
+    padding: spacing.md
   },
   strategyCardActive: {
     backgroundColor: colors.primaryMist,
@@ -4922,7 +5095,8 @@ const styles = StyleSheet.create({
   },
   strategyCardTitleBlock: {
     flex: 1,
-    gap: spacing.xs
+    gap: spacing.xs,
+    minWidth: 0
   },
   strategyCardKicker: {
     color: colors.primary,
@@ -5110,12 +5284,13 @@ const styles = StyleSheet.create({
   },
   virtualBottleBlock: {
     alignItems: "center",
-    flexBasis: 170,
-    gap: spacing.sm
+    gap: spacing.sm,
+    minHeight: 278,
+    width: 170
   },
   virtualBottleBlockLarge: {
     alignSelf: "center",
-    flexBasis: "auto",
+    minHeight: 360,
     width: "100%"
   },
   bottleCap: {

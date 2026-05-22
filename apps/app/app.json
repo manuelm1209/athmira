@@ -54,7 +54,7 @@
       "blockedPermissions": ["android.permission.RECORD_AUDIO"],
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
+        "backgroundColor": "#111820"
       },
       "softwareKeyboardLayoutMode": "resize",
       "predictiveBackGestureEnabled": true
