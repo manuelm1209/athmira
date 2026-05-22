@@ -1,6 +1,6 @@
 import { Link, type Href, usePathname } from "expo-router";
 import { useEffect, useState, type PropsWithChildren } from "react";
-import { Image, Platform, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from "react-native";
+import { Image, Platform, Pressable, StyleSheet, Text, View, useWindowDimensions } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { colors, radii, shadows, spacing, typography } from "@athmira/ui";
 
@@ -43,12 +43,17 @@ export function AppShell({ children }: PropsWithChildren) {
   const [webHydrated, setWebHydrated] = useState(Platform.OS !== "web");
   const compact = !webHydrated || width < 760;
   const [headerDocked, setHeaderDocked] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
 
   useEffect(() => {
     if (Platform.OS === "web") {
       setWebHydrated(true);
     }
   }, []);
+
+  useEffect(() => {
+    setMenuOpen(false);
+  }, [pathname]);
 
   useEffect(() => {
     if (Platform.OS !== "web") {
@@ -107,9 +112,7 @@ export function AppShell({ children }: PropsWithChildren) {
     { href: "/#limitaciones" as Href, key: "science", label: t("homeNavScience") },
     { href: "/#progreso" as Href, key: "resources", label: t("homeNavResources") }
   ];
-  const nativeCameraRoute = pathname === "/analysis/camera" || pathname === "/analysis/front-knee";
-  const nativeNavItems = navItems.filter((item) => item.key !== "logout");
-  const showNativeBottomNav = isNative && Boolean(session) && !nativeCameraRoute;
+  const compactMenuItems = session ? navItems : [...marketingNavItems, ...navItems];
 
   return (
     <View style={styles.root}>
@@ -124,90 +127,130 @@ export function AppShell({ children }: PropsWithChildren) {
           !isNative && headerDocked && styles.headerDocked
         ]}
       >
-        <Link href={session ? "/dashboard" : "/"} asChild>
-          <Pressable accessibilityRole="link" style={styles.brand}>
-            <Image
-              accessibilityIgnoresInvertColors
-              accessibilityLabel="athmira logo"
-              source={brandMarkSource}
-              style={styles.brandMark}
-            />
-            <View>
-              <Text style={styles.brandName}>athmira</Text>
-              <Text style={styles.brandTagline}>{t("tagline")}</Text>
-            </View>
-          </Pressable>
-        </Link>
-        <View style={[styles.nav, compact && styles.navCompact, isNative && styles.nativeHeaderActions]}>
-          {session || compact ? null : (
-            <View style={styles.marketingNav}>
-              {marketingNavItems.map((item) => (
-                <Link href={item.href} asChild key={item.key}>
-                  <Pressable accessibilityRole="link">
-                    <Text style={styles.marketingNavText}>{item.label}</Text>
-                  </Pressable>
-                </Link>
-              ))}
-            </View>
-          )}
-          {isNative && session
-            ? null
-            : navItems.map((item) => (
-                <Link href={item.href} asChild key={item.key}>
-                  <Pressable
-                    accessibilityRole="link"
-                    style={StyleSheet.flatten([
-                      styles.navLink,
-                      item.key === "signup" && styles.primaryNavLink,
-                      pathname === item.href && styles.activeLink
-                    ])}
-                  >
-                    <Text
-                      style={[
-                        styles.navText,
-                        item.key === "signup" && styles.primaryNavText,
-                        pathname === item.href && styles.activeText
-                      ]}
-                    >
-                      {item.label}
-                    </Text>
-                  </Pressable>
-                </Link>
-              ))}
-          <LanguageToggle />
-          {session ? (
-            <Pressable accessibilityRole="button" onPress={signOut} style={styles.navLink}>
-              <Text style={styles.navText}>{t("logout")}</Text>
+        <View style={styles.headerMainRow}>
+          <Link href={session ? "/dashboard" : "/"} asChild>
+            <Pressable
+              accessibilityRole="link"
+              onPress={() => {
+                setMenuOpen(false);
+              }}
+              style={styles.brand}
+            >
+              <Image
+                accessibilityIgnoresInvertColors
+                accessibilityLabel="athmira logo"
+                source={brandMarkSource}
+                style={[styles.brandMark, compact && styles.brandMarkCompact]}
+              />
+              <View style={styles.brandCopy}>
+                <Text allowFontScaling={false} style={[styles.brandName, compact && styles.brandNameCompact]}>
+                  athmira
+                </Text>
+                <Text allowFontScaling={false} numberOfLines={1} style={[styles.brandTagline, compact && styles.brandTaglineCompact]}>
+                  {t("tagline")}
+                </Text>
+              </View>
+            </Pressable>
+          </Link>
+
+          {compact ? (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityState={{ expanded: menuOpen }}
+              onPress={() => {
+                setMenuOpen((current) => !current);
+              }}
+              style={styles.menuButton}
+            >
+              <Text allowFontScaling={false} style={styles.menuButtonText}>
+                {menuOpen ? t("closeMenu") : t("menu")}
+              </Text>
             </Pressable>
           ) : null}
         </View>
+
+        {compact && menuOpen ? (
+          <View style={styles.compactMenu}>
+            <View style={styles.compactMenuGrid}>
+              {compactMenuItems.map((item) => {
+                const href = String(item.href);
+                const active = pathname === href || pathname.startsWith(`${href}/`);
+
+                return (
+                  <Link href={item.href} asChild key={item.key}>
+                    <Pressable
+                      accessibilityRole="link"
+                      style={StyleSheet.flatten([styles.compactMenuItem, active && styles.compactMenuItemActive])}
+                    >
+                      <Text style={[styles.compactMenuItemText, active && styles.compactMenuItemTextActive]}>{item.label}</Text>
+                    </Pressable>
+                  </Link>
+                );
+              })}
+            </View>
+            <View style={styles.compactMenuFooter}>
+              <LanguageToggle />
+              {session ? (
+                <Pressable
+                  accessibilityRole="button"
+                  onPress={() => {
+                    setMenuOpen(false);
+                    signOut();
+                  }}
+                  style={styles.compactSignOut}
+                >
+                  <Text style={styles.compactSignOutText}>{t("logout")}</Text>
+                </Pressable>
+              ) : null}
+            </View>
+          </View>
+        ) : null}
+
+        {compact ? null : (
+          <View style={styles.nav}>
+            {session ? null : (
+              <View style={styles.marketingNav}>
+                {marketingNavItems.map((item) => (
+                  <Link href={item.href} asChild key={item.key}>
+                    <Pressable accessibilityRole="link">
+                      <Text style={styles.marketingNavText}>{item.label}</Text>
+                    </Pressable>
+                  </Link>
+                ))}
+              </View>
+            )}
+            {navItems.map((item) => (
+              <Link href={item.href} asChild key={item.key}>
+                <Pressable
+                  accessibilityRole="link"
+                  style={StyleSheet.flatten([
+                    styles.navLink,
+                    item.key === "signup" && styles.primaryNavLink,
+                    pathname === item.href && styles.activeLink
+                  ])}
+                >
+                  <Text
+                    style={[
+                      styles.navText,
+                      item.key === "signup" && styles.primaryNavText,
+                      pathname === item.href && styles.activeText
+                    ]}
+                  >
+                    {item.label}
+                  </Text>
+                </Pressable>
+              </Link>
+            ))}
+            <LanguageToggle />
+            {session ? (
+              <Pressable accessibilityRole="button" onPress={signOut} style={styles.navLink}>
+                <Text style={styles.navText}>{t("logout")}</Text>
+              </Pressable>
+            ) : null}
+          </View>
+        )}
       </View>
       <View style={styles.content}>{children}</View>
-      {showNativeBottomNav ? (
-        <View style={[styles.nativeBottomNav, { paddingBottom: Math.max(insets.bottom, spacing.sm) }]}>
-          <ScrollView
-            contentContainerStyle={styles.nativeBottomNavContent}
-            horizontal
-            showsHorizontalScrollIndicator={false}
-          >
-            {nativeNavItems.map((item) => {
-              const href = String(item.href);
-              const active = pathname === href || pathname.startsWith(`${href}/`);
-
-              return (
-                <Link href={item.href} asChild key={item.key}>
-                  <Pressable
-                    accessibilityRole="link"
-                    style={StyleSheet.flatten([styles.nativeBottomNavItem, active && styles.nativeBottomNavItemActive])}
-                  >
-                    <Text style={[styles.nativeBottomNavText, active && styles.nativeBottomNavTextActive]}>{item.label}</Text>
-                  </Pressable>
-                </Link>
-              );
-            })}
-          </ScrollView>
-        </View>
-      ) : null}
       {isNative ? null : (
         <View style={styles.footer}>
           <Text style={styles.footerBrand}>athmira</Text>
@@ -244,7 +287,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     flexDirection: "row",
     flexWrap: "wrap",
-    gap: spacing.xl,
+    gap: spacing.lg,
     justifyContent: "space-between",
     marginHorizontal: spacing.md,
     marginTop: spacing.sm,
@@ -253,18 +296,20 @@ const styles = StyleSheet.create({
     ...shadows.soft
   },
   headerCompact: {
-    alignItems: "flex-start",
-    gap: spacing.md,
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md
+    alignItems: "stretch",
+    borderRadius: 14,
+    gap: spacing.sm,
+    marginHorizontal: spacing.sm,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm
   },
   nativeHeader: {
     borderRadius: 0,
     borderTopWidth: 0,
     marginHorizontal: 0,
     marginTop: 0,
-    paddingHorizontal: spacing.lg,
-    paddingBottom: spacing.md
+    paddingHorizontal: spacing.md,
+    paddingBottom: spacing.sm
   },
   headerDocked: {
     backgroundColor: "rgba(255,255,255,0.86)",
@@ -278,15 +323,33 @@ const styles = StyleSheet.create({
     transform: [{ translateY: -1 }],
     ...shadows.medium
   },
+  headerMainRow: {
+    alignItems: "center",
+    flexDirection: "row",
+    gap: spacing.md,
+    justifyContent: "space-between",
+    width: "100%"
+  },
   brand: {
     alignItems: "center",
     flexDirection: "row",
-    gap: spacing.sm
+    flexShrink: 1,
+    gap: spacing.sm,
+    minWidth: 0
   },
   brandMark: {
     borderRadius: radii.md,
     height: 38,
     width: 38
+  },
+  brandMarkCompact: {
+    borderRadius: radii.sm,
+    height: 34,
+    width: 34
+  },
+  brandCopy: {
+    flexShrink: 1,
+    minWidth: 0
   },
   brandName: {
     color: colors.primary,
@@ -295,11 +358,38 @@ const styles = StyleSheet.create({
     fontWeight: typography.weights.black,
     letterSpacing: 0
   },
+  brandNameCompact: {
+    fontSize: 20,
+    lineHeight: 23
+  },
   brandTagline: {
     color: colors.inkMuted,
     fontFamily,
     fontSize: 12,
     fontWeight: typography.weights.bold
+  },
+  brandTaglineCompact: {
+    fontSize: 11,
+    lineHeight: 14
+  },
+  menuButton: {
+    alignItems: "center",
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
+    borderRadius: radii.md,
+    borderWidth: 1,
+    flexDirection: "row",
+    flexShrink: 0,
+    gap: spacing.xs,
+    minHeight: 40,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm
+  },
+  menuButtonText: {
+    color: colors.white,
+    fontFamily,
+    fontSize: 13,
+    fontWeight: typography.weights.black
   },
   nav: {
     alignItems: "center",
@@ -317,6 +407,71 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
     justifyContent: "flex-end",
     width: "auto"
+  },
+  compactMenu: {
+    backgroundColor: colors.surface,
+    borderColor: colors.border,
+    borderRadius: radii.md,
+    borderWidth: 1,
+    gap: spacing.md,
+    padding: spacing.md,
+    width: "100%"
+  },
+  compactMenuGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: spacing.sm
+  },
+  compactMenuItem: {
+    alignItems: "center",
+    backgroundColor: colors.surfaceMuted,
+    borderColor: colors.border,
+    borderRadius: radii.md,
+    borderWidth: 1,
+    flexBasis: 128,
+    flexGrow: 1,
+    justifyContent: "center",
+    minHeight: 44,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm
+  },
+  compactMenuItemActive: {
+    backgroundColor: colors.primary,
+    borderColor: colors.primary
+  },
+  compactMenuItemText: {
+    color: colors.ink,
+    fontFamily,
+    fontSize: 13,
+    fontWeight: typography.weights.black,
+    textAlign: "center"
+  },
+  compactMenuItemTextActive: {
+    color: colors.white
+  },
+  compactMenuFooter: {
+    alignItems: "center",
+    borderTopColor: colors.border,
+    borderTopWidth: 1,
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: spacing.md,
+    justifyContent: "space-between",
+    paddingTop: spacing.md
+  },
+  compactSignOut: {
+    borderColor: colors.borderStrong,
+    borderRadius: radii.md,
+    borderWidth: 1,
+    minHeight: 38,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm
+  },
+  compactSignOutText: {
+    color: colors.ink,
+    fontFamily,
+    fontSize: 13,
+    fontWeight: typography.weights.black
   },
   marketingNav: {
     alignItems: "center",
@@ -360,41 +515,6 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1
-  },
-  nativeBottomNav: {
-    backgroundColor: "rgba(255,255,255,0.96)",
-    borderTopColor: colors.border,
-    borderTopWidth: 1,
-    paddingTop: spacing.sm
-  },
-  nativeBottomNavContent: {
-    gap: spacing.sm,
-    paddingHorizontal: spacing.md
-  },
-  nativeBottomNavItem: {
-    alignItems: "center",
-    borderColor: colors.border,
-    borderRadius: radii.md,
-    borderWidth: 1,
-    justifyContent: "center",
-    minHeight: 42,
-    minWidth: 92,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm
-  },
-  nativeBottomNavItemActive: {
-    backgroundColor: colors.primary,
-    borderColor: colors.primary
-  },
-  nativeBottomNavText: {
-    color: colors.ink,
-    fontFamily,
-    fontSize: 12,
-    fontWeight: typography.weights.black,
-    textAlign: "center"
-  },
-  nativeBottomNavTextActive: {
-    color: colors.white
   },
   footer: {
     alignItems: "center",
