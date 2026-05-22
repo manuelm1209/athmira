@@ -1,8 +1,9 @@
 import { analyzePoseFrame } from "@athmira/pose-engine";
 import { Body, Button, Card, colors, spacing } from "@athmira/ui";
 import { CameraView, useCameraPermissions } from "expo-camera";
-import { forwardRef, useEffect, useImperativeHandle, useRef, type ElementRef } from "react";
-import { StyleSheet, Text, View } from "react-native";
+import { useKeepAwake } from "expo-keep-awake";
+import { forwardRef, useEffect, useImperativeHandle, useRef, useState, type ElementRef } from "react";
+import { StyleSheet, Text, View, useWindowDimensions } from "react-native";
 
 import type { BikeFitCameraHandle, BikeFitCameraProps } from "./BikeFitCamera.types";
 
@@ -12,20 +13,37 @@ export const BikeFitCamera = forwardRef<BikeFitCameraHandle, BikeFitCameraProps>
 ) {
   const cameraRef = useRef<ElementRef<typeof CameraView> | null>(null);
   const [permission, requestPermission] = useCameraPermissions();
+  const [previewReady, setPreviewReady] = useState(false);
+  const [mountError, setMountError] = useState<string | null>(null);
+  const { width } = useWindowDimensions();
+  const compact = width < 520;
   const hasPermission = Boolean(permission?.granted);
+  const isReady = hasPermission && previewReady && !mountError;
+
+  useKeepAwake("athmira-side-bike-fit-camera");
 
   useEffect(() => {
-    onReadyChange?.(hasPermission);
+    onReadyChange?.(isReady);
 
-    if (hasPermission) {
+    if (isReady) {
       onLiveResult?.(analyzePoseFrame({ height: 720, timestampMs: Date.now(), width: 1280 }));
     } else {
       onLiveResult?.(null);
     }
-  }, [hasPermission, onLiveResult, onReadyChange]);
+  }, [isReady, onLiveResult, onReadyChange]);
+
+  useEffect(() => {
+    if (!hasPermission) {
+      setPreviewReady(false);
+    }
+  }, [hasPermission]);
 
   useImperativeHandle(ref, () => ({
     async captureSnapshot() {
+      if (!isReady) {
+        return null;
+      }
+
       const snapshot = await cameraRef.current?.takePictureAsync({
         quality: 0.7,
         skipProcessing: true
@@ -33,7 +51,11 @@ export const BikeFitCamera = forwardRef<BikeFitCameraHandle, BikeFitCameraProps>
 
       return snapshot?.uri ?? null;
     },
-    async startAnalysis(durationMs = 2500) {
+    async startAnalysis(durationMs = 8000) {
+      if (!isReady) {
+        throw new Error(labels.poseNotReady);
+      }
+
       await new Promise((resolve) => setTimeout(resolve, durationMs));
 
       return Array.from({ length: 12 }, (_, index) =>
@@ -63,10 +85,46 @@ export const BikeFitCamera = forwardRef<BikeFitCameraHandle, BikeFitCameraProps>
     );
   }
 
+  if (mountError) {
+    return (
+      <Card style={styles.permissionCard}>
+        <Body>{mountError}</Body>
+        <Button
+          onPress={() => {
+            setMountError(null);
+            setPreviewReady(false);
+          }}
+        >
+          {labels.cameraEnable}
+        </Button>
+      </Card>
+    );
+  }
+
   return (
-    <View style={styles.cameraFrame}>
-      <CameraView ref={cameraRef} facing="front" style={styles.camera} />
+    <View style={[styles.cameraFrame, compact && styles.cameraFrameCompact]}>
+      <CameraView
+        active={hasPermission}
+        animateShutter={false}
+        facing="front"
+        mirror
+        mode="picture"
+        onCameraReady={() => setPreviewReady(true)}
+        onMountError={(event) => {
+          setMountError(event.message);
+          setPreviewReady(false);
+        }}
+        ratio="16:9"
+        ref={cameraRef}
+        responsiveOrientationWhenOrientationLocked
+        style={styles.camera}
+      />
       <View style={[styles.overlay, styles.noPointerEvents]}>
+        {!previewReady ? (
+          <View style={styles.previewStatus}>
+            <Text style={styles.previewStatusText}>{labels.cameraPermissionRequesting}</Text>
+          </View>
+        ) : null}
         <View style={styles.verticalGuide} />
         <View style={styles.torsoGuide} />
         <View style={styles.kneeGuide} />
@@ -86,19 +144,38 @@ const styles = StyleSheet.create({
     aspectRatio: 16 / 9,
     backgroundColor: colors.ink,
     borderRadius: 8,
-    minHeight: 320,
+    minHeight: 280,
     overflow: "hidden",
-    position: "relative"
+    position: "relative",
+    width: "100%"
+  },
+  cameraFrameCompact: {
+    minHeight: 240
   },
   camera: {
-    height: "100%",
-    width: "100%"
+    ...StyleSheet.absoluteFillObject
   },
   overlay: {
     ...StyleSheet.absoluteFillObject
   },
   noPointerEvents: {
     pointerEvents: "none"
+  },
+  previewStatus: {
+    alignItems: "center",
+    backgroundColor: "rgba(13,27,34,0.74)",
+    bottom: 0,
+    justifyContent: "center",
+    left: 0,
+    position: "absolute",
+    right: 0,
+    top: 0
+  },
+  previewStatusText: {
+    color: "#ffffff",
+    fontSize: 13,
+    fontWeight: "800",
+    textAlign: "center"
   },
   verticalGuide: {
     backgroundColor: "rgba(255,255,255,0.45)",
@@ -148,6 +225,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
     position: "absolute",
+    right: spacing.md,
     top: spacing.md
   }
 });

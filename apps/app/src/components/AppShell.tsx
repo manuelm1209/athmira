@@ -1,6 +1,7 @@
 import { Link, type Href, usePathname } from "expo-router";
 import { useEffect, useState, type PropsWithChildren } from "react";
-import { Image, Platform, Pressable, StyleSheet, Text, View, useWindowDimensions } from "react-native";
+import { Image, Platform, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { colors, radii, shadows, spacing, typography } from "@athmira/ui";
 
 import { useAuth } from "@/providers/AuthProvider";
@@ -37,8 +38,17 @@ export function AppShell({ children }: PropsWithChildren) {
   const { isAdmin, session, signOut } = useAuth();
   const { t } = useLanguage();
   const { width } = useWindowDimensions();
-  const compact = width < 760;
+  const insets = useSafeAreaInsets();
+  const isNative = Platform.OS !== "web";
+  const [webHydrated, setWebHydrated] = useState(Platform.OS !== "web");
+  const compact = !webHydrated || width < 760;
   const [headerDocked, setHeaderDocked] = useState(false);
+
+  useEffect(() => {
+    if (Platform.OS === "web") {
+      setWebHydrated(true);
+    }
+  }, []);
 
   useEffect(() => {
     if (Platform.OS !== "web") {
@@ -97,12 +107,22 @@ export function AppShell({ children }: PropsWithChildren) {
     { href: "/#limitaciones" as Href, key: "science", label: t("homeNavScience") },
     { href: "/#progreso" as Href, key: "resources", label: t("homeNavResources") }
   ];
+  const nativeCameraRoute = pathname === "/analysis/camera" || pathname === "/analysis/front-knee";
+  const nativeNavItems = navItems.filter((item) => item.key !== "logout");
+  const showNativeBottomNav = isNative && Boolean(session) && !nativeCameraRoute;
 
   return (
     <View style={styles.root}>
       <View
         accessibilityLabel="Main navigation"
-        style={[styles.header, compact && styles.headerCompact, headerMotionStyle, headerDocked && styles.headerDocked]}
+        style={[
+          styles.header,
+          compact && styles.headerCompact,
+          isNative && styles.nativeHeader,
+          isNative && { paddingTop: insets.top + spacing.sm },
+          headerMotionStyle,
+          !isNative && headerDocked && styles.headerDocked
+        ]}
       >
         <Link href={session ? "/dashboard" : "/"} asChild>
           <Pressable accessibilityRole="link" style={styles.brand}>
@@ -118,7 +138,7 @@ export function AppShell({ children }: PropsWithChildren) {
             </View>
           </Pressable>
         </Link>
-        <View style={[styles.nav, compact && styles.navCompact]}>
+        <View style={[styles.nav, compact && styles.navCompact, isNative && styles.nativeHeaderActions]}>
           {session || compact ? null : (
             <View style={styles.marketingNav}>
               {marketingNavItems.map((item) => (
@@ -130,28 +150,30 @@ export function AppShell({ children }: PropsWithChildren) {
               ))}
             </View>
           )}
-          {navItems.map((item) => (
-            <Link href={item.href} asChild key={item.key}>
-              <Pressable
-                accessibilityRole="link"
-                style={StyleSheet.flatten([
-                  styles.navLink,
-                  item.key === "signup" && styles.primaryNavLink,
-                  pathname === item.href && styles.activeLink
-                ])}
-              >
-                <Text
-                  style={[
-                    styles.navText,
-                    item.key === "signup" && styles.primaryNavText,
-                    pathname === item.href && styles.activeText
-                  ]}
-                >
-                  {item.label}
-                </Text>
-              </Pressable>
-            </Link>
-          ))}
+          {isNative && session
+            ? null
+            : navItems.map((item) => (
+                <Link href={item.href} asChild key={item.key}>
+                  <Pressable
+                    accessibilityRole="link"
+                    style={StyleSheet.flatten([
+                      styles.navLink,
+                      item.key === "signup" && styles.primaryNavLink,
+                      pathname === item.href && styles.activeLink
+                    ])}
+                  >
+                    <Text
+                      style={[
+                        styles.navText,
+                        item.key === "signup" && styles.primaryNavText,
+                        pathname === item.href && styles.activeText
+                      ]}
+                    >
+                      {item.label}
+                    </Text>
+                  </Pressable>
+                </Link>
+              ))}
           <LanguageToggle />
           {session ? (
             <Pressable accessibilityRole="button" onPress={signOut} style={styles.navLink}>
@@ -161,21 +183,48 @@ export function AppShell({ children }: PropsWithChildren) {
         </View>
       </View>
       <View style={styles.content}>{children}</View>
-      <View style={styles.footer}>
-        <Text style={styles.footerBrand}>athmira</Text>
-        <View style={styles.footerLinks}>
-          <Link href="/privacy" asChild>
-            <Pressable accessibilityRole="link">
-              <Text style={styles.footerLinkText}>{t("privacyPolicy")}</Text>
-            </Pressable>
-          </Link>
-          <Link href="/terms" asChild>
-            <Pressable accessibilityRole="link">
-              <Text style={styles.footerLinkText}>{t("termsConditions")}</Text>
-            </Pressable>
-          </Link>
+      {showNativeBottomNav ? (
+        <View style={[styles.nativeBottomNav, { paddingBottom: Math.max(insets.bottom, spacing.sm) }]}>
+          <ScrollView
+            contentContainerStyle={styles.nativeBottomNavContent}
+            horizontal
+            showsHorizontalScrollIndicator={false}
+          >
+            {nativeNavItems.map((item) => {
+              const href = String(item.href);
+              const active = pathname === href || pathname.startsWith(`${href}/`);
+
+              return (
+                <Link href={item.href} asChild key={item.key}>
+                  <Pressable
+                    accessibilityRole="link"
+                    style={StyleSheet.flatten([styles.nativeBottomNavItem, active && styles.nativeBottomNavItemActive])}
+                  >
+                    <Text style={[styles.nativeBottomNavText, active && styles.nativeBottomNavTextActive]}>{item.label}</Text>
+                  </Pressable>
+                </Link>
+              );
+            })}
+          </ScrollView>
         </View>
-      </View>
+      ) : null}
+      {isNative ? null : (
+        <View style={styles.footer}>
+          <Text style={styles.footerBrand}>athmira</Text>
+          <View style={styles.footerLinks}>
+            <Link href="/privacy" asChild>
+              <Pressable accessibilityRole="link">
+                <Text style={styles.footerLinkText}>{t("privacyPolicy")}</Text>
+              </Pressable>
+            </Link>
+            <Link href="/terms" asChild>
+              <Pressable accessibilityRole="link">
+                <Text style={styles.footerLinkText}>{t("termsConditions")}</Text>
+              </Pressable>
+            </Link>
+          </View>
+        </View>
+      )}
     </View>
   );
 }
@@ -208,6 +257,14 @@ const styles = StyleSheet.create({
     gap: spacing.md,
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.md
+  },
+  nativeHeader: {
+    borderRadius: 0,
+    borderTopWidth: 0,
+    marginHorizontal: 0,
+    marginTop: 0,
+    paddingHorizontal: spacing.lg,
+    paddingBottom: spacing.md
   },
   headerDocked: {
     backgroundColor: "rgba(255,255,255,0.86)",
@@ -255,6 +312,12 @@ const styles = StyleSheet.create({
     justifyContent: "flex-start",
     width: "100%"
   },
+  nativeHeaderActions: {
+    flexGrow: 1,
+    gap: spacing.sm,
+    justifyContent: "flex-end",
+    width: "auto"
+  },
   marketingNav: {
     alignItems: "center",
     flexDirection: "row",
@@ -297,6 +360,41 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1
+  },
+  nativeBottomNav: {
+    backgroundColor: "rgba(255,255,255,0.96)",
+    borderTopColor: colors.border,
+    borderTopWidth: 1,
+    paddingTop: spacing.sm
+  },
+  nativeBottomNavContent: {
+    gap: spacing.sm,
+    paddingHorizontal: spacing.md
+  },
+  nativeBottomNavItem: {
+    alignItems: "center",
+    borderColor: colors.border,
+    borderRadius: radii.md,
+    borderWidth: 1,
+    justifyContent: "center",
+    minHeight: 42,
+    minWidth: 92,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm
+  },
+  nativeBottomNavItemActive: {
+    backgroundColor: colors.primary,
+    borderColor: colors.primary
+  },
+  nativeBottomNavText: {
+    color: colors.ink,
+    fontFamily,
+    fontSize: 12,
+    fontWeight: typography.weights.black,
+    textAlign: "center"
+  },
+  nativeBottomNavTextActive: {
+    color: colors.white
   },
   footer: {
     alignItems: "center",

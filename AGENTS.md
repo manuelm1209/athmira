@@ -81,6 +81,21 @@ Use modules/services for:
 - AI recommendations
 - Wearable integrations
 
+## Cross-Platform Native Rules
+
+Web, iOS, and Android must remain first-class targets. New features should be designed as shared TypeScript business logic with thin platform adapters.
+
+- Prefer Expo SDK modules before adding custom native code.
+- Test native functionality in Expo Go first when possible.
+- Use development builds or EAS builds only when a feature needs a local Expo module, native config plugin, or native dependency outside Expo Go.
+- Keep platform branches explicit with `.web.ts`, `.native.ts`, `.ios.ts`, or `.android.ts` files instead of scattering platform checks through screens.
+- Add a web fallback or clear unsupported state for every native-only capability.
+- Keep Swift/Kotlin/Java code inside local Expo modules only when JavaScript/TypeScript and Expo SDK modules are not enough.
+- Expose custom native modules through typed TypeScript APIs and keep domain calculations in shared packages such as `pose-engine`, `fit-engine`, `aero-engine`, or `nutrition-engine`.
+- Do not commit generated `ios/` or `android/` folders unless the project intentionally moves from managed Expo to committed native projects.
+- Use `native:prebuild`, `native:prebuild:ios`, and `native:prebuild:android` script names for Expo prebuild commands. Do not add npm lifecycle scripts named `prebuild`, because npm runs them automatically before `build`.
+- Keep native app configuration in `apps/app/app.json`, `apps/app/app.config.js`, and `apps/app/eas.json`; document new permissions, entitlements, or build profile changes in README.
+
 ## Cybersecurity Requirements
 
 Cybersecurity is a must for every feature. Treat auth, user profile data, bike data, camera/media data, analysis history, and future wearable or AI data as sensitive user data.
@@ -373,6 +388,17 @@ The camera flow should:
 For now, computer vision can be mocked.
 
 The code should still be structured as if real pose detection will be added later.
+
+Native camera requirements:
+
+- Use `expo-camera` for iOS and Android camera previews.
+- Request only camera permission unless a feature truly records audio.
+- Do not request Android `RECORD_AUDIO` for bike fit or posture capture.
+- Keep the device awake during active camera analysis.
+- Mirror front-camera previews when they are used for rider setup.
+- Handle `onCameraReady` and `onMountError` before enabling analysis actions.
+- Keep camera screens responsive to notches, home indicators, small phones, tablets, and Android navigation areas.
+- Stop or unmount camera sessions when leaving the analysis flow.
 
 ## Pose Engine Interface
 

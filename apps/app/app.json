@@ -4,10 +4,17 @@
     "slug": "athmira",
     "scheme": "athmira",
     "version": "0.1.0",
+    "platforms": ["ios", "android", "web"],
     "orientation": "portrait",
     "icon": "./assets/icon.png",
-    "userInterfaceStyle": "light",
+    "primaryColor": "#00857d",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
     "newArchEnabled": true,
+    "androidStatusBar": {
+      "barStyle": "dark-content"
+    },
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
@@ -23,24 +30,34 @@
       [
         "expo-camera",
         {
-          "cameraPermission": "athmira uses the camera to provide preliminary bike fit and aero posture guidance."
+          "cameraPermission": "athmira uses the camera only inside analysis flows to provide preliminary bike fit and aero posture guidance.",
+          "microphonePermission": false,
+          "recordAudioAndroid": false,
+          "barcodeScannerEnabled": false
         }
       ]
     ],
     "ios": {
+      "buildNumber": "1",
       "bundleIdentifier": "com.athmira.app",
       "supportsTablet": true,
       "infoPlist": {
-        "NSCameraUsageDescription": "athmira uses the camera to provide preliminary bike fit and aero posture guidance."
+        "ITSAppUsesNonExemptEncryption": false,
+        "NSCameraUsageDescription": "athmira uses the camera only inside analysis flows to provide preliminary bike fit and aero posture guidance.",
+        "UIRequiresFullScreen": false
       }
     },
     "android": {
+      "versionCode": 1,
       "package": "com.athmira.app",
-      "permissions": ["CAMERA"],
+      "allowBackup": false,
+      "blockedPermissions": ["android.permission.RECORD_AUDIO"],
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
-      }
+      },
+      "softwareKeyboardLayoutMode": "resize",
+      "predictiveBackGestureEnabled": true
     },
     "web": {
       "bundler": "metro",

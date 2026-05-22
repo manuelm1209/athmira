@@ -62,7 +62,12 @@ type ScreenProps = PropsWithChildren<{
 
 export function Screen({ children, centered, maxWidth = 1120 }: ScreenProps) {
   return (
-    <ScrollView contentContainerStyle={[styles.screen, centered && styles.centeredScreen]}>
+    <ScrollView
+      automaticallyAdjustKeyboardInsets
+      contentContainerStyle={[styles.screen, centered && styles.centeredScreen]}
+      contentInsetAdjustmentBehavior="automatic"
+      keyboardShouldPersistTaps="handled"
+    >
       <View style={[styles.screenInner, { maxWidth }]}>{children}</View>
     </ScrollView>
   );
@@ -284,7 +289,8 @@ const styles = StyleSheet.create({
   },
   screenInner: {
     alignSelf: "center",
-    padding: spacing.lg,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.xl,
     width: "100%"
   },
   card: {

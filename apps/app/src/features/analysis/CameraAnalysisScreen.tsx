@@ -156,7 +156,12 @@ export function CameraAnalysisScreen() {
     setMessage(null);
 
     try {
-      await cameraRef.current?.captureSnapshot();
+      const snapshotUri = await cameraRef.current?.captureSnapshot();
+
+      if (!snapshotUri) {
+        throw new Error(t("poseNotReady"));
+      }
+
       setMessage(t("snapshotCaptured"));
     } catch (snapshotError) {
       setError(getErrorMessage(snapshotError));
@@ -200,11 +205,11 @@ export function CameraAnalysisScreen() {
         {message ? <Text style={styles.message}>{message}</Text> : null}
         {error ? <Text style={styles.error}>{error}</Text> : null}
 
-        <Inline>
-          <Button disabled={!canAnalyze} loading={working} onPress={beginAnalysis}>
+        <Inline style={styles.actions}>
+          <Button disabled={!canAnalyze} loading={working} onPress={beginAnalysis} style={styles.actionButton}>
             {t("beginAnalysis")}
           </Button>
-          <Button disabled={!cameraReady} onPress={captureSnapshot} variant="secondary">
+          <Button disabled={!cameraReady} onPress={captureSnapshot} style={styles.actionButton} variant="secondary">
             {t("captureSnapshot")}
           </Button>
         </Inline>
@@ -232,6 +237,13 @@ const styles = StyleSheet.create({
   },
   header: {
     gap: spacing.md
+  },
+  actions: {
+    alignItems: "stretch"
+  },
+  actionButton: {
+    flexBasis: 180,
+    flexGrow: 1
   },
   instructionsCard: {
     gap: spacing.sm

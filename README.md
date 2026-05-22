@@ -84,6 +84,30 @@ Public auth forms intentionally avoid displaying raw Supabase Auth errors. Login
 npm run web
 ```
 
+## Native iOS And Android
+
+The same Expo app in `apps/app` targets web, iOS, and Android. Start with Expo Go for native validation:
+
+```bash
+npm run ios
+npm run android
+```
+
+The native camera flows use `expo-camera` with only the camera permission enabled. Android explicitly blocks microphone recording permission, and the app keeps the screen awake while an analysis camera is mounted.
+
+Use EAS profiles from `apps/app/eas.json` when you need installable native builds:
+
+```bash
+cd apps/app
+npx eas build --profile development --platform ios
+npx eas build --profile preview --platform android
+npx eas build --profile production --platform all
+```
+
+Run `npm run native:prebuild:ios` or `npm run native:prebuild:android` only when a custom native module, config plugin, or local native debugging requires generated `ios/` or `android/` folders. Do not commit generated native folders unless the project intentionally moves away from managed Expo.
+
+When adding device-specific features, prefer Expo SDK modules first. If custom native code is required, implement it as a local Expo module with a TypeScript API, Swift for iOS, and Kotlin/Java for Android, plus a web fallback or an explicit unsupported state. Keep business logic in shared packages or services, not inside the native module bridge.
+
 ## Authenticated Playwright Access
 
 Codex and Playwright can inspect protected routes by reusing the saved browser state in `playwright/.auth/codex-user.json`. That file contains session tokens, is ignored by git, and should stay local.
@@ -238,6 +262,8 @@ npm run build      # Export the Expo web app
 npm run expo:check # Check Expo SDK dependency compatibility
 npm run lint       # Run Expo lint
 npm run typecheck  # Run TypeScript checks
+npm run ios        # Start the app in Expo Go on iOS
+npm run android    # Start the app in Expo Go on Android
 ```
 
 ## Safety And Claims

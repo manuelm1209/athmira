@@ -1,4 +1,5 @@
 import { Body, FadeInView, Heading, Inline, Screen, colors, radii, shadows, spacing, typography } from "@athmira/ui";
+import { useEffect, useState } from "react";
 import { Image, Platform, StyleSheet, Text, View, useWindowDimensions } from "react-native";
 import type { ImageSourcePropType } from "react-native";
 
@@ -271,8 +272,10 @@ export default function WelcomeRoute() {
   const { language, t } = useLanguage();
   const copy = homeCopy[language];
   const { width } = useWindowDimensions();
-  const mobile = width < 760;
-  const moduleColumns = mobile ? 1 : width < 1100 ? 2 : 4;
+  const [webHydrated, setWebHydrated] = useState(Platform.OS !== "web");
+  const layoutWidth = webHydrated ? width : 0;
+  const mobile = !webHydrated || layoutWidth < 760;
+  const moduleColumns = mobile ? 1 : layoutWidth < 1100 ? 2 : 4;
   const moduleGridWebStyle = Platform.select({
     default: undefined,
     web: {
@@ -280,8 +283,14 @@ export default function WelcomeRoute() {
       gridTemplateColumns: `repeat(${moduleColumns}, minmax(0, 1fr))`
     } as never
   });
-  const mobilePageWidth = Math.max(320, width - spacing.xxl);
+  const mobilePageWidth = Math.max(320, layoutWidth - spacing.xxl);
   const mobileBox = mobile ? { maxWidth: mobilePageWidth, width: mobilePageWidth } : undefined;
+
+  useEffect(() => {
+    if (Platform.OS === "web") {
+      setWebHydrated(true);
+    }
+  }, []);
 
   return (
     <>
