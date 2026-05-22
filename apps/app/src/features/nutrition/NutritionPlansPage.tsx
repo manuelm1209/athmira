@@ -1567,21 +1567,20 @@ function TargetRing({
   target: number;
 }) {
   const percent = target > 0 ? Math.min(100, Math.max(0, current / target * 100)) : 0;
-  const ringStyle = Platform.select({
-    web: {
-      backgroundImage: `conic-gradient(${color} ${percent}%, #dbecee ${percent}% 100%)`,
-      transitionDuration: "320ms",
-      transitionProperty: "background-image",
-      transitionTimingFunction: "ease"
-    } as never,
-    default: {
-      borderColor: color
-    }
-  });
+  const ringStyle =
+    Platform.OS === "web"
+      ? ({
+          backgroundImage: `conic-gradient(${color} ${percent}%, #dbecee ${percent}% 100%)`,
+          transitionDuration: "320ms",
+          transitionProperty: "background-image",
+          transitionTimingFunction: "ease"
+        } as never)
+      : null;
 
   return (
     <View style={styles.targetRingBlock}>
       <View style={[styles.targetRing, ringStyle]}>
+        {Platform.OS !== "web" ? <NativeTargetRingSegments color={color} percent={percent} /> : null}
         <View style={styles.targetRingInner}>
           <Text
             adjustsFontSizeToFit
@@ -1594,6 +1593,40 @@ function TargetRing({
           </Text>
         </View>
       </View>
+    </View>
+  );
+}
+
+function NativeTargetRingSegments({ color, percent }: { color: string; percent: number }) {
+  const segmentCount = 28;
+  const activeSegments = Math.round(segmentCount * percent / 100);
+  const center = 29;
+  const radius = 23;
+  const segmentHeight = 10;
+  const segmentWidth = 4;
+
+  return (
+    <View pointerEvents="none" style={styles.targetRingSegments}>
+      {Array.from({ length: segmentCount }, (_, index) => {
+        const rotation = index * (360 / segmentCount);
+        const radians = rotation * Math.PI / 180;
+        const active = index < activeSegments;
+
+        return (
+          <View
+            key={index}
+            style={[
+              styles.targetRingSegment,
+              {
+                backgroundColor: active ? color : "#dbecee",
+                left: center - segmentWidth / 2 + Math.sin(radians) * radius,
+                top: center - segmentHeight / 2 - Math.cos(radians) * radius,
+                transform: [{ rotate: `${rotation}deg` }]
+              }
+            ]}
+          />
+        );
+      })}
     </View>
   );
 }
@@ -4741,7 +4774,21 @@ const styles = StyleSheet.create({
     borderRadius: radii.round,
     height: 58,
     justifyContent: "center",
+    overflow: "hidden",
     width: 58
+  },
+  targetRingSegments: {
+    height: 58,
+    left: 0,
+    position: "absolute",
+    top: 0,
+    width: 58
+  },
+  targetRingSegment: {
+    borderRadius: 3,
+    height: 10,
+    position: "absolute",
+    width: 4
   },
   targetRingInner: {
     alignItems: "center",
