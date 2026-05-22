@@ -484,7 +484,7 @@ export default function WelcomeRoute() {
           <Image
             accessibilityLabel="Cyclist riding with athmira planning context"
             resizeMode="cover"
-            source={{ uri: visualAssets.aeroTrack }}
+            source={visualAssets.aeroTrack}
             style={styles.finalImage}
           />
           <View style={styles.finalOverlay} />

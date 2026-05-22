@@ -168,7 +168,7 @@ export function DashboardScreen() {
             <Image
               accessibilityLabel="Cyclist training on track"
               resizeMode="cover"
-              source={{ uri: visualAssets.aeroTrack }}
+              source={visualAssets.aeroTrack}
               style={styles.heroImage}
             />
             <View style={styles.heroOverlay} />
