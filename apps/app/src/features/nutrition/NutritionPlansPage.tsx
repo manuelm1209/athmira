@@ -49,10 +49,12 @@ import {
   spacing,
   typography
 } from "@athmira/ui";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
+  Animated,
+  Easing,
   Modal,
   Platform,
   Pressable,
@@ -290,7 +292,6 @@ const nutritionCopy = {
     sodiumTarget: "Sodium target",
     strategyBoard: "Fueling strategy",
     strategyBoardBody: "Add each ingredient from the bottle card you are filling. Swipe horizontally to manage more bottles or carried food.",
-    scrollHint: "Swipe sideways for more bottles and carried food.",
     startCardBody:
       "Use the builder to combine bottles, gels, bars, bocadillos, gummies, bananas, sandwiches, rice cakes, and custom products into a complete endurance fueling strategy.",
     startCardTitle: "Select or create a plan",
@@ -440,7 +441,6 @@ const nutritionCopy = {
     sodiumTarget: "Objetivo de sodio",
     strategyBoard: "Estrategia de alimentación",
     strategyBoardBody: "Agrega cada ingrediente desde la tarjeta de la caramañola que estás llenando. Desliza horizontalmente para manejar más botellas o comida.",
-    scrollHint: "Desliza hacia los lados para ver más caramañolas y comida.",
     startCardBody:
       "Usa el constructor para combinar botellas, gels, barras, bocadillos, gomitas, bananos, sandwiches, rice cakes y productos personalizados en una estrategia completa de fueling.",
     startCardTitle: "Selecciona o crea un plan",
@@ -1667,14 +1667,177 @@ function BottleSizeSelect({
   );
 }
 
-function HorizontalScrollHint({ text }: { text: string }) {
+function HorizontalScrollAffordance({ visible }: { visible: boolean }) {
+  const translateX = useRef(new Animated.Value(-24)).current;
+  const opacity = useRef(new Animated.Value(0)).current;
+  const touchProgress = useRef(new Animated.Value(0)).current;
+  const scale = useRef(new Animated.Value(1.08)).current;
+  const leftTrailOpacity = useRef(new Animated.Value(0)).current;
+  const rightTrailOpacity = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    Animated.timing(opacity, {
+      duration: 180,
+      easing: Easing.out(Easing.quad),
+      toValue: visible ? 1 : 0,
+      useNativeDriver: true
+    }).start();
+
+    if (!visible) {
+      translateX.stopAnimation();
+      touchProgress.stopAnimation();
+      scale.stopAnimation();
+      leftTrailOpacity.stopAnimation();
+      rightTrailOpacity.stopAnimation();
+      translateX.setValue(-24);
+      touchProgress.setValue(0);
+      scale.setValue(1.08);
+      leftTrailOpacity.setValue(0);
+      rightTrailOpacity.setValue(0);
+      return;
+    }
+
+    translateX.setValue(-24);
+    touchProgress.setValue(0);
+    scale.setValue(1.08);
+    leftTrailOpacity.setValue(0);
+    rightTrailOpacity.setValue(0);
+
+    const press = () =>
+      Animated.parallel([
+        Animated.timing(touchProgress, {
+          duration: 220,
+          easing: Easing.out(Easing.quad),
+          toValue: 1,
+          useNativeDriver: false
+        }),
+        Animated.timing(scale, {
+          duration: 220,
+          easing: Easing.out(Easing.quad),
+          toValue: 0.9,
+          useNativeDriver: false
+        })
+      ]);
+    const release = () =>
+      Animated.parallel([
+        Animated.timing(touchProgress, {
+          duration: 220,
+          easing: Easing.out(Easing.quad),
+          toValue: 0,
+          useNativeDriver: false
+        }),
+        Animated.timing(scale, {
+          duration: 220,
+          easing: Easing.out(Easing.back(1.15)),
+          toValue: 1.08,
+          useNativeDriver: false
+        }),
+        Animated.timing(leftTrailOpacity, {
+          duration: 220,
+          easing: Easing.out(Easing.quad),
+          toValue: 0,
+          useNativeDriver: false
+        }),
+        Animated.timing(rightTrailOpacity, {
+          duration: 220,
+          easing: Easing.out(Easing.quad),
+          toValue: 0,
+          useNativeDriver: false
+        })
+      ]);
+
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.delay(260),
+        press(),
+        Animated.parallel([
+          Animated.timing(translateX, {
+            duration: 1360,
+            easing: Easing.inOut(Easing.quad),
+            toValue: 34,
+            useNativeDriver: false
+          }),
+          Animated.sequence([
+            Animated.timing(leftTrailOpacity, {
+              duration: 320,
+              easing: Easing.out(Easing.quad),
+              toValue: 1,
+              useNativeDriver: false
+            }),
+            Animated.delay(560),
+            Animated.timing(leftTrailOpacity, {
+              duration: 480,
+              easing: Easing.out(Easing.quad),
+              toValue: 0,
+              useNativeDriver: false
+            })
+          ])
+        ]),
+        release(),
+        Animated.delay(360),
+        press(),
+        Animated.parallel([
+          Animated.timing(translateX, {
+            duration: 1360,
+            easing: Easing.inOut(Easing.quad),
+            toValue: -24,
+            useNativeDriver: false
+          }),
+          Animated.sequence([
+            Animated.timing(rightTrailOpacity, {
+              duration: 320,
+              easing: Easing.out(Easing.quad),
+              toValue: 1,
+              useNativeDriver: false
+            }),
+            Animated.delay(560),
+            Animated.timing(rightTrailOpacity, {
+              duration: 480,
+              easing: Easing.out(Easing.quad),
+              toValue: 0,
+              useNativeDriver: false
+            })
+          ])
+        ]),
+        release()
+      ])
+    );
+
+    loop.start();
+
+    return () => {
+      loop.stop();
+      translateX.setValue(-24);
+      touchProgress.setValue(0);
+      scale.setValue(1.08);
+      leftTrailOpacity.setValue(0);
+      rightTrailOpacity.setValue(0);
+    };
+  }, [leftTrailOpacity, opacity, rightTrailOpacity, scale, touchProgress, translateX, visible]);
+
+  const dotBackgroundColor = touchProgress.interpolate({
+    inputRange: [0, 1],
+    outputRange: ["rgba(47,143,232,0.28)", "#2f8fe8"]
+  });
+  const trailLeftNearOpacity = leftTrailOpacity.interpolate({ inputRange: [0, 1], outputRange: [0, 0.5] });
+  const trailLeftMidOpacity = leftTrailOpacity.interpolate({ inputRange: [0, 1], outputRange: [0, 0.28] });
+  const trailLeftFarOpacity = leftTrailOpacity.interpolate({ inputRange: [0, 1], outputRange: [0, 0.12] });
+  const trailRightNearOpacity = rightTrailOpacity.interpolate({ inputRange: [0, 1], outputRange: [0, 0.5] });
+  const trailRightMidOpacity = rightTrailOpacity.interpolate({ inputRange: [0, 1], outputRange: [0, 0.28] });
+  const trailRightFarOpacity = rightTrailOpacity.interpolate({ inputRange: [0, 1], outputRange: [0, 0.12] });
+
   return (
-    <View style={styles.scrollHint}>
-      <Text style={styles.scrollHintText}>{text}</Text>
-      <View style={styles.scrollHintTrack}>
-        <View style={styles.scrollHintThumb} />
-      </View>
-    </View>
+    <Animated.View pointerEvents="none" style={[styles.scrollAffordance, { opacity }]}>
+      <Animated.View style={[styles.scrollAffordanceCue, { transform: [{ translateX }] }]}>
+        <Animated.View style={[styles.scrollAffordanceTrailLeftFar, { opacity: trailLeftFarOpacity }]} />
+        <Animated.View style={[styles.scrollAffordanceTrailLeftMid, { opacity: trailLeftMidOpacity }]} />
+        <Animated.View style={[styles.scrollAffordanceTrailLeftNear, { opacity: trailLeftNearOpacity }]} />
+        <Animated.View style={[styles.scrollAffordanceTrailRightFar, { opacity: trailRightFarOpacity }]} />
+        <Animated.View style={[styles.scrollAffordanceTrailRightMid, { opacity: trailRightMidOpacity }]} />
+        <Animated.View style={[styles.scrollAffordanceTrailRightNear, { opacity: trailRightNearOpacity }]} />
+        <Animated.View style={[styles.scrollAffordanceDot, { backgroundColor: dotBackgroundColor, transform: [{ scale }] }]} />
+      </Animated.View>
+    </Animated.View>
   );
 }
 
@@ -1710,6 +1873,11 @@ function FuelingCanvas({
     ? [styles.fuelCardMobile, { width: mobileCardWidth }]
     : undefined;
   const carriedItems = items.filter((item) => item.location !== "bottle");
+  const [showScrollAffordance, setShowScrollAffordance] = useState(true);
+
+  function hideScrollAffordance() {
+    setShowScrollAffordance(false);
+  }
 
   return (
     <Card style={[styles.fuelingCanvas, compact && styles.fuelingCanvasMobile]}>
@@ -1723,36 +1891,49 @@ function FuelingCanvas({
         </Button>
       </View>
 
-      <HorizontalScrollHint text={copy.scrollHint} />
+      <View style={styles.horizontalScrollerFrame}>
+        {compact ? <HorizontalScrollAffordance visible={showScrollAffordance} /> : null}
+        <ScrollView
+          horizontal
+          onMomentumScrollBegin={hideScrollAffordance}
+          onScroll={(event) => {
+            if (event.nativeEvent.contentOffset.x > 2) {
+              hideScrollAffordance();
+            }
+          }}
+          onScrollBeginDrag={hideScrollAffordance}
+          scrollEventThrottle={16}
+          showsHorizontalScrollIndicator
+          contentContainerStyle={[styles.fuelingScroller, compact && styles.fuelingScrollerMobile]}
+        >
+          {bottles.map((bottle) => {
+            const calculation = bottleCalculations.find((entry) => entry.bottle.id === bottle.id) ?? calculateBottleTotals(bottle, []);
+            const bottleItems = items.filter((item) => item.location === "bottle" && item.bottle_id === bottle.id);
 
-      <ScrollView horizontal showsHorizontalScrollIndicator contentContainerStyle={[styles.fuelingScroller, compact && styles.fuelingScrollerMobile]}>
-        {bottles.map((bottle) => {
-          const calculation = bottleCalculations.find((entry) => entry.bottle.id === bottle.id) ?? calculateBottleTotals(bottle, []);
-          const bottleItems = items.filter((item) => item.location === "bottle" && item.bottle_id === bottle.id);
-
-          return (
-            <BottleFuelCard
-              active={bottle.id === activeBottleId}
-              bottle={bottle}
-              cardStyle={mobileCardStyle}
-              calculation={calculation}
-              compact={compact}
-              items={bottleItems}
-              key={bottle.id}
-              onAddIngredient={() => onOpenAddModal({ bottleId: bottle.id, mode: "bottle" })}
-              onRemoveBottle={() => onRemoveBottle(bottle.id)}
-              onRemoveItem={onRemoveItem}
-              onSelect={() => onSelectBottle(bottle.id)}
-              onUpdateBottle={(patch) => onUpdateBottle(bottle.id, patch)}
-            />
-          );
-        })}
-        <CarriedFuelCard cardStyle={mobileCardStyle} compact={compact} items={carriedItems} onAddFood={() => onOpenAddModal({ mode: "carried" })} onRemoveItem={onRemoveItem} />
-        <Pressable accessibilityRole="button" onPress={() => onAddBottle()} style={[styles.addBottleTile, compact && { width: mobileCardWidth }]}>
-          <Text style={styles.addBottleTileMark}>+</Text>
-          <Text style={styles.addBottleTileText}>{copy.addBottle}</Text>
-        </Pressable>
-      </ScrollView>
+            return (
+              <BottleFuelCard
+                active={bottle.id === activeBottleId}
+                bottle={bottle}
+                cardStyle={mobileCardStyle}
+                calculation={calculation}
+                compact={compact}
+                items={bottleItems}
+                key={bottle.id}
+                onAddIngredient={() => onOpenAddModal({ bottleId: bottle.id, mode: "bottle" })}
+                onRemoveBottle={() => onRemoveBottle(bottle.id)}
+                onRemoveItem={onRemoveItem}
+                onSelect={() => onSelectBottle(bottle.id)}
+                onUpdateBottle={(patch) => onUpdateBottle(bottle.id, patch)}
+              />
+            );
+          })}
+          <CarriedFuelCard cardStyle={mobileCardStyle} compact={compact} items={carriedItems} onAddFood={() => onOpenAddModal({ mode: "carried" })} onRemoveItem={onRemoveItem} />
+          <Pressable accessibilityRole="button" onPress={() => onAddBottle()} style={[styles.addBottleTile, compact && { width: mobileCardWidth }]}>
+            <Text style={styles.addBottleTileMark}>+</Text>
+            <Text style={styles.addBottleTileText}>{copy.addBottle}</Text>
+          </Pressable>
+        </ScrollView>
+      </View>
     </Card>
   );
 }
@@ -1774,6 +1955,11 @@ function ReadOnlyFuelingCanvas({
     ? [styles.fuelCardMobile, { width: Math.max(300, width - spacing.xl * 2) }]
     : undefined;
   const carriedItems = items.filter((item) => item.location !== "bottle");
+  const [showScrollAffordance, setShowScrollAffordance] = useState(true);
+
+  function hideScrollAffordance() {
+    setShowScrollAffordance(false);
+  }
 
   return (
     <Card style={[styles.fuelingCanvas, compact && styles.fuelingCanvasMobile]}>
@@ -1784,17 +1970,30 @@ function ReadOnlyFuelingCanvas({
         </View>
       </View>
 
-      <HorizontalScrollHint text={copy.scrollHint} />
+      <View style={styles.horizontalScrollerFrame}>
+        {compact ? <HorizontalScrollAffordance visible={showScrollAffordance} /> : null}
+        <ScrollView
+          horizontal
+          onMomentumScrollBegin={hideScrollAffordance}
+          onScroll={(event) => {
+            if (event.nativeEvent.contentOffset.x > 2) {
+              hideScrollAffordance();
+            }
+          }}
+          onScrollBeginDrag={hideScrollAffordance}
+          scrollEventThrottle={16}
+          showsHorizontalScrollIndicator
+          contentContainerStyle={[styles.fuelingScroller, compact && styles.fuelingScrollerMobile]}
+        >
+          {bottles.map((bottle) => {
+            const calculation = bottleCalculations.find((entry) => entry.bottle.id === bottle.id) ?? calculateBottleTotals(bottle, []);
+            const bottleItems = items.filter((item) => item.location === "bottle" && item.bottle_id === bottle.id);
 
-      <ScrollView horizontal showsHorizontalScrollIndicator contentContainerStyle={[styles.fuelingScroller, compact && styles.fuelingScrollerMobile]}>
-        {bottles.map((bottle) => {
-          const calculation = bottleCalculations.find((entry) => entry.bottle.id === bottle.id) ?? calculateBottleTotals(bottle, []);
-          const bottleItems = items.filter((item) => item.location === "bottle" && item.bottle_id === bottle.id);
-
-          return <ReadOnlyBottleCard bottle={bottle} cardStyle={mobileCardStyle} calculation={calculation} compact={compact} items={bottleItems} key={bottle.id} />;
-        })}
-        <ReadOnlyCarriedCard cardStyle={mobileCardStyle} compact={compact} items={carriedItems} />
-      </ScrollView>
+            return <ReadOnlyBottleCard bottle={bottle} cardStyle={mobileCardStyle} calculation={calculation} compact={compact} items={bottleItems} key={bottle.id} />;
+          })}
+          <ReadOnlyCarriedCard cardStyle={mobileCardStyle} compact={compact} items={carriedItems} />
+        </ScrollView>
+      </View>
     </Card>
   );
 }
@@ -2325,7 +2524,12 @@ export function BottleStrategyBoard({
   const [customBottleSize, setCustomBottleSize] = useState("");
   const [productForm, setProductForm] = useState<ProductFormMode>({ visible: false });
   const [error, setError] = useState<string | null>(null);
+  const [showScrollAffordance, setShowScrollAffordance] = useState(true);
   const userProducts = useMemo(() => products.filter((product) => product.product_scope === "user"), [products]);
+
+  function hideScrollAffordance() {
+    setShowScrollAffordance(false);
+  }
 
   function addCustomBottle() {
     const size = parseOptionalNumber(customBottleSize);
@@ -2429,42 +2633,51 @@ export function BottleStrategyBoard({
         </ScrollView>
       ) : null}
 
-      <HorizontalScrollHint text={copy.scrollHint} />
+      <View style={styles.horizontalScrollerFrame}>
+        {compact ? <HorizontalScrollAffordance visible={showScrollAffordance} /> : null}
+        <ScrollView
+          horizontal
+          onMomentumScrollBegin={hideScrollAffordance}
+          onScroll={(event) => {
+            if (event.nativeEvent.contentOffset.x > 2) {
+              hideScrollAffordance();
+            }
+          }}
+          onScrollBeginDrag={hideScrollAffordance}
+          scrollEventThrottle={16}
+          showsHorizontalScrollIndicator
+          contentContainerStyle={[styles.strategyScroller, compact && styles.strategyScrollerMobile]}
+        >
+          {bottles.map((bottle) => {
+            const calculation = bottleCalculations.find((entry) => entry.bottle.id === bottle.id) ?? calculateBottleTotals(bottle, []);
+            const bottleItems = items.filter((item) => item.location === "bottle" && item.bottle_id === bottle.id);
 
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator
-        contentContainerStyle={[styles.strategyScroller, compact && styles.strategyScrollerMobile]}
-      >
-        {bottles.map((bottle) => {
-          const calculation = bottleCalculations.find((entry) => entry.bottle.id === bottle.id) ?? calculateBottleTotals(bottle, []);
-          const bottleItems = items.filter((item) => item.location === "bottle" && item.bottle_id === bottle.id);
-
-          return (
-            <BottleStrategyCard
-              active={bottle.id === activeBottleId}
-              bottle={bottle}
-              cardStyle={mobileCardStyle}
-              calculation={calculation}
-              items={bottleItems}
-              key={bottle.id}
-              onAddProduct={onAddProduct}
-              onRemoveBottle={onRemoveBottle}
-              onRemoveItem={onRemoveItem}
-              onSelect={() => onSelectBottle(bottle.id)}
-              onUpdateBottle={onUpdateBottle}
-              products={products}
-            />
-          );
-        })}
-        <CarriedFoodStrategyCard
-          cardStyle={mobileCardStyle}
-          items={items.filter((item) => item.location !== "bottle")}
-          onAddProduct={onAddProduct}
-          onRemoveItem={onRemoveItem}
-          products={products}
-        />
-      </ScrollView>
+            return (
+              <BottleStrategyCard
+                active={bottle.id === activeBottleId}
+                bottle={bottle}
+                cardStyle={mobileCardStyle}
+                calculation={calculation}
+                items={bottleItems}
+                key={bottle.id}
+                onAddProduct={onAddProduct}
+                onRemoveBottle={onRemoveBottle}
+                onRemoveItem={onRemoveItem}
+                onSelect={() => onSelectBottle(bottle.id)}
+                onUpdateBottle={onUpdateBottle}
+                products={products}
+              />
+            );
+          })}
+          <CarriedFoodStrategyCard
+            cardStyle={mobileCardStyle}
+            items={items.filter((item) => item.location !== "bottle")}
+            onAddProduct={onAddProduct}
+            onRemoveItem={onRemoveItem}
+            products={products}
+          />
+        </ScrollView>
+      </View>
     </Card>
   );
 }
@@ -4566,31 +4779,86 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
     paddingRight: spacing.md
   },
-  scrollHint: {
+  horizontalScrollerFrame: {
+    position: "relative"
+  },
+  scrollAffordance: {
     alignItems: "center",
-    flexDirection: "row",
-    gap: spacing.sm,
-    opacity: 0.78
+    height: 52,
+    justifyContent: "center",
+    position: "absolute",
+    right: spacing.lg,
+    top: spacing.lg,
+    width: 126,
+    zIndex: 4
   },
-  scrollHintText: {
-    color: colors.inkMuted,
-    fontFamily,
-    fontSize: 12,
-    fontWeight: typography.weights.black,
-    lineHeight: 16
+  scrollAffordanceCue: {
+    alignItems: "center",
+    height: 38,
+    justifyContent: "center",
+    position: "relative",
+    width: 86
   },
-  scrollHintTrack: {
-    backgroundColor: colors.surfaceStrong,
+  scrollAffordanceTrailLeftFar: {
+    backgroundColor: "#2f8fe8",
     borderRadius: radii.round,
-    flex: 1,
-    height: 4,
-    overflow: "hidden"
+    height: 8,
+    position: "absolute",
+    right: 72,
+    width: 8
   },
-  scrollHintThumb: {
-    backgroundColor: colors.primary,
+  scrollAffordanceTrailLeftMid: {
+    backgroundColor: "#2f8fe8",
     borderRadius: radii.round,
-    height: "100%",
-    width: 56
+    height: 11,
+    position: "absolute",
+    right: 58,
+    width: 11
+  },
+  scrollAffordanceTrailLeftNear: {
+    backgroundColor: "#2f8fe8",
+    borderRadius: radii.round,
+    height: 15,
+    position: "absolute",
+    right: 39,
+    width: 15
+  },
+  scrollAffordanceTrailRightFar: {
+    backgroundColor: "#2f8fe8",
+    borderRadius: radii.round,
+    height: 8,
+    left: 72,
+    position: "absolute",
+    width: 8
+  },
+  scrollAffordanceTrailRightMid: {
+    backgroundColor: "#2f8fe8",
+    borderRadius: radii.round,
+    height: 11,
+    left: 58,
+    position: "absolute",
+    width: 11
+  },
+  scrollAffordanceTrailRightNear: {
+    backgroundColor: "#2f8fe8",
+    borderRadius: radii.round,
+    height: 15,
+    left: 39,
+    position: "absolute",
+    width: 15
+  },
+  scrollAffordanceDot: {
+    borderColor: "#2f8fe8",
+    borderRadius: radii.round,
+    borderWidth: 2,
+    height: 26,
+    left: 30,
+    position: "absolute",
+    shadowColor: "#2f8fe8",
+    shadowOffset: { height: 0, width: 0 },
+    shadowOpacity: 0.42,
+    shadowRadius: 12,
+    width: 26
   },
   fuelingCanvas: {
     gap: spacing.lg,
@@ -5284,6 +5552,7 @@ const styles = StyleSheet.create({
   },
   virtualBottleBlock: {
     alignItems: "center",
+    alignSelf: "center",
     gap: spacing.sm,
     minHeight: 278,
     width: 170
