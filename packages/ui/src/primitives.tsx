@@ -69,7 +69,7 @@ export function Screen({ children, centered, footer, maxWidth = 1120 }: ScreenPr
       contentInsetAdjustmentBehavior="automatic"
       keyboardShouldPersistTaps="handled"
     >
-      <View style={[styles.screenInner, { maxWidth }, centered && Boolean(footer) && styles.centeredScreenInner]}>
+      <View style={[styles.screenInner, { maxWidth }, Boolean(footer) && styles.screenInnerWithFooter, centered && Boolean(footer) && styles.centeredScreenInner]}>
         {children}
       </View>
       {footer}
@@ -348,6 +348,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.xl,
     width: "100%"
+  },
+  screenInnerWithFooter: {
+    flexGrow: 1
   },
   card: {
     backgroundColor: colors.surface,
