@@ -2,6 +2,9 @@ import type { PoseFrameResult } from "@athmira/types";
 
 export type BikeFitCameraLabels = {
   analyzing: string;
+  bikeFitComplete: string;
+  bikeFitGetReady: string;
+  bikeFitRecording: string;
   cameraAnalysisUnavailable: string;
   cameraDenied: string;
   cameraEnable: string;
@@ -21,7 +24,7 @@ export type BikeFitCameraLabels = {
 
 export type BikeFitCameraHandle = {
   captureSnapshot: () => Promise<string | null>;
-  startAnalysis: (durationMs?: number) => Promise<PoseFrameResult[]>;
+  startAnalysis: (options?: { countdownMs?: number; durationMs?: number }) => Promise<PoseFrameResult[]>;
 };
 
 export type BikeFitCameraProps = {

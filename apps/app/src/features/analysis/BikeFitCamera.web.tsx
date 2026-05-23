@@ -25,12 +25,16 @@ type PoseDetector = {
 };
 
 type RecordingState = {
+  countdownMs: number;
   durationMs: number;
+  recordingStartedAt?: number;
   reject: (error: Error) => void;
   resolve: (samples: PoseFrameResult[]) => void;
   samples: PoseFrameResult[];
   startedAt: number;
 };
+
+type AnalysisPhase = "idle" | "countdown" | "recording" | "complete";
 
 export const BikeFitCamera = forwardRef<BikeFitCameraHandle, BikeFitCameraProps>(function BikeFitCamera(
   { labels, onLiveResult, onReadyChange },
@@ -49,6 +53,8 @@ export const BikeFitCamera = forwardRef<BikeFitCameraHandle, BikeFitCameraProps>
   const [error, setError] = useState<string | null>(null);
   const [progress, setProgress] = useState<number | null>(null);
   const [poseDetected, setPoseDetected] = useState(false);
+  const [phase, setPhase] = useState<AnalysisPhase>("idle");
+  const [countdownSeconds, setCountdownSeconds] = useState<number | null>(null);
 
   useImperativeHandle(ref, () => ({
     async captureSnapshot() {
@@ -60,20 +66,24 @@ export const BikeFitCamera = forwardRef<BikeFitCameraHandle, BikeFitCameraProps>
 
       return canvas.toDataURL("image/jpeg", 0.82);
     },
-    async startAnalysis(durationMs = 8000) {
-      if (!latestResultRef.current || latestResultRef.current.confidenceScore < POSE_CONFIDENCE_THRESHOLD) {
+    async startAnalysis({ countdownMs = 10000, durationMs = 8000 } = {}) {
+      if (!detectorRef.current) {
         throw new Error(labels.poseNotReady);
       }
 
       return new Promise<PoseFrameResult[]>((resolve, reject) => {
         recordingRef.current = {
+          countdownMs,
           durationMs,
           reject,
           resolve,
           samples: [],
           startedAt: performance.now()
         };
-        setProgress(0);
+        setCountdownSeconds(Math.ceil(countdownMs / 1000));
+        setError(null);
+        setPhase(countdownMs > 0 ? "countdown" : "recording");
+        setProgress(countdownMs > 0 ? null : 0);
       });
     }
   }));
@@ -200,15 +210,32 @@ export const BikeFitCamera = forwardRef<BikeFitCameraHandle, BikeFitCameraProps>
       return;
     }
 
+    const now = performance.now();
+
+    if (!recording.recordingStartedAt) {
+      const remainingMs = recording.countdownMs - (now - recording.startedAt);
+      setCountdownSeconds(Math.max(0, Math.ceil(remainingMs / 1000)));
+
+      if (remainingMs > 0) {
+        return;
+      }
+
+      recording.recordingStartedAt = now;
+      setCountdownSeconds(null);
+      setPhase("recording");
+      setProgress(0);
+    }
+
     if (result && result.confidenceScore >= 0.35) {
       recording.samples.push(result);
     }
 
-    const elapsedMs = performance.now() - recording.startedAt;
+    const elapsedMs = now - recording.recordingStartedAt;
     setProgress(Math.min(1, elapsedMs / recording.durationMs));
 
     if (elapsedMs >= recording.durationMs) {
       recordingRef.current = null;
+      setPhase("complete");
       setProgress(null);
 
       if (recording.samples.length < 6) {
@@ -250,6 +277,8 @@ export const BikeFitCamera = forwardRef<BikeFitCameraHandle, BikeFitCameraProps>
     drawAngleLabels(context, result.keypoints, side, result.angles);
   }
 
+  const overlay = getPhaseOverlay({ countdownSeconds, labels, phase, progress });
+
   return (
     <View style={styles.frame}>
       <video autoPlay muted playsInline ref={videoRef} style={videoStyle} />
@@ -269,9 +298,49 @@ export const BikeFitCamera = forwardRef<BikeFitCameraHandle, BikeFitCameraProps>
         </Text>
         {error ? <Text style={styles.errorText}>{error}</Text> : null}
       </View>
+      {overlay ? (
+        <View style={[styles.phaseOverlay, styles.noPointerEvents]}>
+          {overlay.heading ? <Text style={styles.phaseHeading}>{overlay.heading}</Text> : null}
+          {overlay.bigNumber ? <Text style={styles.phaseBigNumber}>{overlay.bigNumber}</Text> : null}
+          {overlay.subtitle ? <Text style={styles.phaseSubtitle}>{overlay.subtitle}</Text> : null}
+        </View>
+      ) : null}
     </View>
   );
 });
+
+function getPhaseOverlay(input: {
+  countdownSeconds: number | null;
+  labels: BikeFitCameraProps["labels"];
+  phase: AnalysisPhase;
+  progress: number | null;
+}) {
+  if (input.phase === "countdown") {
+    return {
+      bigNumber: String(input.countdownSeconds ?? 0),
+      heading: input.labels.bikeFitGetReady,
+      subtitle: null as string | null
+    };
+  }
+
+  if (input.phase === "recording") {
+    return {
+      bigNumber: `${Math.round((input.progress ?? 0) * 100)}%`,
+      heading: input.labels.bikeFitRecording,
+      subtitle: null as string | null
+    };
+  }
+
+  if (input.phase === "complete") {
+    return {
+      bigNumber: null as string | null,
+      heading: input.labels.bikeFitComplete,
+      subtitle: null as string | null
+    };
+  }
+
+  return null;
+}
 
 function createResultFromPose(
   pose: { keypoints: { name?: string; part?: string; score?: number; x: number; y: number }[] } | undefined,
@@ -536,5 +605,42 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: "700",
     marginTop: spacing.xs
+  },
+  phaseOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    alignItems: "center",
+    backgroundColor: "rgba(6,11,9,0.32)",
+    gap: spacing.sm,
+    justifyContent: "center",
+    padding: spacing.xl
+  },
+  phaseHeading: {
+    color: "#ffffff",
+    fontSize: 22,
+    fontWeight: "800",
+    lineHeight: 28,
+    textAlign: "center",
+    textShadowColor: "rgba(0,0,0,0.75)",
+    textShadowOffset: { height: 2, width: 0 },
+    textShadowRadius: 8
+  },
+  phaseBigNumber: {
+    color: "#b7e64a",
+    fontSize: 96,
+    fontWeight: "900",
+    lineHeight: 104,
+    textAlign: "center",
+    textShadowColor: "rgba(0,0,0,0.75)",
+    textShadowOffset: { height: 2, width: 0 },
+    textShadowRadius: 12
+  },
+  phaseSubtitle: {
+    color: "#ffffff",
+    fontSize: 14,
+    fontWeight: "700",
+    textAlign: "center",
+    textShadowColor: "rgba(0,0,0,0.75)",
+    textShadowOffset: { height: 1, width: 0 },
+    textShadowRadius: 6
   }
 });

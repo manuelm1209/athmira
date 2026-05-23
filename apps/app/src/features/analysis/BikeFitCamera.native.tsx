@@ -52,12 +52,12 @@ export const BikeFitCamera = forwardRef<BikeFitCameraHandle, BikeFitCameraProps>
 
       return snapshot?.uri ?? null;
     },
-    async startAnalysis(durationMs = 8000) {
+    async startAnalysis({ countdownMs = 10000, durationMs = 8000 } = {}) {
       if (!isReady) {
         throw new Error(labels.poseNotReady);
       }
 
-      await new Promise((resolve) => setTimeout(resolve, durationMs));
+      await new Promise((resolve) => setTimeout(resolve, countdownMs + durationMs));
 
       return Array.from({ length: 12 }, (_, index) =>
         analyzePoseFrame({

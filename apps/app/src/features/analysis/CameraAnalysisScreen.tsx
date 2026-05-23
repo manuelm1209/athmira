@@ -43,6 +43,9 @@ export function CameraAnalysisScreen() {
   const [working, setWorking] = useState(false);
   const cameraLabels = {
     analyzing: t("analyzing"),
+    bikeFitComplete: t("bikeFitComplete"),
+    bikeFitGetReady: t("bikeFitGetReady"),
+    bikeFitRecording: t("bikeFitRecording"),
     cameraAnalysisUnavailable: t("cameraAnalysisUnavailable"),
     cameraDenied: t("cameraDenied"),
     cameraEnable: t("cameraEnable"),
@@ -70,7 +73,7 @@ export function CameraAnalysisScreen() {
     setWorking(true);
 
     try {
-      const samples = await cameraRef.current?.startAnalysis();
+      const samples = await cameraRef.current?.startAnalysis({ countdownMs: 10000, durationMs: 8000 });
 
       if (!samples?.length) {
         throw new Error(t("poseNotReady"));
@@ -186,6 +189,7 @@ export function CameraAnalysisScreen() {
           <Text style={styles.instruction}>{t("placeCamera")}</Text>
           <Text style={styles.instruction}>{t("showEntireBike")}</Text>
           <Text style={styles.instruction}>{t("steadyPedaling")}</Text>
+          <Text style={styles.instruction}>{t("bikeFitInstructionCountdown")}</Text>
         </Card>
 
         <BikeFitCamera
