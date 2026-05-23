@@ -150,9 +150,6 @@ const homeCopy = {
     futureTitle: "Built for the road ahead.",
     futureBody:
       "The foundation already supports the next layers: AI coaching, Garmin, Strava, Apple Health, Google Fit, running, swimming, and triathlon modules. The product grows without rebuilding the athlete record.",
-    safetyTitle: "Useful guidance, careful claims.",
-    safetyBody:
-      "athmira provides educational, camera-based guidance. It does not diagnose pain, replace a medical professional, or replace a professional bike fitter. If pain persists, consult a qualified professional.",
     finalTitle: "Make the next ride the start of a smarter system.",
     finalBody:
       "Create your profile, add a bike, run Bike Fit, save pressure and nutrition plans, then let every retest move the story forward."
@@ -235,9 +232,6 @@ const homeCopy = {
     futureTitle: "Construido para lo que viene.",
     futureBody:
       "La base ya soporta las próximas capas: coaching con IA, Garmin, Strava, Apple Health, Google Fit, running, natación y módulos de triatlón. El producto crece sin reconstruir el registro del atleta.",
-    safetyTitle: "Guía útil, promesas cuidadosas.",
-    safetyBody:
-      "athmira ofrece orientación educativa basada en cámara. No diagnostica dolor, no reemplaza a un profesional médico ni a un bike fitter profesional. Si el dolor persiste, consulta con un profesional calificado.",
     finalTitle: "Haz que la próxima rodada empiece un sistema más inteligente.",
     finalBody:
       "Crea tu perfil, agrega una bici, ejecuta Bike Fit, guarda presión y nutrición, y deja que cada re-test mueva la historia hacia adelante."
@@ -297,7 +291,14 @@ export default function WelcomeRoute() {
     <>
       <SeoHead description={homeSeoDescription} jsonLd={homeStructuredData} title={homeSeoTitle} />
       <Screen maxWidth={1280}>
-        <View style={[styles.page, mobile && { maxWidth: mobilePageWidth, width: mobilePageWidth }, mobile && mobilePageWebStyle]}>
+        <View
+          style={[
+            styles.page,
+            mobile && styles.pageMobile,
+            mobile && { maxWidth: mobilePageWidth, width: mobilePageWidth },
+            mobile && mobilePageWebStyle
+          ]}
+        >
         <FadeInView style={[styles.hero, mobile && styles.heroMobile]}>
           <View style={[styles.heroCopy, mobile && styles.heroCopyMobile, mobileBox]}>
             <Heading style={[styles.heroTitle, mobile && styles.heroTitleMobile, mobileBox]}>{copy.heroTitle}</Heading>
@@ -416,21 +417,23 @@ export default function WelcomeRoute() {
         </FadeInView>
 
         <FadeInView delayMs={200} style={[styles.workflow, mobile && styles.workflowMobile]}>
-          <View style={styles.workflowCopy}>
+          <View style={[styles.workflowCopy, mobile && styles.workflowCopyMobile]}>
             <Text style={[styles.sectionTitleLeft, styles.workflowTitle, mobile && styles.sectionTitleMobile, mobileBox]}>
               {copy.workflowTitle}
             </Text>
             <Text style={[styles.sectionBodyLeft, styles.workflowBody, mobileBox]}>{copy.workflowBody}</Text>
           </View>
-          <View style={styles.stepStack}>
+          <View style={[styles.stepStack, mobile && styles.stepStackMobile]}>
             {copy.steps.map((step, index) => (
-              <View key={step.title} style={styles.stepItem}>
-                <View style={styles.stepNumber}>
-                  <Text style={styles.stepNumberText}>{String(index + 1).padStart(2, "0")}</Text>
+              <View key={step.title} style={[styles.stepItem, mobile && styles.stepItemMobile]}>
+                <View style={[styles.stepNumber, mobile && styles.stepNumberMobile]}>
+                  <Text style={[styles.stepNumberText, mobile && styles.stepNumberTextMobile]}>
+                    {String(index + 1).padStart(2, "0")}
+                  </Text>
                 </View>
                 <View style={styles.stepCopy}>
-                  <Text style={styles.stepTitle}>{step.title}</Text>
-                  <Text style={styles.stepBody}>{step.body}</Text>
+                  <Text style={[styles.stepTitle, mobile && styles.stepTitleMobile]}>{step.title}</Text>
+                  <Text style={[styles.stepBody, mobile && styles.stepBodyMobile]}>{step.body}</Text>
                 </View>
               </View>
             ))}
@@ -438,21 +441,21 @@ export default function WelcomeRoute() {
         </FadeInView>
 
         <FadeInView delayMs={250} style={[styles.cockpitSection, mobile && styles.cockpitSectionMobile]}>
-          <View style={styles.dashboardMock}>
-            <View style={styles.mockHeader}>
+          <View style={[styles.dashboardMock, mobile && styles.dashboardMockMobile]}>
+            <View style={[styles.mockHeader, mobile && styles.mockHeaderMobile]}>
               <View>
-                <Text style={styles.mockTitle}>athmira</Text>
-                <Text style={styles.mockSubtitle}>{copy.cockpitTitle}</Text>
+                <Text style={[styles.mockTitle, mobile && styles.mockTitleMobile]}>athmira</Text>
+                <Text style={[styles.mockSubtitle, mobile && styles.mockSubtitleMobile]}>{copy.cockpitTitle}</Text>
               </View>
-              <View style={styles.scoreRing}>
-                <Text style={styles.scoreRingValue}>82</Text>
+              <View style={[styles.scoreRing, mobile && styles.scoreRingMobile]}>
+                <Text style={[styles.scoreRingValue, mobile && styles.scoreRingValueMobile]}>82</Text>
               </View>
             </View>
             <View style={styles.dashboardGrid}>
               {copy.dashboardCards.map((card) => (
-                <View key={card.label} style={styles.dashboardCard}>
+                <View key={card.label} style={[styles.dashboardCard, mobile && styles.dashboardCardMobile]}>
                   <Text style={styles.dashboardLabel}>{card.label}</Text>
-                  <Text style={styles.dashboardValue}>{card.value}</Text>
+                  <Text style={[styles.dashboardValue, mobile && styles.dashboardValueMobile]}>{card.value}</Text>
                   <Text style={styles.dashboardNote}>{card.note}</Text>
                 </View>
               ))}
@@ -476,12 +479,7 @@ export default function WelcomeRoute() {
           </View>
         </FadeInView>
 
-        <FadeInView delayMs={300} style={styles.safetySection}>
-          <Text style={styles.safetyTitle}>{copy.safetyTitle}</Text>
-          <Text style={styles.safetyBody}>{copy.safetyBody}</Text>
-        </FadeInView>
-
-        <FadeInView delayMs={350} style={styles.finalCta}>
+        <FadeInView delayMs={300} style={[styles.finalCta, mobile && styles.finalCtaMobile]}>
           <Image
             accessibilityLabel="Cyclist riding with athmira planning context"
             resizeMode="cover"
@@ -542,6 +540,10 @@ const styles = StyleSheet.create({
     overflow: "hidden",
     paddingBottom: spacing.xxxl,
     width: "100%"
+  },
+  pageMobile: {
+    gap: 44,
+    paddingBottom: spacing.xxl
   },
   hero: {
     alignItems: "center",
@@ -891,27 +893,50 @@ const styles = StyleSheet.create({
   },
   workflowMobile: {
     flexDirection: "column",
-    padding: spacing.xl
+    gap: spacing.xl,
+    padding: spacing.lg,
+    paddingBottom: spacing.xxl
   },
   workflowCopy: {
-    flex: 0.75,
+    flexBasis: 0,
+    flexGrow: 0.75,
+    flexShrink: 1,
     gap: spacing.md,
     minWidth: 260
+  },
+  workflowCopyMobile: {
+    flexBasis: "auto",
+    flexGrow: 0,
+    flexShrink: 0,
+    minWidth: 0,
+    width: "100%"
   },
   workflowTitle: {
     color: colors.white
   },
   workflowBody: {
-    color: "#c6e5e1"
+    color: "#d8f0ed"
   },
   stepStack: {
-    flex: 1,
+    flexBasis: 0,
+    flexGrow: 1,
+    flexShrink: 1,
     gap: spacing.lg
+  },
+  stepStackMobile: {
+    flexBasis: "auto",
+    flexGrow: 0,
+    flexShrink: 0,
+    gap: spacing.md,
+    width: "100%"
   },
   stepItem: {
     alignItems: "flex-start",
     flexDirection: "row",
     gap: spacing.md
+  },
+  stepItemMobile: {
+    gap: spacing.sm
   },
   stepNumber: {
     alignItems: "center",
@@ -921,11 +946,18 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     width: 42
   },
+  stepNumberMobile: {
+    height: 36,
+    width: 36
+  },
   stepNumberText: {
     color: colors.primaryDark,
     fontFamily,
     fontSize: 12,
     fontWeight: typography.weights.black
+  },
+  stepNumberTextMobile: {
+    fontSize: 11
   },
   stepCopy: {
     flex: 1,
@@ -935,13 +967,22 @@ const styles = StyleSheet.create({
     color: colors.white,
     fontFamily,
     fontSize: 18,
-    fontWeight: typography.weights.black
+    fontWeight: typography.weights.black,
+    lineHeight: 23
+  },
+  stepTitleMobile: {
+    fontSize: 16,
+    lineHeight: 21
   },
   stepBody: {
-    color: "#c6e5e1",
+    color: "#d8f0ed",
     fontFamily,
     fontSize: 14,
     lineHeight: 21
+  },
+  stepBodyMobile: {
+    fontSize: 13,
+    lineHeight: 20
   },
   cockpitSection: {
     alignItems: "center",
@@ -963,11 +1004,20 @@ const styles = StyleSheet.create({
     padding: spacing.xl,
     ...shadows.medium
   },
+  dashboardMockMobile: {
+    minWidth: 0,
+    padding: spacing.lg,
+    width: "100%"
+  },
   mockHeader: {
     alignItems: "center",
     flexDirection: "row",
     gap: spacing.lg,
     justifyContent: "space-between"
+  },
+  mockHeaderMobile: {
+    alignItems: "flex-start",
+    gap: spacing.md
   },
   mockTitle: {
     color: colors.primary,
@@ -977,12 +1027,22 @@ const styles = StyleSheet.create({
     letterSpacing: 1.2,
     textTransform: "uppercase"
   },
+  mockTitleMobile: {
+    fontSize: 21,
+    lineHeight: 25
+  },
   mockSubtitle: {
     color: colors.inkMuted,
     fontFamily,
     fontSize: 13,
     fontWeight: typography.weights.bold,
     maxWidth: 360
+  },
+  mockSubtitleMobile: {
+    flexShrink: 1,
+    fontSize: 12,
+    lineHeight: 17,
+    maxWidth: 210
   },
   scoreRing: {
     alignItems: "center",
@@ -994,11 +1054,19 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     width: 78
   },
+  scoreRingMobile: {
+    borderWidth: 4,
+    height: 58,
+    width: 58
+  },
   scoreRingValue: {
     color: colors.ink,
     fontFamily,
     fontSize: 27,
     fontWeight: typography.weights.black
+  },
+  scoreRingValueMobile: {
+    fontSize: 21
   },
   dashboardGrid: {
     flexDirection: "row",
@@ -1015,6 +1083,10 @@ const styles = StyleSheet.create({
     gap: spacing.xs,
     padding: spacing.md
   },
+  dashboardCardMobile: {
+    flexBasis: "100%",
+    padding: spacing.md
+  },
   dashboardLabel: {
     color: colors.inkMuted,
     fontFamily,
@@ -1027,6 +1099,10 @@ const styles = StyleSheet.create({
     fontFamily,
     fontSize: 27,
     fontWeight: typography.weights.black
+  },
+  dashboardValueMobile: {
+    fontSize: 24,
+    lineHeight: 28
   },
   dashboardNote: {
     color: colors.inkMuted,
@@ -1072,27 +1148,6 @@ const styles = StyleSheet.create({
     fontSize: 15,
     lineHeight: 23
   },
-  safetySection: {
-    alignItems: "flex-start",
-    backgroundColor: "#fff8e8",
-    borderColor: "#f4d08c",
-    borderRadius: radii.md,
-    borderWidth: 1,
-    gap: spacing.sm,
-    padding: spacing.xl
-  },
-  safetyTitle: {
-    color: colors.ink,
-    fontFamily,
-    fontSize: 18,
-    fontWeight: typography.weights.black
-  },
-  safetyBody: {
-    color: colors.inkMuted,
-    fontFamily,
-    fontSize: 14,
-    lineHeight: 21
-  },
   finalCta: {
     alignItems: "center",
     backgroundColor: colors.graphite,
@@ -1106,6 +1161,11 @@ const styles = StyleSheet.create({
     padding: spacing.xxl,
     position: "relative",
     ...shadows.medium
+  },
+  finalCtaMobile: {
+    alignItems: "stretch",
+    gap: spacing.lg,
+    padding: spacing.xl
   },
   finalImage: {
     bottom: 0,

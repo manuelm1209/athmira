@@ -304,9 +304,6 @@ export const en = {
   homeProofPrivate: "Built around private athlete data",
   homeProofProgress: "Progress-ready history",
   homeReadyTitle: "Ready to ride smarter?",
-  homeSafetyBody:
-    "athmira is guidance for training and education. It does not replace a doctor, physical therapist, coach, or professional bike fitter.",
-  homeSafetyTitle: "Useful guidance, careful claims",
   homeStatusGood: "Good",
   homeStatusOptimal: "Optimal",
   homeTrustedBy: "Trusted by athletes who want more",
@@ -678,9 +675,6 @@ export const es: Record<keyof typeof en, string> = {
   homeProofPrivate: "Pensado para datos privados",
   homeProofProgress: "Historial listo para progreso",
   homeReadyTitle: "¿Listo para rodar mejor?",
-  homeSafetyBody:
-    "athmira es guía para entrenamiento y educación. No reemplaza a un médico, fisioterapeuta, entrenador o bike fitter profesional.",
-  homeSafetyTitle: "Guía útil, promesas cuidadosas",
   homeStatusGood: "Bien",
   homeStatusOptimal: "Óptimo",
   homeTrustedBy: "Atletas que quieren más confían en athmira",
