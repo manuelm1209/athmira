@@ -96,6 +96,19 @@ Web, iOS, and Android must remain first-class targets. New features should be de
 - Use `native:prebuild`, `native:prebuild:ios`, and `native:prebuild:android` script names for Expo prebuild commands. Do not add npm lifecycle scripts named `prebuild`, because npm runs them automatically before `build`.
 - Keep native app configuration in `apps/app/app.json`, `apps/app/app.config.js`, and `apps/app/eas.json`; document new permissions, entitlements, or build profile changes in README.
 
+## Image and Asset Optimization
+
+Treat every committed image, icon, or media file as a performance and bandwidth cost. The web build, native bundles, and slow mobile networks all pay for oversized assets.
+
+- Optimize before committing. Never check in a raw camera/export PNG, screenshot, or multi-megabyte source file. Resize and recompress to the dimensions actually needed by the UI.
+- Pick the smallest format that preserves quality: prefer JPG (quality ≈70–80) for photos and rendered bike or product shots; use PNG only when transparency matters; use SVG for icons and brand marks; consider WebP/AVIF when a single platform target warrants it.
+- Target reasonable dimensions for the use case. Card images and previews should max out around 1000–1200 px on the longest edge. App icons and thumbnails should be sized to their actual render size at @2x or @3x, not arbitrary large dimensions.
+- Keep file sizes lean. As a rule of thumb: under ~150 KB for content/preview images, under ~50 KB for UI icons or small thumbnails, under ~30 KB for inline logos.
+- Group assets by purpose under `apps/app/assets/<group>/` (e.g. `assets/bikes/`, `assets/home/`, `assets/brand/`) and name them with kebab-case, lowercase, ASCII-only filenames.
+- Centralize image references in a typed `require(...)` mapping module (see `apps/app/src/lib/bike-images.ts` and `apps/app/src/lib/visual-assets.ts`) instead of scattering raw `require` calls through screens.
+- Do not upload original-resolution photos, scans, or designer exports directly to user-facing pages. Optimize them first; if you must keep an original, store it outside the bundled `assets/` directory.
+- When adding new image sets, document any non-obvious source/size choices in this file or in the relevant README.
+
 ## Cybersecurity Requirements
 
 Cybersecurity is a must for every feature. Treat auth, user profile data, bike data, camera/media data, analysis history, and future wearable or AI data as sensitive user data.

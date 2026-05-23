@@ -1,8 +1,9 @@
 import type { BikeType } from "@athmira/types";
 import { colors, radii, spacing } from "@athmira/ui";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Image, Pressable, StyleSheet, Text, View } from "react-native";
 
 import type { TranslationKey } from "@/i18n";
+import { getBikeImage } from "@/lib/bike-images";
 import { useLanguage } from "@/providers/LanguageProvider";
 
 const bikeTypes: { value: BikeType; labelKey: TranslationKey }[] = [
@@ -24,6 +25,9 @@ export function BikeTypeSelector({ value, onChange }: BikeTypeSelectorProps) {
   return (
     <View style={styles.wrapper}>
       <Text style={styles.label}>{t("bikeType")}</Text>
+      <View style={styles.preview}>
+        <Image accessibilityIgnoresInvertColors resizeMode="contain" source={getBikeImage(value)} style={styles.previewImage} />
+      </View>
       <View style={styles.options}>
         {bikeTypes.map((option) => (
           <Pressable
@@ -48,6 +52,22 @@ const styles = StyleSheet.create({
     color: colors.ink,
     fontSize: 14,
     fontWeight: "800"
+  },
+  preview: {
+    alignItems: "center",
+    backgroundColor: colors.surface,
+    borderColor: colors.border,
+    borderRadius: radii.md,
+    borderWidth: 1,
+    justifyContent: "center",
+    overflow: "hidden",
+    paddingVertical: spacing.md
+  },
+  previewImage: {
+    aspectRatio: 3 / 2,
+    height: undefined,
+    maxWidth: 420,
+    width: "100%"
   },
   options: {
     flexDirection: "row",

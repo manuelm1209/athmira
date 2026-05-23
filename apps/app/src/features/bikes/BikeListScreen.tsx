@@ -1,10 +1,11 @@
 import { listBikes } from "@athmira/supabase";
 import type { Bike } from "@athmira/types";
-import { Body, Card, Heading, Inline, Screen, colors, spacing } from "@athmira/ui";
+import { Body, Card, Heading, Inline, Screen, colors, radii, spacing } from "@athmira/ui";
 import { useEffect, useState } from "react";
-import { StyleSheet, Text, View } from "react-native";
+import { Image, StyleSheet, Text, View } from "react-native";
 
 import { LinkButton } from "@/components/LinkButton";
+import { getBikeImage } from "@/lib/bike-images";
 import { useAuth } from "@/providers/AuthProvider";
 import { useLanguage } from "@/providers/LanguageProvider";
 import { getErrorMessage } from "@/utils/form";
@@ -66,18 +67,29 @@ export function BikeListScreen() {
           ) : null}
           {bikes.map((bike) => (
             <Card key={bike.id} style={styles.card}>
+              <View style={styles.cardImageFrame}>
+                <Image
+                  accessibilityIgnoresInvertColors
+                  resizeMode="contain"
+                  source={getBikeImage(bike.bike_type)}
+                  style={styles.cardImage}
+                />
+              </View>
               <View style={styles.cardCopy}>
                 <Text style={styles.title}>{bike.name}</Text>
+                <Text style={styles.type}>{t(bike.bike_type)}</Text>
                 <Text style={styles.meta}>
-                  {[bike.brand, bike.model, bike.size].filter(Boolean).join(" / ") || bike.bike_type}
+                  {[bike.brand, bike.model, bike.size].filter(Boolean).join(" / ") || "—"}
                 </Text>
               </View>
-              <LinkButton href={{ pathname: "/bikes/[id]", params: { id: bike.id } }} variant="secondary">
-                {t("editBike")}
-              </LinkButton>
-              <LinkButton href={{ pathname: "/tire-pressure", params: { bikeId: bike.id } }} variant="ghost">
-                {t("tirePressureConfigure")}
-              </LinkButton>
+              <View style={styles.cardActions}>
+                <LinkButton href={{ pathname: "/bikes/[id]", params: { id: bike.id } }} variant="secondary">
+                  {t("editBike")}
+                </LinkButton>
+                <LinkButton href={{ pathname: "/tire-pressure", params: { bikeId: bike.id } }} variant="ghost">
+                  {t("tirePressureConfigure")}
+                </LinkButton>
+              </View>
             </Card>
           ))}
         </View>
@@ -107,15 +119,44 @@ const styles = StyleSheet.create({
     gap: spacing.md,
     justifyContent: "space-between"
   },
+  cardImageFrame: {
+    alignItems: "center",
+    backgroundColor: colors.surface,
+    borderColor: colors.border,
+    borderRadius: radii.md,
+    borderWidth: 1,
+    flexBasis: 220,
+    flexGrow: 0,
+    height: 130,
+    justifyContent: "center",
+    overflow: "hidden",
+    padding: spacing.sm
+  },
+  cardImage: {
+    height: "100%",
+    width: "100%"
+  },
   cardCopy: {
     flex: 1,
     gap: spacing.xs,
     minWidth: 220
   },
+  cardActions: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: spacing.sm
+  },
   title: {
     color: colors.ink,
     fontSize: 20,
     fontWeight: "900"
+  },
+  type: {
+    color: colors.primaryDark,
+    fontSize: 12,
+    fontWeight: "900",
+    letterSpacing: 0.4,
+    textTransform: "uppercase"
   },
   meta: {
     color: colors.inkMuted,

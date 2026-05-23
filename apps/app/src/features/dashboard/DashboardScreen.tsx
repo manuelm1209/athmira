@@ -16,10 +16,11 @@ import {
 import type { Href } from "expo-router";
 import { Link } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
-import { Platform, Pressable, StyleSheet, Text, View, useWindowDimensions } from "react-native";
+import { Image, Platform, Pressable, StyleSheet, Text, View, useWindowDimensions } from "react-native";
 
 import { LinkButton } from "@/components/LinkButton";
 import type { TranslationKey } from "@/i18n";
+import { getBikeImage } from "@/lib/bike-images";
 import { useAuth } from "@/providers/AuthProvider";
 import { useLanguage } from "@/providers/LanguageProvider";
 import { getErrorMessage } from "@/utils/form";
@@ -257,6 +258,8 @@ export function DashboardScreen() {
                 ))}
               </View>
             </Card>
+
+            <PrimaryBikeCard bike={latestBike} narrow={narrow} />
           </FadeInView>
 
           <FadeInView delayMs={180} style={[styles.sideColumn, !compact && styles.sideColumnDesktop]}>
@@ -390,6 +393,78 @@ function ModuleTile({ compact, module, narrow }: { compact: boolean; module: Das
       </Pressable>
     </Link>
   );
+}
+
+function PrimaryBikeCard({ bike, narrow }: { bike: Bike | null; narrow: boolean }) {
+  const { t } = useLanguage();
+
+  if (!bike) {
+    return (
+      <Card style={styles.bikeCard}>
+        <View style={styles.cardHeaderCopy}>
+          <Text style={styles.sectionTitle}>{t("dashboardPrimaryBike")}</Text>
+          <Text style={styles.sectionHint}>{t("dashboardNoBikeBody")}</Text>
+        </View>
+        <Inline>
+          <LinkButton href="/bikes/new">{t("addBike")}</LinkButton>
+        </Inline>
+      </Card>
+    );
+  }
+
+  const specs: { label: string; value: string }[] = [
+    { label: t("brand"), value: bike.brand ?? "—" },
+    { label: t("model"), value: bike.model ?? "—" },
+    { label: t("size"), value: bike.size ?? "—" },
+    { label: t("saddleHeight"), value: formatMm(bike.saddle_height_mm) },
+    { label: t("saddleSetback"), value: formatMm(bike.saddle_setback_mm) },
+    { label: t("stemLength"), value: formatMm(bike.stem_length_mm) },
+    { label: t("crankLength"), value: formatMm(bike.crank_length_mm) },
+    { label: t("handlebarWidth"), value: formatMm(bike.handlebar_width_mm) }
+  ];
+
+  return (
+    <Card style={styles.bikeCard}>
+      <View style={[styles.cardHeader, narrow && styles.cardHeaderStacked]}>
+        <View style={styles.cardHeaderCopy}>
+          <Text style={styles.sectionTitle}>{t("dashboardPrimaryBike")}</Text>
+          <Text style={styles.sectionHint}>{t("dashboardPrimaryBikeHint")}</Text>
+        </View>
+        <LinkButton href={{ pathname: "/bikes/[id]", params: { id: bike.id } }} variant="secondary">
+          {t("dashboardManageBike")}
+        </LinkButton>
+      </View>
+
+      <View style={[styles.bikeBody, narrow && styles.bikeBodyMobile]}>
+        <View style={[styles.bikeImageFrame, narrow && styles.bikeImageFrameMobile]}>
+          <Image
+            accessibilityIgnoresInvertColors
+            resizeMode="contain"
+            source={getBikeImage(bike.bike_type)}
+            style={styles.bikeImage}
+          />
+        </View>
+        <View style={styles.bikeInfo}>
+          <Text style={styles.bikeType}>{t(bike.bike_type)}</Text>
+          <Text style={styles.bikeName}>{bike.name}</Text>
+          <View style={styles.specsGrid}>
+            {specs.map((spec) => (
+              <View key={spec.label} style={styles.specItem}>
+                <Text style={styles.specLabel}>{spec.label}</Text>
+                <Text numberOfLines={1} style={styles.specValue}>
+                  {spec.value}
+                </Text>
+              </View>
+            ))}
+          </View>
+        </View>
+      </View>
+    </Card>
+  );
+}
+
+function formatMm(value: number | null | undefined) {
+  return typeof value === "number" && Number.isFinite(value) ? `${value} mm` : "—";
 }
 
 function RecentRow({
@@ -612,6 +687,91 @@ function getModuleIconStyle(tone: "accent" | "amber" | "blue" | "primary") {
 const fontFamily = Platform.select({ default: undefined, web: typography.fontFamily });
 
 const styles = StyleSheet.create({
+  bikeBody: {
+    alignItems: "center",
+    flexDirection: "row",
+    gap: spacing.lg
+  },
+  bikeBodyMobile: {
+    alignItems: "stretch",
+    flexDirection: "column"
+  },
+  bikeCard: {
+    gap: spacing.lg,
+    width: "100%"
+  },
+  bikeImage: {
+    height: "100%",
+    width: "100%"
+  },
+  bikeImageFrame: {
+    alignItems: "center",
+    backgroundColor: colors.surface,
+    borderColor: colors.border,
+    borderRadius: radii.md,
+    borderWidth: 1,
+    flexBasis: 260,
+    flexGrow: 0,
+    flexShrink: 0,
+    height: 170,
+    justifyContent: "center",
+    overflow: "hidden",
+    padding: spacing.sm
+  },
+  bikeImageFrameMobile: {
+    flexBasis: "auto",
+    height: 200,
+    width: "100%"
+  },
+  bikeInfo: {
+    flex: 1,
+    gap: spacing.sm,
+    minWidth: 0
+  },
+  bikeName: {
+    color: colors.ink,
+    fontFamily,
+    fontSize: 22,
+    fontWeight: typography.weights.black,
+    lineHeight: 26
+  },
+  bikeType: {
+    color: colors.primaryDark,
+    fontFamily,
+    fontSize: 12,
+    fontWeight: typography.weights.black,
+    letterSpacing: 0.4,
+    textTransform: "uppercase"
+  },
+  specItem: {
+    backgroundColor: colors.surfaceMuted,
+    borderRadius: radii.sm,
+    flexBasis: "30%",
+    flexGrow: 1,
+    gap: 2,
+    minWidth: 110,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs
+  },
+  specLabel: {
+    color: colors.inkMuted,
+    fontFamily,
+    fontSize: 10,
+    fontWeight: typography.weights.black,
+    letterSpacing: 0.2,
+    textTransform: "uppercase"
+  },
+  specValue: {
+    color: colors.ink,
+    fontFamily,
+    fontSize: 14,
+    fontWeight: typography.weights.black
+  },
+  specsGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: spacing.xs
+  },
   cardHeader: {
     alignItems: "flex-start",
     flexDirection: "row",
