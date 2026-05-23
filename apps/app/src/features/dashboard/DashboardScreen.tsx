@@ -16,11 +16,10 @@ import {
 import type { Href } from "expo-router";
 import { Link } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
-import { Image, Platform, Pressable, StyleSheet, Text, View, useWindowDimensions } from "react-native";
+import { Platform, Pressable, StyleSheet, Text, View, useWindowDimensions } from "react-native";
 
 import { LinkButton } from "@/components/LinkButton";
 import type { TranslationKey } from "@/i18n";
-import { visualAssets } from "@/lib/visual-assets";
 import { useAuth } from "@/providers/AuthProvider";
 import { useLanguage } from "@/providers/LanguageProvider";
 import { getErrorMessage } from "@/utils/form";
@@ -31,20 +30,27 @@ type DashboardData = {
 };
 
 type DashboardModule = {
+  code: string;
   detail: TranslationKey;
   href: Href;
   label: TranslationKey;
   metric: string;
-  progress: number;
   tone: "accent" | "amber" | "blue" | "primary";
+};
+
+type PathStepData = {
+  complete: boolean;
+  href: Href;
+  label: string;
+  meta: string;
 };
 
 export function DashboardScreen() {
   const { profile, user } = useAuth();
   const { t, language } = useLanguage();
   const { width } = useWindowDimensions();
-  const compact = width < 940;
-  const narrow = width < 620;
+  const compact = width < 980;
+  const narrow = width < 640;
   const [data, setData] = useState<DashboardData>({ bikes: [], history: [] });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -101,234 +107,222 @@ export function DashboardScreen() {
   const confidenceScore = getLatestConfidenceScore(latestAnalysis);
   const athleteName = profile?.name ? `, ${profile.name.split(" ")[0]}` : "";
   const dateLocale = language === "es" ? "es-CO" : "en-US";
-  const recentPoints = getRecentChartPoints(data.history, dateLocale);
   const primaryAction = getPrimaryAction({ hasAnalysis: data.history.length > 0, hasBike: data.bikes.length > 0 });
   const latestResultsHref = latestAnalysis
     ? ({ pathname: "/analysis/results", params: { sessionId: latestAnalysis.session.id } } as Href)
     : ("/analysis" as Href);
+  const latestBikeHref = latestBike ? (`/bikes/${latestBike.id}` as Href) : ("/bikes/new" as Href);
+
   const modules = useMemo<DashboardModule[]>(
     () => [
       {
+        code: "FIT",
         detail: "dashboardBikeFitDetail",
         href: "/analysis",
         label: "bikeFit",
         metric: latestScore === null ? t("dashboardReady") : `${latestScore}/100`,
-        progress: latestScore ?? setupProgress,
         tone: "primary"
       },
       {
+        code: "KNEE",
         detail: "dashboardFrontKneeDetail",
         href: "/analysis/front-knee",
         label: "frontKneeTitle",
         metric: latestAnalysis?.frontKneeMeasurement?.overall_score
           ? `${Math.round(latestAnalysis.frontKneeMeasurement.overall_score)}/100`
           : t("dashboardReady"),
-        progress: latestAnalysis?.frontKneeMeasurement?.overall_score ?? (data.bikes.length ? 54 : 20),
         tone: "blue"
       },
       {
+        code: "FUEL",
         detail: "dashboardNutritionDetail",
         href: "/nutrition",
         label: "nutrition",
         metric: profile?.weight_kg ? `${profile.weight_kg} kg` : t("dashboardProfileNeeded"),
-        progress: profile?.weight_kg ? 72 : 28,
         tone: "accent"
       },
       {
+        code: "PSI",
         detail: "dashboardPressureDetail",
         href: "/tire-pressure",
         label: "tirePressureNav",
         metric: latestBike ? t(latestBike.bike_type) : t("dashboardBikeNeeded"),
-        progress: latestBike ? 68 : 24,
         tone: "amber"
       }
     ],
-    [data.bikes.length, latestAnalysis, latestBike, latestScore, profile?.weight_kg, setupProgress, t]
+    [latestAnalysis, latestBike, latestScore, profile?.weight_kg, t]
   );
 
-  return (
-    <Screen maxWidth={1240}>
-      <View style={styles.stack}>
-        <FadeInView style={[styles.heroPanel, compact && styles.heroPanelCompact]}>
-          <View style={styles.heroCopy}>
-            <Heading style={styles.heroTitle}>{`${t("greeting")}${athleteName}`}</Heading>
-            <Body style={styles.heroBody}>{t(primaryAction.body)}</Body>
-            <Inline style={styles.heroActions}>
-              <LinkButton href={primaryAction.href}>{t(primaryAction.label)}</LinkButton>
-              <LinkButton href="/bikes/new" variant="secondary">
-                {t("addBike")}
-              </LinkButton>
-              <LinkButton href="/nutrition" variant="ghost">
-                {t("nutrition")}
-              </LinkButton>
-            </Inline>
-          </View>
+  const pathSteps: PathStepData[] = [
+    {
+      complete: profileProgress >= 80,
+      href: "/profile",
+      label: t("dashboardStepProfile"),
+      meta: `${profileProgress}%`
+    },
+    {
+      complete: data.bikes.length > 0,
+      href: data.bikes.length ? "/bikes" : "/bikes/new",
+      label: t("dashboardStepBike"),
+      meta: data.bikes.length ? `${data.bikes.length}/1` : t("dashboardPending")
+    },
+    {
+      complete: data.history.length > 0,
+      href: latestResultsHref,
+      label: t("dashboardStepCamera"),
+      meta: data.history.length ? `${data.history.length}` : t("dashboardPending")
+    },
+    {
+      complete: Boolean(profile?.weight_kg),
+      href: "/nutrition",
+      label: t("dashboardStepNutrition"),
+      meta: profile?.weight_kg ? t("dashboardComplete") : t("dashboardPending")
+    }
+  ];
+  const currentPathIndex = pathSteps.findIndex((step) => !step.complete);
 
-          <View style={styles.heroVisual}>
-            <Image
-              accessibilityLabel="Cyclist training on track"
-              resizeMode="cover"
-              source={visualAssets.aeroTrack}
-              style={styles.heroImage}
-            />
-            <View style={styles.heroOverlay} />
-            <View style={styles.heroMetric}>
-              <Text style={styles.heroMetricLabel}>{t("dashboardSetupScore")}</Text>
-              <Text style={styles.heroMetricValue}>{setupProgress}%</Text>
-              <Text style={styles.heroMetricHint}>{t("dashboardBasedOnYourData")}</Text>
+  return (
+    <Screen maxWidth={1180}>
+      <View style={[styles.stack, narrow && styles.stackMobile]}>
+        <FadeInView style={[styles.heroPanel, compact && styles.heroPanelCompact, narrow && styles.heroPanelMobile]}>
+          <View style={styles.heroCopy}>
+            <Heading style={[styles.heroTitle, narrow && styles.heroTitleMobile]}>{`${t("greeting")}${athleteName}`}</Heading>
+            <Body style={[styles.heroBody, narrow && styles.heroBodyMobile]}>{t(primaryAction.body)}</Body>
+
+            <View style={[styles.nextAction, narrow && styles.nextActionMobile]}>
+              <View style={styles.nextActionCopy}>
+                <Text style={styles.nextActionLabel}>{t("dashboardNextBestAction")}</Text>
+                <Text style={styles.nextActionTitle}>{t(primaryAction.title)}</Text>
+                <Text style={styles.nextActionDetail}>{t(primaryAction.detail)}</Text>
+              </View>
+              <Inline style={styles.heroActions}>
+                <LinkButton href={primaryAction.href}>{t(primaryAction.label)}</LinkButton>
+              </Inline>
             </View>
           </View>
+
+          <Card style={[styles.snapshotCard, compact && styles.snapshotCardCompact]}>
+            <View style={styles.snapshotHeader}>
+              <Text style={styles.sectionTitle}>{t("dashboardQuickSummary")}</Text>
+              <Text style={styles.syncText}>{loading ? t("dashboardLoading") : t("dashboardSynced")}</Text>
+            </View>
+            <View style={[styles.snapshotGrid, narrow && styles.snapshotGridMobile]}>
+              <SnapshotMetric
+                detail={profileProgress >= 80 ? t("dashboardComplete") : t("dashboardPending")}
+                label={t("profile")}
+                tone="primary"
+                value={`${profileProgress}%`}
+              />
+              <SnapshotMetric
+                detail={latestBike?.name ?? t("dashboardBikeNeeded")}
+                label={t("bikes")}
+                tone="blue"
+                value={String(data.bikes.length)}
+              />
+              <SnapshotMetric
+                detail={latestAnalysis ? formatDate(latestAnalysis.session.created_at, dateLocale) : t("dashboardNoData")}
+                label={t("dashboardAnalysisShort")}
+                tone="accent"
+                value={String(data.history.length)}
+              />
+            </View>
+            <View style={styles.setupLine}>
+              <View style={styles.setupLineHeader}>
+                <Text style={styles.setupLineLabel}>{t("dashboardSetupScore")}</Text>
+                <Text style={styles.setupLineValue}>{setupProgress}%</Text>
+              </View>
+              <ProgressBar progress={setupProgress} />
+            </View>
+          </Card>
         </FadeInView>
 
         {error ? <Text style={styles.error}>{error}</Text> : null}
 
-        <FadeInView delayMs={100} style={styles.metricsGrid}>
-          <PerformanceMetric label={t("dashboardBikesCount")} tone="primary" value={String(data.bikes.length)} />
-          <PerformanceMetric label={t("dashboardAnalysesCount")} tone="blue" value={String(data.history.length)} />
-          <PerformanceMetric label={t("dashboardLatestScore")} tone="accent" value={formatScore(latestScore)} />
-          <PerformanceMetric label={t("dashboardProfileComplete")} tone="amber" value={`${profileProgress}%`} />
-        </FadeInView>
-
         <View style={[styles.contentGrid, compact && styles.contentGridCompact]}>
-          <FadeInView delayMs={160} style={styles.leftColumn}>
-            <Card style={styles.overviewCard}>
+          <FadeInView delayMs={120} style={[styles.mainColumn, !compact && styles.mainColumnDesktop]}>
+            <Card style={styles.featurePanel}>
               <View style={[styles.cardHeader, narrow && styles.cardHeaderStacked]}>
                 <View style={styles.cardHeaderCopy}>
-                  <Text style={styles.cardLabel}>{t("dashboardToday")}</Text>
-                  <Text style={styles.cardTitle}>{t("dashboardCommandCenter")}</Text>
+                  <Text style={styles.sectionTitle}>{t("dashboardFeatures")}</Text>
+                  <Text style={styles.sectionHint}>{t("dashboardFeaturesHint")}</Text>
                 </View>
-                <Text style={styles.statusText}>{loading ? t("dashboardLoading") : t("dashboardSynced")}</Text>
-              </View>
-
-              <View style={styles.statusGrid}>
-                <StatusItem
-                  complete={profileProgress >= 80}
-                  label={t("profile")}
-                  value={`${profileProgress}%`}
-                />
-                <StatusItem
-                  complete={data.bikes.length > 0}
-                  label={t("bikes")}
-                  value={data.bikes.length ? `${data.bikes.length}` : t("dashboardPending")}
-                />
-                <StatusItem
-                  complete={Boolean(latestAnalysis)}
-                  label={t("camera")}
-                  value={latestAnalysis ? formatDate(latestAnalysis.session.created_at, dateLocale) : t("dashboardPending")}
-                />
-                <StatusItem
-                  complete={Boolean(profile?.weight_kg)}
-                  label={t("nutrition")}
-                  value={profile?.weight_kg ? `${profile.weight_kg} kg` : t("dashboardPending")}
-                />
-              </View>
-            </Card>
-
-            <View style={[styles.dualGrid, narrow && styles.dualGridCompact]}>
-              <Card style={styles.latestBikeCard}>
-                <View style={styles.cardHeader}>
-                  <View style={styles.cardHeaderCopy}>
-                    <Text style={styles.cardLabel}>{t("latestBike")}</Text>
-                    <Text style={styles.cardTitle}>{latestBike?.name ?? t("dashboardNoBikeTitle")}</Text>
-                  </View>
-                  <View style={styles.bikeIcon}>
-                    <Text style={styles.bikeIconText}>A</Text>
-                  </View>
-                </View>
-                <Text style={styles.cardMeta}>{latestBike ? getBikeMeta(latestBike, t) : t("dashboardNoBikeBody")}</Text>
-                <View style={styles.measureGrid}>
-                  <MiniMeasure label={t("saddleHeight")} value={formatMillimeters(latestBike?.saddle_height_mm)} />
-                  <MiniMeasure label={t("stemLength")} value={formatMillimeters(latestBike?.stem_length_mm)} />
-                  <MiniMeasure label={t("crankLength")} value={formatMillimeters(latestBike?.crank_length_mm)} />
-                </View>
-                <LinkButton href={latestBike ? `/bikes/${latestBike.id}` : "/bikes/new"} variant="secondary">
-                  {latestBike ? t("editBike") : t("addBike")}
+                <LinkButton href="/analysis" variant="secondary">
+                  {t("startBikeFit")}
                 </LinkButton>
-              </Card>
-
-              <Card style={styles.analysisCard}>
-                <View style={styles.cardHeader}>
-                  <View style={styles.cardHeaderCopy}>
-                    <Text style={styles.cardLabel}>{t("dashboardLatestAnalysis")}</Text>
-                    <Text style={styles.cardTitle}>{latestAnalysis?.summary?.title ?? t("dashboardNoAnalysisTitle")}</Text>
-                  </View>
-                  <Text style={styles.dateText}>
-                    {latestAnalysis ? formatDate(latestAnalysis.session.created_at, dateLocale) : t("dashboardPending")}
-                  </Text>
-                </View>
-                <View style={styles.scoreRow}>
-                  <ScorePill label={t("dashboardLatestScore")} value={formatScore(latestScore)} />
-                  <ScorePill label={t("aeroScore")} value={formatScore(latestAeroScore)} />
-                  <ScorePill label={t("confidenceScore")} value={formatScore(confidenceScore)} />
-                </View>
-                <Text style={styles.cardMeta}>
-                  {latestAnalysis ? getRecommendationPreview(latestAnalysis, t) : t("noAnalysisHistory")}
-                </Text>
-                <LinkButton href={latestResultsHref} variant="secondary">
-                  {latestAnalysis ? t("fitResults") : t("startBikeFit")}
-                </LinkButton>
-              </Card>
-            </View>
-
-            <Card style={styles.historyCard}>
-              <View style={[styles.cardHeader, narrow && styles.cardHeaderStacked]}>
-                <View style={styles.cardHeaderCopy}>
-                  <Text style={styles.cardLabel}>{t("dashboardWeeklyLoad")}</Text>
-                  <Text style={styles.cardTitle}>{t("analysisHistory")}</Text>
-                </View>
-                <Text style={styles.deltaText}>
-                  {data.history.length ? `${data.history.length} ${t("dashboardSaved")}` : t("dashboardNoData")}
-                </Text>
               </View>
-              <AnalysisHistoryChart points={recentPoints} />
+
+              <View style={styles.moduleGrid}>
+                {modules.map((module) => (
+                  <ModuleTile compact={compact} key={module.label} module={module} narrow={narrow} />
+                ))}
+              </View>
             </Card>
           </FadeInView>
 
-          <FadeInView delayMs={220} style={styles.rightColumn}>
-            <Card style={styles.actionCard}>
-              <Text style={styles.cardLabelOnDark}>{t("dashboardNextBestAction")}</Text>
-              <Text style={styles.actionTitle}>{t(primaryAction.title)}</Text>
-              <Text style={styles.actionBody}>{t(primaryAction.detail)}</Text>
-              <Inline style={styles.actionButtons}>
-                <LinkButton href={primaryAction.href}>{t(primaryAction.label)}</LinkButton>
-                <LinkButton href="/analysis/front-knee" variant="secondary">
-                  {t("frontKneeTitle")}
-                </LinkButton>
-              </Inline>
-              <View style={styles.safetyNote}>
-                <Text style={styles.safetyNoteText}>{t("educationalNote")}</Text>
+          <FadeInView delayMs={180} style={[styles.sideColumn, !compact && styles.sideColumnDesktop]}>
+            <Card style={styles.recentCard}>
+              <View style={styles.cardHeader}>
+                <View style={styles.cardHeaderCopy}>
+                  <Text style={styles.sectionTitle}>{t("dashboardRecentActivity")}</Text>
+                  <Text style={styles.sectionHint}>{t("dashboardBasedOnYourData")}</Text>
+                </View>
+              </View>
+
+              <View style={styles.recentRows}>
+                <RecentRow
+                  code="BIKE"
+                  detail={latestBike ? getBikeMeta(latestBike, t) : t("dashboardNoBikeBody")}
+                  href={latestBikeHref}
+                  label={t("latestBike")}
+                  metric={data.bikes.length ? t("dashboardComplete") : t("dashboardPending")}
+                  tone="primary"
+                  title={latestBike?.name ?? t("dashboardNoBikeTitle")}
+                />
+                <RecentRow
+                  code="FIT"
+                  detail={
+                    latestAnalysis
+                      ? getRecommendationPreview(latestAnalysis, t)
+                      : t("noAnalysisHistory")
+                  }
+                  href={latestResultsHref}
+                  label={t("dashboardLatestAnalysis")}
+                  metric={latestAnalysis ? `${formatScore(latestScore)}/100` : t("dashboardPending")}
+                  tone="blue"
+                  title={latestAnalysis?.summary?.title ?? t("dashboardNoAnalysisTitle")}
+                />
+              </View>
+
+              <View style={styles.scoreRow}>
+                <ScoreChip label={t("aeroAnalysis")} value={formatScore(latestAeroScore)} />
+                <ScoreChip label={t("confidenceScore")} value={formatScore(confidenceScore)} />
               </View>
             </Card>
 
-            <View style={styles.moduleGrid}>
-              {modules.map((module) => (
-                <ModuleTile key={module.label} module={module} />
-              ))}
-            </View>
-
             <Card style={styles.pathCard}>
-              <Text style={styles.cardLabel}>{t("dashboardYourPath")}</Text>
-              <Text style={styles.cardTitle}>{t("dashboardBuildFoundation")}</Text>
+              <View style={styles.pathHeader}>
+                <View style={styles.cardHeaderCopy}>
+                  <Text style={styles.sectionTitle}>{t("dashboardYourPath")}</Text>
+                  <Text style={styles.sectionHint}>{t("dashboardBuildFoundation")}</Text>
+                </View>
+                <Text style={styles.pathProgress}>{setupProgress}%</Text>
+              </View>
+
               <View style={styles.pathSteps}>
-                <PathStep active complete={profileProgress >= 80} href="/profile" label={t("dashboardStepProfile")} />
-                <PathStep
-                  active={data.bikes.length > 0}
-                  complete={data.bikes.length > 0}
-                  href={data.bikes.length ? "/bikes" : "/bikes/new"}
-                  label={t("dashboardStepBike")}
-                />
-                <PathStep
-                  active={data.history.length > 0}
-                  complete={data.history.length > 0}
-                  href="/analysis"
-                  label={t("dashboardStepCamera")}
-                />
-                <PathStep
-                  active={Boolean(profile?.weight_kg)}
-                  complete={Boolean(profile?.weight_kg)}
-                  href="/nutrition"
-                  label={t("dashboardStepNutrition")}
-                />
+                {pathSteps.map((step, index) => (
+                  <PathStep
+                    complete={step.complete}
+                    current={currentPathIndex === index}
+                    href={step.href}
+                    key={step.label}
+                    label={step.label}
+                    meta={step.meta}
+                  />
+                ))}
+              </View>
+
+              <View style={styles.safetyNote}>
+                <Text style={styles.safetyNoteText}>{t("educationalNote")}</Text>
               </View>
             </Card>
           </FadeInView>
@@ -338,139 +332,152 @@ export function DashboardScreen() {
   );
 }
 
-function PerformanceMetric({
+function SnapshotMetric({
+  detail,
   label,
   tone,
   value
 }: {
+  detail: string;
   label: string;
-  tone: "accent" | "amber" | "blue" | "primary";
+  tone: "accent" | "blue" | "primary";
   value: string;
 }) {
   return (
-    <View style={styles.metricCard}>
-      <View style={[styles.metricTone, getToneStyle(tone)]} />
-      <Text style={styles.metricValue}>{value}</Text>
-      <Text style={styles.metricLabel}>{label}</Text>
+    <View style={styles.snapshotMetric}>
+      <View style={[styles.snapshotDot, getToneStyle(tone)]} />
+      <Text style={styles.snapshotValue}>{value}</Text>
+      <Text numberOfLines={1} style={styles.snapshotLabel}>
+        {label}
+      </Text>
+      <Text numberOfLines={1} style={styles.snapshotDetail}>
+        {detail}
+      </Text>
     </View>
   );
 }
 
-function StatusItem({ complete, label, value }: { complete: boolean; label: string; value: string }) {
-  return (
-    <View style={[styles.statusItem, complete && styles.statusItemComplete]}>
-      <View style={[styles.statusDot, complete && styles.statusDotComplete]} />
-      <View style={styles.statusCopy}>
-        <Text style={styles.statusLabel}>{label}</Text>
-        <Text style={styles.statusValue}>{value}</Text>
-      </View>
-    </View>
-  );
-}
-
-function MiniMeasure({ label, value }: { label: string; value: string }) {
-  return (
-    <View style={styles.miniMeasure}>
-      <Text style={styles.miniMeasureLabel}>{label}</Text>
-      <Text style={styles.miniMeasureValue}>{value}</Text>
-    </View>
-  );
-}
-
-function ScorePill({ label, value }: { label: string; value: string }) {
-  return (
-    <View style={styles.scorePill}>
-      <Text style={styles.scoreLabel}>{label}</Text>
-      <Text style={styles.scoreValue}>{value}</Text>
-    </View>
-  );
-}
-
-function ModuleTile({ module }: { module: DashboardModule }) {
+function ModuleTile({ compact, module, narrow }: { compact: boolean; module: DashboardModule; narrow: boolean }) {
   const { t } = useLanguage();
 
   return (
     <Link href={module.href} asChild>
-      <Pressable accessibilityRole="link" style={({ pressed }) => [styles.moduleTile, pressed && styles.pressedTile]}>
+      <Pressable
+        accessibilityRole="link"
+        style={StyleSheet.flatten([
+          styles.moduleTile,
+          compact && styles.moduleTileCompact,
+          narrow && styles.moduleTileMobile
+        ])}
+      >
         <View style={[styles.moduleIcon, getModuleIconStyle(module.tone)]}>
-          <Text style={styles.moduleIconText}>{t(module.label).slice(0, 1)}</Text>
+          <Text style={styles.moduleIconText}>{module.code}</Text>
         </View>
         <View style={styles.moduleCopy}>
-          <Text style={styles.moduleTitle}>{t(module.label)}</Text>
-          <Text style={styles.moduleDetail}>{t(module.detail)}</Text>
+          <Text numberOfLines={2} style={styles.moduleTitle}>
+            {t(module.label)}
+          </Text>
+          <Text numberOfLines={3} style={styles.moduleDetail}>
+            {t(module.detail)}
+          </Text>
         </View>
-        <Text style={styles.moduleMetric}>{module.metric}</Text>
-        <ProgressBar progress={module.progress} />
+        <View style={styles.moduleFooter}>
+          <Text numberOfLines={1} style={styles.moduleMetric}>
+            {module.metric}
+          </Text>
+          <Text style={styles.moduleArrow}>{">"}</Text>
+        </View>
       </Pressable>
     </Link>
   );
 }
 
-function AnalysisHistoryChart({ points }: { points: { label: string; score: number; value: string }[] }) {
-  const { t } = useLanguage();
-  const hasRealData = points.some((point) => point.score > 0);
-
-  if (!hasRealData) {
-    return (
-      <View style={styles.chartEmpty}>
-        <Text style={styles.chartEmptyTitle}>{t("dashboardNoAnalysisTitle")}</Text>
-        <Text style={styles.chartEmptyText}>{t("noAnalysisHistory")}</Text>
-        <LinkButton href="/analysis" variant="secondary">
-          {t("startBikeFit")}
-        </LinkButton>
-      </View>
-    );
-  }
-
+function RecentRow({
+  code,
+  detail,
+  href,
+  label,
+  metric,
+  title,
+  tone
+}: {
+  code: string;
+  detail: string;
+  href: Href;
+  label: string;
+  metric: string;
+  title: string;
+  tone: "blue" | "primary";
+}) {
   return (
-    <View style={styles.chartPanel}>
-      <View style={styles.chartGridLines}>
-        <View style={styles.chartGridLine} />
-        <View style={styles.chartGridLine} />
-        <View style={styles.chartGridLine} />
-      </View>
-      <View style={styles.chartAxisLabels}>
-        <Text style={styles.chartAxisLabel}>100</Text>
-        <Text style={styles.chartAxisLabel}>50</Text>
-        <Text style={styles.chartAxisLabel}>0</Text>
-      </View>
-      <View style={styles.chartSeries}>
-        {points.map((point, index) => (
-          <View key={`${point.label}-${index}`} style={styles.chartColumn}>
-            <Text style={styles.chartValue}>{point.value}</Text>
-            <View style={styles.chartTrack}>
-              <View style={[styles.chartBar, { height: `${Math.max(8, point.score)}%` }]} />
-              <View style={[styles.chartDot, { bottom: `${Math.max(8, point.score)}%` }]} />
-            </View>
-            <Text style={styles.chartLabel}>{point.label}</Text>
-          </View>
-        ))}
-      </View>
+    <Link href={href} asChild>
+      <Pressable accessibilityRole="link" style={styles.recentRow}>
+        <View style={[styles.recentIcon, getModuleIconStyle(tone)]}>
+          <Text style={styles.recentIconText}>{code}</Text>
+        </View>
+        <View style={styles.recentCopy}>
+          <Text style={styles.recentLabel}>{label}</Text>
+          <Text numberOfLines={1} style={styles.recentTitle}>
+            {title}
+          </Text>
+          <Text numberOfLines={2} style={styles.recentDetail}>
+            {detail}
+          </Text>
+        </View>
+        <View style={styles.recentMeta}>
+          <Text numberOfLines={1} style={styles.recentMetric}>
+            {metric}
+          </Text>
+          <Text style={styles.rowArrow}>{">"}</Text>
+        </View>
+      </Pressable>
+    </Link>
+  );
+}
+
+function ScoreChip({ label, value }: { label: string; value: string }) {
+  return (
+    <View style={styles.scoreChip}>
+      <Text numberOfLines={1} style={styles.scoreChipLabel}>
+        {label}
+      </Text>
+      <Text style={styles.scoreChipValue}>{value}</Text>
     </View>
   );
 }
 
 function PathStep({
-  active,
   complete,
+  current,
   href,
-  label
+  label,
+  meta
 }: {
-  active: boolean;
   complete: boolean;
+  current: boolean;
   href: Href;
   label: string;
+  meta: string;
 }) {
   return (
     <Link href={href} asChild>
-      <Pressable accessibilityRole="link" style={({ pressed }) => [styles.pathStep, pressed && styles.pathStepPressed]}>
-        <View style={styles.pathStepRow}>
-          <View style={[styles.pathMarker, active && styles.pathMarkerActive, complete && styles.pathMarkerComplete]}>
-            <Text style={[styles.pathMarkerText, active && styles.pathMarkerTextActive]}>{complete ? "OK" : ""}</Text>
-          </View>
-          <Text style={[styles.pathLabel, active && styles.pathLabelActive]}>{label}</Text>
-          <Text style={styles.pathArrow}>{">"}</Text>
+      <Pressable
+        accessibilityRole="link"
+        style={StyleSheet.flatten([
+          styles.pathStep,
+          current && styles.pathStepCurrent
+        ])}
+      >
+        <View style={[styles.pathMarker, complete && styles.pathMarkerComplete, current && styles.pathMarkerCurrent]}>
+          <Text style={[styles.pathMarkerText, complete && styles.pathMarkerTextComplete]}>{complete ? "✓" : ""}</Text>
         </View>
+        <Text numberOfLines={1} style={[styles.pathLabel, complete && styles.pathLabelComplete]}>
+          {label}
+        </Text>
+        <Text numberOfLines={1} style={styles.pathMeta}>
+          {meta}
+        </Text>
+        <Text style={styles.rowArrow}>{">"}</Text>
       </Pressable>
     </Link>
   );
@@ -529,10 +536,6 @@ function formatScore(score: number | null) {
   return score === null ? "--" : String(score);
 }
 
-function formatMillimeters(value: number | null | undefined) {
-  return typeof value === "number" ? `${Math.round(value)} mm` : "--";
-}
-
 function formatDate(value: string, locale: string) {
   return new Intl.DateTimeFormat(locale, { day: "numeric", month: "short" }).format(new Date(value));
 }
@@ -548,28 +551,6 @@ function getRecommendationPreview(item: AnalysisHistoryItem, t: (key: Translatio
   const primary = item.recommendations.find((recommendation) => recommendation.is_primary) ?? item.recommendations[0];
 
   return primary?.message ?? t("resultsDisclaimer");
-}
-
-function getRecentChartPoints(history: AnalysisHistoryItem[], locale: string) {
-  const items = history.slice(0, 7).reverse();
-
-  if (!items.length) {
-    return Array.from({ length: 7 }, (_, index) => ({
-      label: `${index + 1}`,
-      score: 0,
-      value: "--"
-    }));
-  }
-
-  return items.map((item) => ({
-    label: formatShortDate(item.session.created_at, locale),
-    score: getLatestScore(item) ?? getLatestConfidenceScore(item) ?? 0,
-    value: formatScore(getLatestScore(item) ?? getLatestConfidenceScore(item))
-  }));
-}
-
-function formatShortDate(value: string, locale: string) {
-  return new Intl.DateTimeFormat(locale, { day: "numeric", month: "short" }).format(new Date(value));
 }
 
 function getPrimaryAction({ hasAnalysis, hasBike }: { hasAnalysis: boolean; hasBike: boolean }) {
@@ -602,12 +583,10 @@ function getPrimaryAction({ hasAnalysis, hasBike }: { hasAnalysis: boolean; hasB
   };
 }
 
-function getToneStyle(tone: "accent" | "amber" | "blue" | "primary") {
+function getToneStyle(tone: "accent" | "blue" | "primary") {
   switch (tone) {
     case "accent":
       return styles.toneAccent;
-    case "amber":
-      return styles.toneAmber;
     case "blue":
       return styles.toneBlue;
     case "primary":
@@ -633,47 +612,6 @@ function getModuleIconStyle(tone: "accent" | "amber" | "blue" | "primary") {
 const fontFamily = Platform.select({ default: undefined, web: typography.fontFamily });
 
 const styles = StyleSheet.create({
-  actionBody: {
-    color: "#d5e3e7",
-    fontFamily,
-    fontSize: 15,
-    lineHeight: 22
-  },
-  actionButtons: {
-    flexWrap: "wrap"
-  },
-  actionCard: {
-    backgroundColor: colors.graphite,
-    borderColor: "#24343d",
-    gap: spacing.md,
-    overflow: "hidden"
-  },
-  actionTitle: {
-    color: colors.white,
-    fontFamily,
-    fontSize: 27,
-    fontWeight: typography.weights.black,
-    lineHeight: 32
-  },
-  analysisCard: {
-    flex: 1,
-    gap: spacing.lg,
-    minWidth: 280
-  },
-  bikeIcon: {
-    alignItems: "center",
-    backgroundColor: colors.primarySoft,
-    borderRadius: radii.md,
-    height: 44,
-    justifyContent: "center",
-    width: 44
-  },
-  bikeIconText: {
-    color: colors.primaryDark,
-    fontFamily,
-    fontSize: 20,
-    fontWeight: typography.weights.black
-  },
   cardHeader: {
     alignItems: "flex-start",
     flexDirection: "row",
@@ -685,152 +623,9 @@ const styles = StyleSheet.create({
     gap: spacing.xs
   },
   cardHeaderStacked: {
-    flexDirection: "column"
-  },
-  cardLabel: {
-    color: colors.primary,
-    fontFamily,
-    fontSize: 12,
-    fontWeight: typography.weights.black,
-    textTransform: "uppercase"
-  },
-  cardLabelOnDark: {
-    color: colors.aqua,
-    fontFamily,
-    fontSize: 12,
-    fontWeight: typography.weights.black,
-    textTransform: "uppercase"
-  },
-  cardMeta: {
-    color: colors.inkMuted,
-    fontFamily,
-    fontSize: 14,
-    fontWeight: typography.weights.medium,
-    lineHeight: 21
-  },
-  cardTitle: {
-    color: colors.ink,
-    fontFamily,
-    fontSize: 22,
-    fontWeight: typography.weights.black,
-    lineHeight: 28
-  },
-  chartBar: {
-    backgroundColor: colors.primary,
-    borderTopLeftRadius: radii.round,
-    borderTopRightRadius: radii.round,
-    bottom: 0,
-    left: "42%",
-    minHeight: 8,
-    position: "absolute",
-    width: 10
-  },
-  chartColumn: {
-    alignItems: "center",
-    flex: 1,
-    gap: spacing.sm,
-    height: "100%",
-    justifyContent: "flex-end"
-  },
-  chartDot: {
-    backgroundColor: colors.surface,
-    borderColor: colors.primary,
-    borderRadius: radii.round,
-    borderWidth: 3,
-    height: 16,
-    left: "50%",
-    marginBottom: -8,
-    marginLeft: -8,
-    position: "absolute",
-    width: 16
-  },
-  chartEmpty: {
-    alignItems: "flex-start",
-    backgroundColor: colors.surfaceMuted,
-    borderRadius: radii.lg,
-    gap: spacing.md,
-    minHeight: 220,
-    padding: spacing.xl
-  },
-  chartEmptyText: {
-    color: colors.inkMuted,
-    fontFamily,
-    fontSize: 14,
-    fontWeight: typography.weights.medium,
-    lineHeight: 21,
-    maxWidth: 560
-  },
-  chartEmptyTitle: {
-    color: colors.ink,
-    fontFamily,
-    fontSize: 20,
-    fontWeight: typography.weights.black
-  },
-  chartGridLine: {
-    backgroundColor: colors.border,
-    height: 1,
-    width: "100%"
-  },
-  chartGridLines: {
-    bottom: 44,
-    justifyContent: "space-between",
-    left: 54,
-    position: "absolute",
-    right: spacing.lg,
-    top: spacing.lg
-  },
-  chartLabel: {
-    color: colors.inkSubtle,
-    fontFamily,
-    fontSize: 11,
-    fontWeight: typography.weights.bold,
-    minHeight: 16,
-    textAlign: "center"
-  },
-  chartPanel: {
-    backgroundColor: colors.surfaceMuted,
-    borderRadius: radii.lg,
-    minHeight: 250,
-    overflow: "hidden",
-    paddingBottom: spacing.md,
-    paddingLeft: 54,
-    paddingRight: spacing.lg,
-    paddingTop: spacing.lg,
-    position: "relative"
-  },
-  chartAxisLabel: {
-    color: colors.inkSubtle,
-    fontFamily,
-    fontSize: 11,
-    fontWeight: typography.weights.bold
-  },
-  chartAxisLabels: {
-    bottom: 44,
-    justifyContent: "space-between",
-    left: spacing.lg,
-    position: "absolute",
-    top: spacing.lg,
-    width: 28
-  },
-  chartSeries: {
-    flexDirection: "row",
-    gap: spacing.md,
-    height: 214,
-    position: "relative"
-  },
-  chartTrack: {
-    alignItems: "center",
-    flex: 1,
-    justifyContent: "flex-end",
-    position: "relative",
-    width: "100%"
-  },
-  chartValue: {
-    color: colors.primaryDark,
-    fontFamily,
-    fontSize: 12,
-    fontWeight: typography.weights.black,
-    minHeight: 16
+    alignItems: "stretch",
+    flexDirection: "column",
+    gap: spacing.lg
   },
   contentGrid: {
     alignItems: "flex-start",
@@ -840,196 +635,90 @@ const styles = StyleSheet.create({
   contentGridCompact: {
     flexDirection: "column"
   },
-  dateText: {
-    color: colors.inkMuted,
-    fontFamily,
-    fontSize: 12,
-    fontWeight: typography.weights.black,
-    textTransform: "uppercase"
-  },
-  deltaText: {
-    color: colors.primaryDark,
-    fontFamily,
-    fontSize: 15,
-    fontWeight: typography.weights.black
-  },
-  dualGrid: {
-    flexDirection: "row",
-    gap: spacing.lg
-  },
-  dualGridCompact: {
-    flexDirection: "column"
-  },
   error: {
     color: colors.danger,
     fontFamily,
     fontWeight: typography.weights.bold
   },
+  featurePanel: {
+    gap: spacing.xl,
+    width: "100%"
+  },
   heroActions: {
+    flexShrink: 0,
     flexWrap: "wrap"
   },
   heroBody: {
-    color: "#d4e5e4",
-    maxWidth: 650
+    color: colors.inkMuted,
+    maxWidth: 680
+  },
+  heroBodyMobile: {
+    fontSize: 15,
+    lineHeight: 22
   },
   heroCopy: {
     flex: 1,
     gap: spacing.lg,
     justifyContent: "center"
   },
-  heroImage: {
-    height: "100%",
-    width: "100%"
-  },
-  heroMetric: {
-    backgroundColor: "rgba(255,255,255,0.95)",
-    borderRadius: radii.lg,
-    bottom: spacing.lg,
-    left: spacing.lg,
-    padding: spacing.md,
-    position: "absolute",
-    width: 170
-  },
-  heroMetricHint: {
-    color: colors.inkMuted,
-    fontFamily,
-    fontSize: 11,
-    fontWeight: typography.weights.bold,
-    lineHeight: 15
-  },
-  heroMetricLabel: {
-    color: colors.inkMuted,
-    fontFamily,
-    fontSize: 12,
-    fontWeight: typography.weights.black,
-    textTransform: "uppercase"
-  },
-  heroMetricValue: {
-    color: colors.primaryDark,
-    fontFamily,
-    fontSize: 38,
-    fontWeight: typography.weights.black,
-    lineHeight: 42
-  },
-  heroOverlay: {
-    backgroundColor: "rgba(6,63,61,0.18)",
-    bottom: 0,
-    left: 0,
-    position: "absolute",
-    right: 0,
-    top: 0
-  },
   heroPanel: {
     alignItems: "stretch",
-    backgroundColor: colors.primaryDark,
+    backgroundColor: "#eef8f8",
+    borderColor: colors.border,
     borderRadius: radii.xl,
+    borderWidth: 1,
     flexDirection: "row",
     gap: spacing.xl,
     overflow: "hidden",
     padding: spacing.xxl,
-    ...shadows.medium
+    ...shadows.soft
   },
   heroPanelCompact: {
     flexDirection: "column"
   },
-  heroTitle: {
-    color: colors.white,
-    fontSize: 36,
-    lineHeight: 42,
-    maxWidth: 700
-  },
-  heroVisual: {
-    backgroundColor: colors.graphite,
+  heroPanelMobile: {
     borderRadius: radii.lg,
-    flex: 0.85,
-    minHeight: 290,
-    minWidth: 280,
-    overflow: "hidden",
-    position: "relative"
-  },
-  historyCard: {
-    gap: spacing.lg
-  },
-  latestBikeCard: {
-    flex: 1,
     gap: spacing.lg,
-    minWidth: 280
+    padding: spacing.lg
   },
-  leftColumn: {
-    flex: 1.15,
-    gap: spacing.lg,
+  heroTitle: {
+    color: colors.ink,
+    fontSize: 38,
+    lineHeight: 44,
+    maxWidth: 720
+  },
+  heroTitleMobile: {
+    fontSize: 30,
+    lineHeight: 36
+  },
+  mainColumn: {
     width: "100%"
   },
-  measureGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: spacing.sm
+  mainColumnDesktop: {
+    flex: 1.35
   },
-  metricCard: {
-    backgroundColor: colors.surface,
-    borderColor: colors.border,
-    borderRadius: radii.lg,
-    borderWidth: 1,
-    flexBasis: 190,
-    flexGrow: 1,
-    gap: spacing.sm,
-    padding: spacing.lg,
-    ...shadows.soft
-  },
-  metricLabel: {
-    color: colors.inkMuted,
+  moduleArrow: {
+    color: colors.primary,
     fontFamily,
-    fontSize: 13,
-    fontWeight: typography.weights.bold
-  },
-  metricTone: {
-    borderRadius: radii.round,
-    height: 8,
-    width: 44
-  },
-  metricValue: {
-    color: colors.ink,
-    fontFamily,
-    fontSize: 34,
-    fontWeight: typography.weights.black,
-    lineHeight: 38
-  },
-  metricsGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: spacing.md
-  },
-  miniMeasure: {
-    backgroundColor: colors.primaryMist,
-    borderRadius: radii.md,
-    flexBasis: 120,
-    flexGrow: 1,
-    gap: spacing.xs,
-    padding: spacing.md
-  },
-  miniMeasureLabel: {
-    color: colors.inkMuted,
-    fontFamily,
-    fontSize: 11,
-    fontWeight: typography.weights.black,
-    textTransform: "uppercase"
-  },
-  miniMeasureValue: {
-    color: colors.ink,
-    fontFamily,
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: typography.weights.black
   },
   moduleCopy: {
     flex: 1,
-    gap: spacing.xs
+    gap: spacing.sm
   },
   moduleDetail: {
     color: colors.inkMuted,
     fontFamily,
     fontSize: 13,
     fontWeight: typography.weights.medium,
-    lineHeight: 18
+    lineHeight: 19
+  },
+  moduleFooter: {
+    alignItems: "center",
+    flexDirection: "row",
+    gap: spacing.sm,
+    justifyContent: "space-between"
   },
   moduleGrid: {
     flexDirection: "row",
@@ -1039,9 +728,9 @@ const styles = StyleSheet.create({
   moduleIcon: {
     alignItems: "center",
     borderRadius: radii.md,
-    height: 36,
+    height: 52,
     justifyContent: "center",
-    width: 36
+    width: 52
   },
   moduleIconAccent: {
     backgroundColor: colors.accentSoft
@@ -1050,7 +739,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.amberSoft
   },
   moduleIconBlue: {
-    backgroundColor: "#e2edff"
+    backgroundColor: "#e3efff"
   },
   moduleIconPrimary: {
     backgroundColor: colors.primarySoft
@@ -1058,102 +747,179 @@ const styles = StyleSheet.create({
   moduleIconText: {
     color: colors.primaryDark,
     fontFamily,
-    fontSize: 16,
-    fontWeight: typography.weights.black
+    fontSize: 11,
+    fontWeight: typography.weights.black,
+    letterSpacing: 0,
+    textTransform: "uppercase"
   },
   moduleMetric: {
     color: colors.primaryDark,
+    flex: 1,
     fontFamily,
     fontSize: 13,
     fontWeight: typography.weights.black
   },
   moduleTile: {
-    backgroundColor: colors.surface,
-    borderColor: colors.border,
-    borderRadius: radii.lg,
+    backgroundColor: "#fbfefe",
+    borderColor: "#cfe2e3",
+    borderRadius: radii.md,
     borderWidth: 1,
-    flexBasis: 230,
+    flexBasis: "46%",
     flexGrow: 1,
-    gap: spacing.md,
+    gap: spacing.lg,
+    justifyContent: "space-between",
+    minHeight: 178,
+    minWidth: 220,
     padding: spacing.lg,
     ...shadows.soft
+  },
+  moduleTileCompact: {
+    flexBasis: "46%",
+    minHeight: 178
+  },
+  moduleTileMobile: {
+    flexBasis: "46%",
+    gap: spacing.md,
+    minHeight: 168,
+    minWidth: 142,
+    padding: spacing.md
   },
   moduleTitle: {
     color: colors.ink,
     fontFamily,
-    fontSize: 17,
-    fontWeight: typography.weights.black
-  },
-  overviewCard: {
-    gap: spacing.lg
-  },
-  pathCard: {
-    gap: spacing.lg
-  },
-  pathArrow: {
-    color: colors.primary,
-    fontFamily,
     fontSize: 18,
     fontWeight: typography.weights.black,
-    marginLeft: "auto"
+    lineHeight: 23
+  },
+  nextAction: {
+    alignItems: "center",
+    backgroundColor: colors.surface,
+    borderColor: colors.border,
+    borderRadius: radii.md,
+    borderWidth: 1,
+    flexDirection: "row",
+    gap: spacing.lg,
+    justifyContent: "space-between",
+    maxWidth: 700,
+    padding: spacing.lg
+  },
+  nextActionCopy: {
+    flex: 1,
+    gap: spacing.xs
+  },
+  nextActionDetail: {
+    color: colors.inkMuted,
+    fontFamily,
+    fontSize: 13,
+    fontWeight: typography.weights.medium,
+    lineHeight: 19
+  },
+  nextActionLabel: {
+    color: colors.primary,
+    fontFamily,
+    fontSize: 12,
+    fontWeight: typography.weights.black,
+    textTransform: "uppercase"
+  },
+  nextActionMobile: {
+    alignItems: "stretch",
+    flexDirection: "column"
+  },
+  nextActionTitle: {
+    color: colors.ink,
+    fontFamily,
+    fontSize: 21,
+    fontWeight: typography.weights.black,
+    lineHeight: 27
+  },
+  pathCard: {
+    gap: spacing.lg,
+    width: "100%"
+  },
+  pathHeader: {
+    alignItems: "flex-start",
+    flexDirection: "row",
+    gap: spacing.md,
+    justifyContent: "space-between"
   },
   pathLabel: {
-    color: colors.inkMuted,
+    color: colors.ink,
     flex: 1,
     fontFamily,
     fontSize: 14,
     fontWeight: typography.weights.bold
   },
-  pathLabelActive: {
+  pathLabelComplete: {
     color: colors.ink
   },
   pathMarker: {
     alignItems: "center",
     backgroundColor: colors.surfaceStrong,
+    borderColor: colors.borderStrong,
     borderRadius: radii.round,
+    borderWidth: 1,
     flexShrink: 0,
-    height: 24,
+    height: 26,
     justifyContent: "center",
-    width: 24
-  },
-  pathMarkerActive: {
-    backgroundColor: colors.primarySoft
+    width: 26
   },
   pathMarkerComplete: {
-    backgroundColor: colors.primary
+    backgroundColor: colors.accent,
+    borderColor: colors.accent
+  },
+  pathMarkerCurrent: {
+    backgroundColor: colors.primarySoft,
+    borderColor: colors.primary
   },
   pathMarkerText: {
     color: colors.inkMuted,
     fontFamily,
-    fontSize: 13,
-    fontWeight: typography.weights.black
+    fontSize: 15,
+    fontWeight: typography.weights.black,
+    lineHeight: 18
   },
-  pathMarkerTextActive: {
-    color: colors.white
+  pathMarkerTextComplete: {
+    color: colors.primaryDark
+  },
+  pathMeta: {
+    color: colors.inkMuted,
+    fontFamily,
+    fontSize: 12,
+    fontWeight: typography.weights.black,
+    maxWidth: 72,
+    textAlign: "right"
+  },
+  pathProgress: {
+    color: colors.primaryDark,
+    fontFamily,
+    fontSize: 24,
+    fontWeight: typography.weights.black,
+    lineHeight: 30
   },
   pathStep: {
-    alignSelf: "stretch",
-    borderRadius: radii.md,
-    marginHorizontal: -spacing.sm,
-    minHeight: 38,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: spacing.xs,
-    width: "100%"
-  },
-  pathStepPressed: {
-    backgroundColor: colors.primaryMist
-  },
-  pathStepRow: {
     alignItems: "center",
+    borderColor: colors.border,
+    borderRadius: radii.md,
+    borderWidth: 1,
     flexDirection: "row",
     gap: spacing.md,
-    width: "100%"
+    minHeight: 52,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm
+  },
+  pathStepCurrent: {
+    backgroundColor: colors.primaryMist,
+    borderColor: colors.primarySoft
+  },
+  pathStepPressed: {
+    opacity: 0.84,
+    transform: [{ translateY: 1 }]
   },
   pathSteps: {
-    gap: spacing.md
+    gap: spacing.sm
   },
   pressedTile: {
-    opacity: 0.82,
+    opacity: 0.84,
     transform: [{ translateY: 1 }]
   },
   progressFill: {
@@ -1167,113 +933,243 @@ const styles = StyleSheet.create({
     height: 8,
     overflow: "hidden"
   },
-  rightColumn: {
-    flex: 0.85,
+  recentCard: {
     gap: spacing.lg,
     width: "100%"
   },
-  safetyNote: {
-    backgroundColor: "rgba(255,255,255,0.08)",
-    borderColor: "rgba(255,255,255,0.12)",
-    borderRadius: radii.md,
-    borderWidth: 1,
-    padding: spacing.md
+  recentCopy: {
+    flex: 1,
+    gap: spacing.xs
   },
-  safetyNoteText: {
-    color: "#cbd9dc",
+  recentDetail: {
+    color: colors.inkMuted,
     fontFamily,
     fontSize: 13,
     fontWeight: typography.weights.medium,
-    lineHeight: 19
+    lineHeight: 18
   },
-  scoreLabel: {
+  recentIcon: {
+    alignItems: "center",
+    borderRadius: radii.md,
+    flexShrink: 0,
+    height: 46,
+    justifyContent: "center",
+    width: 46
+  },
+  recentIconText: {
+    color: colors.primaryDark,
+    fontFamily,
+    fontSize: 10,
+    fontWeight: typography.weights.black,
+    letterSpacing: 0
+  },
+  recentLabel: {
     color: colors.inkMuted,
     fontFamily,
     fontSize: 11,
     fontWeight: typography.weights.black,
     textTransform: "uppercase"
   },
-  scorePill: {
-    backgroundColor: colors.surfaceMuted,
+  recentMeta: {
+    alignItems: "flex-end",
+    gap: spacing.xs,
+    justifyContent: "center",
+    maxWidth: 76
+  },
+  recentMetric: {
+    color: colors.primaryDark,
+    fontFamily,
+    fontSize: 12,
+    fontWeight: typography.weights.black
+  },
+  recentRow: {
+    alignItems: "center",
+    borderColor: colors.border,
     borderRadius: radii.md,
-    flexBasis: 100,
+    borderWidth: 1,
+    flexDirection: "row",
+    gap: spacing.md,
+    minHeight: 96,
+    padding: spacing.md
+  },
+  recentRowPressed: {
+    backgroundColor: colors.primaryMist
+  },
+  recentRows: {
+    gap: spacing.sm
+  },
+  recentTitle: {
+    color: colors.ink,
+    fontFamily,
+    fontSize: 16,
+    fontWeight: typography.weights.black,
+    lineHeight: 21
+  },
+  rowArrow: {
+    color: colors.ink,
+    fontFamily,
+    fontSize: 18,
+    fontWeight: typography.weights.black
+  },
+  safetyNote: {
+    backgroundColor: colors.surfaceMuted,
+    borderColor: colors.border,
+    borderRadius: radii.md,
+    borderWidth: 1,
+    padding: spacing.md
+  },
+  safetyNoteText: {
+    color: colors.inkMuted,
+    fontFamily,
+    fontSize: 12,
+    fontWeight: typography.weights.medium,
+    lineHeight: 18
+  },
+  scoreChip: {
+    backgroundColor: colors.primaryMist,
+    borderColor: colors.primarySoft,
+    borderRadius: radii.md,
+    borderWidth: 1,
+    flexBasis: 132,
     flexGrow: 1,
     gap: spacing.xs,
     padding: spacing.md
+  },
+  scoreChipLabel: {
+    color: colors.inkMuted,
+    fontFamily,
+    fontSize: 11,
+    fontWeight: typography.weights.black,
+    textTransform: "uppercase"
+  },
+  scoreChipValue: {
+    color: colors.ink,
+    fontFamily,
+    fontSize: 22,
+    fontWeight: typography.weights.black,
+    lineHeight: 26
   },
   scoreRow: {
     flexDirection: "row",
     flexWrap: "wrap",
     gap: spacing.sm
   },
-  scoreValue: {
+  sectionHint: {
+    color: colors.inkMuted,
+    fontFamily,
+    fontSize: 14,
+    fontWeight: typography.weights.medium,
+    lineHeight: 20
+  },
+  sectionTitle: {
     color: colors.ink,
     fontFamily,
     fontSize: 22,
-    fontWeight: typography.weights.black
+    fontWeight: typography.weights.black,
+    lineHeight: 28
   },
-  stack: {
-    gap: spacing.xl
+  setupLine: {
+    gap: spacing.sm
   },
-  statusCopy: {
-    flex: 1
-  },
-  statusDot: {
-    backgroundColor: colors.borderStrong,
-    borderRadius: radii.round,
-    height: 10,
-    marginTop: 4,
-    width: 10
-  },
-  statusDotComplete: {
-    backgroundColor: colors.primary
-  },
-  statusGrid: {
+  setupLineHeader: {
+    alignItems: "center",
     flexDirection: "row",
-    flexWrap: "wrap",
-    gap: spacing.md
+    justifyContent: "space-between"
   },
-  statusItem: {
-    alignItems: "flex-start",
-    backgroundColor: colors.surfaceMuted,
-    borderColor: colors.border,
-    borderRadius: radii.md,
-    borderWidth: 1,
-    flexBasis: 180,
-    flexDirection: "row",
-    flexGrow: 1,
-    gap: spacing.md,
-    padding: spacing.md
-  },
-  statusItemComplete: {
-    backgroundColor: colors.primaryMist,
-    borderColor: colors.primarySoft
-  },
-  statusLabel: {
+  setupLineLabel: {
     color: colors.inkMuted,
     fontFamily,
     fontSize: 12,
     fontWeight: typography.weights.black,
     textTransform: "uppercase"
   },
-  statusText: {
+  setupLineValue: {
+    color: colors.primaryDark,
+    fontFamily,
+    fontSize: 18,
+    fontWeight: typography.weights.black
+  },
+  sideColumn: {
+    gap: spacing.lg,
+    width: "100%"
+  },
+  sideColumnDesktop: {
+    flex: 0.9
+  },
+  snapshotCard: {
+    flex: 0.82,
+    gap: spacing.lg,
+    minWidth: 360,
+    padding: spacing.xl
+  },
+  snapshotCardCompact: {
+    flex: 1,
+    minWidth: 0
+  },
+  snapshotDetail: {
+    color: colors.inkMuted,
+    fontFamily,
+    fontSize: 12,
+    fontWeight: typography.weights.medium,
+    maxWidth: 104,
+    textAlign: "center"
+  },
+  snapshotDot: {
+    borderRadius: radii.round,
+    height: 8,
+    width: 42
+  },
+  snapshotGrid: {
+    flexDirection: "row",
+    gap: spacing.md
+  },
+  snapshotGridMobile: {
+    flexWrap: "wrap"
+  },
+  snapshotHeader: {
+    alignItems: "center",
+    flexDirection: "row",
+    gap: spacing.md,
+    justifyContent: "space-between"
+  },
+  snapshotLabel: {
+    color: colors.ink,
+    fontFamily,
+    fontSize: 13,
+    fontWeight: typography.weights.bold,
+    textAlign: "center"
+  },
+  snapshotMetric: {
+    alignItems: "center",
+    backgroundColor: colors.surfaceMuted,
+    borderRadius: radii.md,
+    flex: 1,
+    gap: spacing.xs,
+    minWidth: 96,
+    padding: spacing.md
+  },
+  snapshotValue: {
+    color: colors.ink,
+    fontFamily,
+    fontSize: 28,
+    fontWeight: typography.weights.black,
+    lineHeight: 32
+  },
+  stack: {
+    gap: spacing.xl
+  },
+  stackMobile: {
+    gap: spacing.lg
+  },
+  syncText: {
     color: colors.primary,
     fontFamily,
     fontSize: 12,
     fontWeight: typography.weights.black,
     textTransform: "uppercase"
   },
-  statusValue: {
-    color: colors.ink,
-    fontFamily,
-    fontSize: 16,
-    fontWeight: typography.weights.black
-  },
   toneAccent: {
     backgroundColor: colors.accent
-  },
-  toneAmber: {
-    backgroundColor: colors.amber
   },
   toneBlue: {
     backgroundColor: colors.blue
