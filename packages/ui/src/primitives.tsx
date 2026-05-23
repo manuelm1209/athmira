@@ -57,26 +57,22 @@ export function Card({ children, style }: CardProps) {
 
 export type ScreenProps = PropsWithChildren<{
   centered?: boolean;
+  footer?: ReactNode;
   maxWidth?: number;
 }>;
 
-export function Screen({ children, centered, maxWidth = 1120 }: ScreenProps) {
-  if (Platform.OS === "web") {
-    return (
-      <View style={[styles.screen, centered && styles.centeredScreen]}>
-        <View style={[styles.screenInner, { maxWidth }]}>{children}</View>
-      </View>
-    );
-  }
-
+export function Screen({ children, centered, footer, maxWidth = 1120 }: ScreenProps) {
   return (
     <ScrollView
       automaticallyAdjustKeyboardInsets
-      contentContainerStyle={[styles.screen, styles.nativeScreen, centered && styles.centeredScreen]}
+      contentContainerStyle={[styles.screen, centered && !footer && styles.centeredScreen]}
       contentInsetAdjustmentBehavior="automatic"
       keyboardShouldPersistTaps="handled"
     >
-      <View style={[styles.screenInner, { maxWidth }]}>{children}</View>
+      <View style={[styles.screenInner, { maxWidth }, centered && Boolean(footer) && styles.centeredScreenInner]}>
+        {children}
+      </View>
+      {footer}
     </ScrollView>
   );
 }
@@ -337,12 +333,14 @@ const fontFamily = Platform.select({ default: undefined, web: typography.fontFam
 
 const styles = StyleSheet.create({
   screen: {
-    backgroundColor: colors.background
-  },
-  nativeScreen: {
+    backgroundColor: colors.background,
     flexGrow: 1
   },
   centeredScreen: {
+    justifyContent: "center"
+  },
+  centeredScreenInner: {
+    flexGrow: 1,
     justifyContent: "center"
   },
   screenInner: {

@@ -115,7 +115,7 @@ export function AppShell({ children }: PropsWithChildren) {
   const compactMenuItems = session ? navItems : [...marketingNavItems, ...navItems];
 
   return (
-    <View style={[styles.root, !isNative && styles.webRoot, isNative && styles.nativeRoot]}>
+    <View style={styles.root}>
       <View
         accessibilityLabel="Main navigation"
         style={[
@@ -250,7 +250,7 @@ export function AppShell({ children }: PropsWithChildren) {
           </View>
         )}
       </View>
-      <View style={[styles.content, !isNative && styles.webContent, isNative && styles.nativeContent]}>{children}</View>
+      <View style={styles.content}>{children}</View>
     </View>
   );
 }
@@ -259,13 +259,7 @@ const fontFamily = Platform.select({ default: undefined, web: typography.fontFam
 
 const styles = StyleSheet.create({
   root: {
-    backgroundColor: "#f3f8fa"
-  },
-  webRoot: {
-    display: "block" as never,
-    minHeight: "100vh" as never
-  },
-  nativeRoot: {
+    backgroundColor: "#f3f8fa",
     flex: 1
   },
   header: {
@@ -502,11 +496,7 @@ const styles = StyleSheet.create({
   primaryNavText: {
     color: colors.white
   },
-  content: {},
-  webContent: {
-    display: "block" as never
-  },
-  nativeContent: {
+  content: {
     flex: 1
   }
 });

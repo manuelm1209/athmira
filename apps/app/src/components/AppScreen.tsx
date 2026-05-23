@@ -3,11 +3,10 @@ import { Platform } from "react-native";
 
 import { AppFooter } from "./AppFooter";
 
-export function AppScreen(props: ScreenProps) {
+export function AppScreen({ children, ...props }: ScreenProps) {
   return (
-    <>
-      <Screen {...props} />
-      {Platform.OS === "web" ? <AppFooter /> : null}
-    </>
+    <Screen {...props} footer={Platform.OS === "web" ? <AppFooter /> : undefined}>
+      {children}
+    </Screen>
   );
 }
