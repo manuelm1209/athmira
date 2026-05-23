@@ -1,5 +1,5 @@
 import type { ChangeEvent, CSSProperties, PropsWithChildren, ReactNode } from "react";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Animated,
@@ -141,6 +141,10 @@ type SelectFieldProps = {
 };
 
 export function SelectField({ helper, label, onValueChange, options, placeholder, value }: SelectFieldProps) {
+  const [nativeOpen, setNativeOpen] = useState(false);
+  const selectedOption = options.find((option) => option.value === value) ?? null;
+  const displayValue = selectedOption?.label ?? placeholder ?? "";
+
   if (Platform.OS === "web") {
     return (
       <View style={styles.fieldWrapper}>
@@ -166,22 +170,57 @@ export function SelectField({ helper, label, onValueChange, options, placeholder
   return (
     <View style={styles.fieldWrapper}>
       <Text style={styles.label}>{label}</Text>
-      <View style={styles.optionGrid}>
-        {options.map((option) => {
-          const selected = option.value === value;
-
-          return (
+      <Pressable
+        accessibilityRole="button"
+        accessibilityState={{ expanded: nativeOpen }}
+        onPress={() => setNativeOpen((current) => !current)}
+        style={({ pressed }) => [styles.nativeSelectButton, pressed ? styles.pressed : null]}
+      >
+        <Text
+          numberOfLines={1}
+          style={[styles.nativeSelectValue, !selectedOption && styles.nativeSelectPlaceholder]}
+        >
+          {displayValue}
+        </Text>
+        <Text style={styles.nativeSelectChevron}>{nativeOpen ? "^" : "v"}</Text>
+      </Pressable>
+      {nativeOpen ? (
+        <View style={styles.nativeSelectMenu}>
+          {placeholder ? (
             <Pressable
               accessibilityRole="button"
-              key={option.value}
-              onPress={() => onValueChange(option.value)}
-              style={[styles.optionButton, selected && styles.optionButtonSelected]}
+              onPress={() => {
+                onValueChange("");
+                setNativeOpen(false);
+              }}
+              style={[styles.nativeSelectOption, value === "" && styles.nativeSelectOptionSelected]}
             >
-              <Text style={[styles.optionButtonText, selected && styles.optionButtonTextSelected]}>{option.label}</Text>
+              <Text style={[styles.nativeSelectOptionText, value === "" && styles.nativeSelectOptionTextSelected]}>
+                {placeholder}
+              </Text>
             </Pressable>
-          );
-        })}
-      </View>
+          ) : null}
+          {options.map((option) => {
+            const selected = option.value === value;
+
+            return (
+              <Pressable
+                accessibilityRole="button"
+                key={option.value}
+                onPress={() => {
+                  onValueChange(option.value);
+                  setNativeOpen(false);
+                }}
+                style={[styles.nativeSelectOption, selected && styles.nativeSelectOptionSelected]}
+              >
+                <Text style={[styles.nativeSelectOptionText, selected && styles.nativeSelectOptionTextSelected]}>
+                  {option.label}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </View>
+      ) : null}
       {helper ? <Text style={styles.helper}>{helper}</Text> : null}
     </View>
   );
@@ -395,6 +434,62 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm
   },
+  nativeSelectButton: {
+    alignItems: "center",
+    backgroundColor: colors.surface,
+    borderColor: colors.border,
+    borderRadius: radii.md,
+    borderWidth: 1,
+    flexDirection: "row",
+    gap: spacing.sm,
+    minHeight: 46,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm
+  },
+  nativeSelectValue: {
+    color: colors.ink,
+    flex: 1,
+    fontFamily,
+    fontSize: 16,
+    fontWeight: typography.weights.medium,
+    lineHeight: 22
+  },
+  nativeSelectPlaceholder: {
+    color: colors.inkMuted
+  },
+  nativeSelectChevron: {
+    color: colors.ink,
+    fontFamily,
+    fontSize: 14,
+    fontWeight: typography.weights.black,
+    lineHeight: 18
+  },
+  nativeSelectMenu: {
+    backgroundColor: colors.surface,
+    borderColor: colors.border,
+    borderRadius: radii.md,
+    borderWidth: 1,
+    overflow: "hidden"
+  },
+  nativeSelectOption: {
+    borderBottomColor: colors.border,
+    borderBottomWidth: 1,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.md
+  },
+  nativeSelectOptionSelected: {
+    backgroundColor: colors.primaryMist
+  },
+  nativeSelectOptionText: {
+    color: colors.ink,
+    fontFamily,
+    fontSize: 15,
+    fontWeight: typography.weights.bold,
+    lineHeight: 21
+  },
+  nativeSelectOptionTextSelected: {
+    color: colors.primaryDark
+  },
   helper: {
     color: colors.inkMuted,
     fontFamily,
@@ -480,11 +575,13 @@ const webFieldStyle: CSSProperties = {
   borderWidth: 1,
   boxSizing: "border-box",
   color: colors.ink,
-  font: "inherit",
+  fontFamily: typography.fontFamily,
   fontSize: 16,
+  fontWeight: typography.weights.medium,
+  lineHeight: "22px",
   minHeight: 46,
   outlineColor: colors.primary,
-  padding: `${spacing.sm}px ${spacing.md}px`,
+  padding: `${spacing.sm}px 40px ${spacing.sm}px ${spacing.md}px`,
   width: "100%"
 };
 

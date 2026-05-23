@@ -85,6 +85,8 @@ Use modules/services for:
 
 Web, iOS, and Android must remain first-class targets. New features should be designed as shared TypeScript business logic with thin platform adapters.
 
+- Unless a request explicitly says it is only for web, only for iOS, or only for Android, treat every UI and behavior change as cross-platform work for web, iOS, and Android.
+- When changing shared screens, verify that shared primitives render acceptably on native as well as React Native Web; do not leave native with a different interaction model unless there is a documented platform reason.
 - Prefer Expo SDK modules before adding custom native code.
 - Test native functionality in Expo Go first when possible.
 - Use development builds or EAS builds only when a feature needs a local Expo module, native config plugin, or native dependency outside Expo Go.

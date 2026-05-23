@@ -1,6 +1,6 @@
 import { listAnalysisHistory, listBikes } from "@athmira/supabase";
 import type { AnalysisHistoryItem, Bike, BikeFitDiscipline, BikeFitGoal, BikeFitPainArea } from "@athmira/types";
-import { Body, Button, Card, Heading, Inline, Screen, colors, radii, spacing } from "@athmira/ui";
+import { Body, Button, Card, Heading, Screen, SelectField, colors, radii, spacing } from "@athmira/ui";
 import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
@@ -33,8 +33,21 @@ export function AnalysisStartScreen() {
   const [goal, setGoal] = useState<BikeFitGoal>("balanced");
   const [discipline, setDiscipline] = useState<BikeFitDiscipline>("road_endurance");
   const [painAreas, setPainAreas] = useState<BikeFitPainArea[]>(["none"]);
+  const [setupOpen, setSetupOpen] = useState(false);
+  const [painOpen, setPainOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const selectedBike = bikes.find((bike) => bike.id === selectedBikeId) ?? null;
+  const selectedPainLabel = painAreas.map((painArea) => getPainAreaLabel(painArea, language)).join(", ");
+
+  function handleBikeChange(nextBikeId: string) {
+    const nextBike = bikes.find((bike) => bike.id === nextBikeId);
+
+    setSelectedBikeId(nextBike?.id ?? null);
+
+    if (nextBike) {
+      setDiscipline(getDefaultDiscipline(nextBike.bike_type));
+    }
+  }
 
   useEffect(() => {
     if (!user) {
@@ -122,89 +135,133 @@ export function AnalysisStartScreen() {
           <Heading>{t("startBikeFit")}</Heading>
           <Body>{t("analysisIntro")}</Body>
         </View>
-        <Card style={styles.card}>
-          <Text style={styles.sectionLabel}>{t("cameraInstructions")}</Text>
-          <View style={styles.instructions}>
-            <Text style={styles.instruction}>{t("placeCamera")}</Text>
-            <Text style={styles.instruction}>{t("showEntireBike")}</Text>
-            <Text style={styles.instruction}>{t("steadyPedaling")}</Text>
+        <Card style={styles.setupCard}>
+          <View style={styles.setupHeader}>
+            <View style={styles.setupHeaderCopy}>
+              <Text style={styles.sectionLabel}>{language === "es" ? "Preparar análisis" : "Prepare analysis"}</Text>
+              <Text style={styles.summaryText}>
+                {selectedBike
+                  ? `${selectedBike.name} / ${getGoalLabel(goal, language)} / ${getDisciplineLabel(discipline, language)}`
+                  : language === "es"
+                    ? "Agrega una bici para iniciar."
+                    : "Add a bike to begin."}
+              </Text>
+            </View>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityState={{ expanded: setupOpen }}
+              onPress={() => setSetupOpen((current) => !current)}
+              style={styles.disclosureButton}
+            >
+              <Text style={styles.disclosureButtonText}>{setupOpen ? "−" : "+"}</Text>
+            </Pressable>
           </View>
-          <Text style={styles.sectionLabel}>{t("chooseBike")}</Text>
+
           {bikes.length === 0 ? (
             <View style={styles.empty}>
               <Body>{t("noBikes")}</Body>
               <LinkButton href="/bikes/new">{t("addBike")}</LinkButton>
             </View>
           ) : (
-            <View style={styles.bikeList}>
-              {bikes.map((bike) => (
-                <Pressable
-                  accessibilityRole="button"
-                  key={bike.id}
-                  onPress={() => {
-                    setSelectedBikeId(bike.id);
-                    setDiscipline(getDefaultDiscipline(bike.bike_type));
-                  }}
-                  style={[styles.bikeOption, selectedBikeId === bike.id && styles.selectedBike]}
-                >
-                  <Text style={[styles.bikeName, selectedBikeId === bike.id && styles.selectedBikeText]}>
-                    {bike.name}
-                  </Text>
-                  <Text style={[styles.bikeMeta, selectedBikeId === bike.id && styles.selectedBikeText]}>
-                    {[bike.brand, bike.model].filter(Boolean).join(" / ") || bike.bike_type}
-                  </Text>
-                </Pressable>
-              ))}
+            <View style={styles.selectGrid}>
+              <View style={styles.selectColumn}>
+                <SelectField
+                  label={t("chooseBike")}
+                  onValueChange={handleBikeChange}
+                  options={bikes.map((bike) => ({
+                    label: bike.name,
+                    value: bike.id
+                  }))}
+                  value={selectedBikeId ?? ""}
+                />
+              </View>
+              <View style={styles.selectColumn}>
+                <SelectField
+                  label={language === "es" ? "Objetivo" : "Goal"}
+                  onValueChange={(nextGoal) => setGoal(nextGoal as BikeFitGoal)}
+                  options={bikeFitGoals.map((nextGoal) => ({
+                    label: getGoalLabel(nextGoal, language),
+                    value: nextGoal
+                  }))}
+                  value={goal}
+                />
+              </View>
+              <View style={styles.selectColumn}>
+                <SelectField
+                  label={language === "es" ? "Disciplina" : "Discipline"}
+                  onValueChange={(nextDiscipline) => setDiscipline(nextDiscipline as BikeFitDiscipline)}
+                  options={bikeFitDisciplines.map((nextDiscipline) => ({
+                    label: getDisciplineLabel(nextDiscipline, language),
+                    value: nextDiscipline
+                  }))}
+                  value={discipline}
+                />
+              </View>
             </View>
           )}
-          <Text style={styles.sectionLabel}>{language === "es" ? "Objetivo" : "Goal"}</Text>
-          <View style={styles.optionGrid}>
-            {bikeFitGoals.map((nextGoal) => (
-              <OptionButton
-                key={nextGoal}
-                label={getGoalLabel(nextGoal, language)}
-                onPress={() => setGoal(nextGoal)}
-                selected={goal === nextGoal}
-              />
-            ))}
-          </View>
-          <Text style={styles.sectionLabel}>{language === "es" ? "Disciplina" : "Discipline"}</Text>
-          <View style={styles.optionGrid}>
-            {bikeFitDisciplines.map((nextDiscipline) => (
-              <OptionButton
-                key={nextDiscipline}
-                label={getDisciplineLabel(nextDiscipline, language)}
-                onPress={() => setDiscipline(nextDiscipline)}
-                selected={discipline === nextDiscipline}
-              />
-            ))}
-          </View>
-          <Text style={styles.helperText}>
-            {language === "es"
-              ? `Perfil seleccionado: ${selectedBike ? selectedBike.name : "sin bici"} / ${getGoalLabel(goal, language)} / ${getDisciplineLabel(discipline, language)}`
-              : `Selected profile: ${selectedBike ? selectedBike.name : "no bike"} / ${getGoalLabel(goal, language)} / ${getDisciplineLabel(discipline, language)}`}
-          </Text>
-          <Text style={styles.sectionLabel}>{language === "es" ? "Molestias actuales" : "Current discomfort"}</Text>
-          <View style={styles.optionGrid}>
-            {bikeFitPainAreas.map((painArea) => (
-              <OptionButton
-                key={painArea}
-                label={getPainAreaLabel(painArea, language)}
-                onPress={() => setPainAreas((current) => togglePainArea(current, painArea))}
-                selected={painAreas.includes(painArea)}
-              />
-            ))}
-          </View>
+
+          {setupOpen ? (
+            <View style={styles.instructions}>
+              <Text style={styles.instruction}>{t("placeCamera")}</Text>
+              <Text style={styles.instruction}>{t("showEntireBike")}</Text>
+              <Text style={styles.instruction}>{t("steadyPedaling")}</Text>
+            </View>
+          ) : null}
+
+          <View style={styles.divider} />
+
+          <Pressable
+            accessibilityRole="button"
+            accessibilityState={{ expanded: painOpen }}
+            onPress={() => setPainOpen((current) => !current)}
+            style={styles.compactDisclosure}
+          >
+            <View style={styles.compactDisclosureCopy}>
+              <Text style={styles.compactDisclosureLabel}>{language === "es" ? "Molestias" : "Discomfort"}</Text>
+              <Text style={styles.compactDisclosureValue}>{selectedPainLabel}</Text>
+            </View>
+            <Text style={styles.compactDisclosureIcon}>{painOpen ? "−" : "+"}</Text>
+          </Pressable>
+
+          {painOpen ? (
+            <View style={styles.optionGrid}>
+              {bikeFitPainAreas.map((painArea) => (
+                <OptionButton
+                  key={painArea}
+                  label={getPainAreaLabel(painArea, language)}
+                  onPress={() => setPainAreas((current) => togglePainArea(current, painArea))}
+                  selected={painAreas.includes(painArea)}
+                />
+              ))}
+            </View>
+          ) : null}
           {error ? <Text style={styles.error}>{error}</Text> : null}
-          <Inline>
-            <Button disabled={bikes.length === 0} onPress={openCamera}>
-              {t("sideFitAnalysis")}
-            </Button>
-            <Button disabled={bikes.length === 0} onPress={openFrontKneeCamera} variant="secondary">
-              {t("frontKneeTitle")}
-            </Button>
-          </Inline>
         </Card>
+
+        <View style={styles.analysisChoiceGrid}>
+          <AnalysisChoice
+            body={
+              language === "es"
+                ? "Para revisar postura lateral, ángulos clave, aero estimado y recomendaciones de fit."
+                : "Review side posture, key angles, estimated aero guidance, and fit recommendations."
+            }
+            disabled={bikes.length === 0}
+            onPress={openCamera}
+            title={t("sideFitAnalysis")}
+          />
+          <AnalysisChoice
+            body={
+              language === "es"
+                ? "Para observar movimiento frontal de rodillas, estabilidad y desviación lateral."
+                : "Track frontal knee movement, stability, and side-to-side drift."
+            }
+            disabled={bikes.length === 0}
+            onPress={openFrontKneeCamera}
+            secondary
+            title={t("frontKneeTitle")}
+          />
+        </View>
+
         <Card style={styles.card}>
           <Text style={styles.sectionLabel}>{t("analysisHistory")}</Text>
           {history.length ? (
@@ -223,6 +280,34 @@ export function AnalysisStartScreen() {
         </Card>
       </View>
     </Screen>
+  );
+}
+
+function AnalysisChoice({
+  body,
+  disabled,
+  onPress,
+  secondary,
+  title
+}: {
+  body: string;
+  disabled: boolean;
+  onPress: () => void;
+  secondary?: boolean;
+  title: string;
+}) {
+  const { language } = useLanguage();
+
+  return (
+    <View style={[styles.analysisChoice, disabled && styles.analysisChoiceDisabled]}>
+      <View style={styles.analysisChoiceCopy}>
+        <Text style={styles.analysisChoiceTitle}>{title}</Text>
+        <Text style={styles.analysisChoiceBody}>{body}</Text>
+      </View>
+      <Button disabled={disabled} onPress={onPress} variant={secondary ? "secondary" : "primary"} style={styles.analysisChoiceButton}>
+        {language === "es" ? "Continuar" : "Continue"}
+      </Button>
+    </View>
   );
 }
 
@@ -355,27 +440,72 @@ const styles = StyleSheet.create({
   card: {
     gap: spacing.lg
   },
+  setupCard: {
+    gap: spacing.md
+  },
+  setupHeader: {
+    alignItems: "center",
+    flexDirection: "row",
+    gap: spacing.md,
+    justifyContent: "space-between"
+  },
+  setupHeaderCopy: {
+    flex: 1,
+    gap: spacing.xs
+  },
+  summaryText: {
+    color: colors.ink,
+    fontSize: 18,
+    fontWeight: "900",
+    lineHeight: 24
+  },
+  disclosureButton: {
+    alignItems: "center",
+    backgroundColor: colors.primaryMist,
+    borderColor: colors.border,
+    borderRadius: radii.round,
+    borderWidth: 1,
+    height: 36,
+    justifyContent: "center",
+    width: 36
+  },
+  disclosureButtonText: {
+    color: colors.primary,
+    fontSize: 22,
+    fontWeight: "900",
+    lineHeight: 24
+  },
   sectionLabel: {
     color: colors.primary,
     fontSize: 13,
     fontWeight: "900",
     textTransform: "uppercase"
   },
+  selectGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: spacing.md
+  },
+  selectColumn: {
+    flexBasis: 230,
+    flexGrow: 1
+  },
   instructions: {
-    gap: spacing.sm
+    backgroundColor: colors.primaryMist,
+    borderColor: colors.border,
+    borderRadius: radii.md,
+    borderWidth: 1,
+    gap: spacing.sm,
+    padding: spacing.md
   },
   instruction: {
-    color: colors.ink,
-    fontSize: 16,
-    lineHeight: 22
+    color: colors.inkMuted,
+    fontSize: 14,
+    fontWeight: "700",
+    lineHeight: 20
   },
   empty: {
     alignItems: "flex-start",
-    gap: spacing.md
-  },
-  bikeList: {
-    flexDirection: "row",
-    flexWrap: "wrap",
     gap: spacing.md
   },
   optionGrid: {
@@ -383,28 +513,9 @@ const styles = StyleSheet.create({
     flexWrap: "wrap",
     gap: spacing.sm
   },
-  bikeOption: {
-    backgroundColor: colors.surface,
-    borderColor: colors.border,
-    borderRadius: radii.md,
-    borderWidth: 1,
-    flexBasis: 220,
-    flexGrow: 1,
-    gap: spacing.xs,
-    padding: spacing.md
-  },
   selectedBike: {
     backgroundColor: colors.primary,
     borderColor: colors.primary
-  },
-  bikeName: {
-    color: colors.ink,
-    fontSize: 17,
-    fontWeight: "900"
-  },
-  bikeMeta: {
-    color: colors.inkMuted,
-    fontSize: 13
   },
   selectedBikeText: {
     color: "#ffffff"
@@ -422,14 +533,77 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "900"
   },
-  helperText: {
+  divider: {
+    backgroundColor: colors.border,
+    height: 1
+  },
+  compactDisclosure: {
+    alignItems: "center",
+    flexDirection: "row",
+    gap: spacing.md,
+    justifyContent: "space-between"
+  },
+  compactDisclosureCopy: {
+    flex: 1,
+    gap: 2
+  },
+  compactDisclosureLabel: {
     color: colors.inkMuted,
-    fontSize: 14,
+    fontSize: 12,
+    fontWeight: "900",
+    textTransform: "uppercase"
+  },
+  compactDisclosureValue: {
+    color: colors.ink,
+    fontSize: 15,
+    fontWeight: "800",
     lineHeight: 20
+  },
+  compactDisclosureIcon: {
+    color: colors.primary,
+    fontSize: 22,
+    fontWeight: "900",
+    lineHeight: 24
   },
   error: {
     color: colors.danger,
     fontWeight: "800"
+  },
+  analysisChoiceGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: spacing.md
+  },
+  analysisChoice: {
+    backgroundColor: colors.surface,
+    borderColor: colors.border,
+    borderRadius: radii.md,
+    borderWidth: 1,
+    flexBasis: 280,
+    flexGrow: 1,
+    gap: spacing.lg,
+    justifyContent: "space-between",
+    padding: spacing.lg
+  },
+  analysisChoiceDisabled: {
+    opacity: 0.65
+  },
+  analysisChoiceCopy: {
+    gap: spacing.sm
+  },
+  analysisChoiceTitle: {
+    color: colors.ink,
+    fontSize: 18,
+    fontWeight: "900",
+    lineHeight: 24
+  },
+  analysisChoiceBody: {
+    color: colors.inkMuted,
+    fontSize: 14,
+    lineHeight: 20
+  },
+  analysisChoiceButton: {
+    alignSelf: "flex-start"
   },
   historyList: {
     gap: spacing.md
