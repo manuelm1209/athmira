@@ -246,7 +246,7 @@ export const BikeFitCamera = forwardRef<BikeFitCameraHandle, BikeFitCameraProps>
 
     const side = selectCyclingSide(result.keypoints);
     drawSegments(context, result.keypoints, side);
-    drawKeypoints(context, result.keypoints);
+    drawKeypoints(context, result.keypoints, side);
     drawAngleLabels(context, result.keypoints, side, result.angles);
   }
 
@@ -296,6 +296,11 @@ function createResultFromPose(
   return createPoseFrameResult(keypoints, frame);
 }
 
+const SKELETON_COLOR = "#b7e64a";
+const SKELETON_GLOW = "rgba(183, 230, 74, 0.55)";
+const LABEL_BG = "rgba(13, 27, 34, 0.82)";
+const LABEL_BORDER = "rgba(183, 230, 74, 0.85)";
+
 function drawSegments(context: CanvasRenderingContext2D, keypoints: PoseKeypoint[], side: "left" | "right") {
   const segments: [string, string][] = [
     [`${side}_shoulder`, `${side}_elbow`],
@@ -305,10 +310,13 @@ function drawSegments(context: CanvasRenderingContext2D, keypoints: PoseKeypoint
     [`${side}_knee`, `${side}_ankle`]
   ];
 
+  context.save();
   context.lineCap = "round";
   context.lineJoin = "round";
-  context.lineWidth = 8;
-  context.strokeStyle = "rgba(12, 175, 215, 0.92)";
+  context.shadowColor = SKELETON_GLOW;
+  context.shadowBlur = 6;
+  context.lineWidth = 3;
+  context.strokeStyle = SKELETON_COLOR;
 
   for (const [startName, endName] of segments) {
     const start = findKeypoint(keypoints, startName);
@@ -323,22 +331,42 @@ function drawSegments(context: CanvasRenderingContext2D, keypoints: PoseKeypoint
     context.lineTo(end.x, end.y);
     context.stroke();
   }
+  context.restore();
 }
 
-function drawKeypoints(context: CanvasRenderingContext2D, keypoints: PoseKeypoint[]) {
+function drawKeypoints(context: CanvasRenderingContext2D, keypoints: PoseKeypoint[], side: "left" | "right") {
+  const tracked = new Set([
+    `${side}_shoulder`,
+    `${side}_elbow`,
+    `${side}_wrist`,
+    `${side}_hip`,
+    `${side}_knee`,
+    `${side}_ankle`
+  ]);
+
+  context.save();
   for (const keypoint of keypoints) {
-    if (keypoint.confidence < 0.35) {
+    if (keypoint.confidence < 0.35 || !tracked.has(keypoint.name)) {
       continue;
     }
 
+    context.shadowColor = SKELETON_GLOW;
+    context.shadowBlur = 8;
     context.beginPath();
-    context.arc(keypoint.x, keypoint.y, 9, 0, Math.PI * 2);
-    context.fillStyle = "#ff2d16";
+    context.arc(keypoint.x, keypoint.y, 5.5, 0, Math.PI * 2);
+    context.lineWidth = 2;
+    context.strokeStyle = SKELETON_COLOR;
+    context.fillStyle = "rgba(13, 27, 34, 0.9)";
     context.fill();
-    context.lineWidth = 3;
-    context.strokeStyle = "#ffffff";
     context.stroke();
+
+    context.shadowBlur = 0;
+    context.beginPath();
+    context.arc(keypoint.x, keypoint.y, 1.8, 0, Math.PI * 2);
+    context.fillStyle = SKELETON_COLOR;
+    context.fill();
   }
+  context.restore();
 }
 
 function drawAngleLabels(
@@ -347,35 +375,96 @@ function drawAngleLabels(
   side: "left" | "right",
   angles: JointAngles
 ) {
-  drawLabel(context, formatAngle("Knee", angles.kneeAngle), findKeypoint(keypoints, `${side}_knee`));
-  drawLabel(context, formatAngle("Hip", angles.hipAngle), findKeypoint(keypoints, `${side}_hip`));
-  drawLabel(context, formatAngle("Torso", angles.torsoAngle), findKeypoint(keypoints, `${side}_shoulder`));
-  drawLabel(context, formatAngle("Elbow", angles.elbowAngle), findKeypoint(keypoints, `${side}_elbow`));
+  drawAngleBadge(context, "Knee", angles.kneeAngle, findKeypoint(keypoints, `${side}_knee`), "right");
+  drawAngleBadge(context, "Hip", angles.hipAngle, findKeypoint(keypoints, `${side}_hip`), "left");
+  drawAngleBadge(context, "Torso", angles.torsoAngle, findKeypoint(keypoints, `${side}_shoulder`), "up");
+  drawAngleBadge(context, "Elbow", angles.elbowAngle, findKeypoint(keypoints, `${side}_elbow`), "right");
 }
 
-function drawLabel(context: CanvasRenderingContext2D, label: string | null, point?: PoseKeypoint) {
-  if (!label || !point) {
+function drawAngleBadge(
+  context: CanvasRenderingContext2D,
+  label: string,
+  value: number | undefined,
+  point: PoseKeypoint | undefined,
+  direction: "left" | "right" | "up" | "down"
+) {
+  if (typeof value !== "number" || !point) {
     return;
   }
 
-  context.font = "700 22px system-ui, -apple-system, BlinkMacSystemFont, sans-serif";
+  const labelText = label.toUpperCase();
+  const valueText = `${value}°`;
+
+  context.save();
+  context.font = "600 10px system-ui, -apple-system, BlinkMacSystemFont, sans-serif";
+  const labelWidth = context.measureText(labelText).width;
+  context.font = "700 18px system-ui, -apple-system, BlinkMacSystemFont, sans-serif";
+  const valueWidth = context.measureText(valueText).width;
+
   const paddingX = 10;
   const paddingY = 7;
-  const metrics = context.measureText(label);
-  const width = metrics.width + paddingX * 2;
-  const height = 36;
-  const x = point.x + 14;
-  const y = point.y - height - 8;
+  const innerWidth = Math.max(labelWidth, valueWidth);
+  const width = innerWidth + paddingX * 2;
+  const height = 38;
+  const offset = 28;
 
-  context.fillStyle = "rgba(20, 35, 29, 0.78)";
+  let x: number;
+  let y: number;
+  switch (direction) {
+    case "left":
+      x = point.x - width - offset;
+      y = point.y - height / 2;
+      break;
+    case "up":
+      x = point.x - width / 2;
+      y = point.y - height - offset;
+      break;
+    case "down":
+      x = point.x - width / 2;
+      y = point.y + offset;
+      break;
+    case "right":
+    default:
+      x = point.x + offset;
+      y = point.y - height / 2;
+      break;
+  }
+
+  context.strokeStyle = LABEL_BORDER;
+  context.lineWidth = 1;
+  context.setLineDash([3, 3]);
+  context.beginPath();
+  context.moveTo(point.x, point.y);
+  context.lineTo(clamp(point.x, x, x + width), clamp(point.y, y, y + height));
+  context.stroke();
+  context.setLineDash([]);
+
+  context.fillStyle = LABEL_BG;
+  context.strokeStyle = LABEL_BORDER;
+  context.lineWidth = 1.25;
   roundRect(context, x, y, width, height, 8);
   context.fill();
+  context.stroke();
+
+  context.textBaseline = "top";
+  context.fillStyle = "rgba(183, 230, 74, 0.95)";
+  context.font = "600 10px system-ui, -apple-system, BlinkMacSystemFont, sans-serif";
+  context.fillText(labelText, x + paddingX, y + paddingY - 1);
+
   context.fillStyle = "#ffffff";
-  context.fillText(label, x + paddingX, y + height - paddingY - 2);
+  context.font = "700 18px system-ui, -apple-system, BlinkMacSystemFont, sans-serif";
+  context.fillText(valueText, x + paddingX, y + paddingY + 9);
+  context.restore();
 }
 
-function formatAngle(label: string, value?: number): string | null {
-  return typeof value === "number" ? `${label} ${value}°` : null;
+function clamp(origin: number, lower: number, upper: number): number {
+  if (origin < lower) {
+    return lower;
+  }
+  if (origin > upper) {
+    return upper;
+  }
+  return origin;
 }
 
 function roundRect(context: CanvasRenderingContext2D, x: number, y: number, width: number, height: number, radius: number) {
