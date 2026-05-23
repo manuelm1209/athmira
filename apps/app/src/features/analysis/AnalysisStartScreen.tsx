@@ -1,9 +1,10 @@
-import { listAnalysisHistory, listBikes } from "@athmira/supabase";
+import { deleteFitSession, listAnalysisHistory, listBikes } from "@athmira/supabase";
 import type { AnalysisHistoryItem, Bike, BikeFitDiscipline, BikeFitGoal, BikeFitPainArea } from "@athmira/types";
-import { Body, Button, Card, Heading, SelectField, colors, radii, spacing } from "@athmira/ui";
+import { Body, Button, Card, Heading, Inline, SelectField, colors, radii, shadows, spacing } from "@athmira/ui";
 import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { createElement } from "react";
+import { Modal, Platform, Pressable, StyleSheet, Text, View } from "react-native";
 import { AppScreen as Screen } from "@/components/AppScreen";
 
 import { LinkButton } from "@/components/LinkButton";
@@ -36,6 +37,37 @@ export function AnalysisStartScreen() {
   const [painAreas, setPainAreas] = useState<BikeFitPainArea[]>(["none"]);
   const [painOpen, setPainOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [pendingDeleteSessionId, setPendingDeleteSessionId] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
+  const pendingDeleteItem = pendingDeleteSessionId
+    ? history.find((item) => item.session.id === pendingDeleteSessionId) ?? null
+    : null;
+
+  async function performDeleteHistory() {
+    if (!user || !pendingDeleteSessionId) {
+      return;
+    }
+
+    const sessionId = pendingDeleteSessionId;
+    setDeleting(true);
+
+    try {
+      await deleteFitSession(user.id, sessionId);
+      setHistory((current) => current.filter((item) => item.session.id !== sessionId));
+      setPendingDeleteSessionId(null);
+    } catch (deleteError) {
+      setError(getErrorMessage(deleteError));
+    } finally {
+      setDeleting(false);
+    }
+  }
+
+  function cancelDeleteHistory() {
+    if (deleting) {
+      return;
+    }
+    setPendingDeleteSessionId(null);
+  }
   const selectedBike = bikes.find((bike) => bike.id === selectedBikeId) ?? null;
   const selectedPainLabel = painAreas.map((painArea) => getPainAreaLabel(painArea, language)).join(", ");
 
@@ -259,8 +291,10 @@ export function AnalysisStartScreen() {
             <View style={styles.historyList}>
               {history.map((item, index) => (
                 <HistoryCard
+                  deleting={deleting && pendingDeleteSessionId === item.session.id}
                   item={item}
                   key={item.session.id}
+                  onDelete={() => setPendingDeleteSessionId(item.session.id)}
                   previous={history.slice(index + 1).find((candidate) => getHistoryType(candidate) === getHistoryType(item))}
                 />
               ))}
@@ -270,7 +304,56 @@ export function AnalysisStartScreen() {
           )}
         </Card>
       </View>
+      <DeleteAnalysisConfirmModal
+        item={pendingDeleteItem}
+        loading={deleting}
+        onCancel={cancelDeleteHistory}
+        onConfirm={performDeleteHistory}
+      />
     </Screen>
+  );
+}
+
+function DeleteAnalysisConfirmModal({
+  item,
+  loading,
+  onCancel,
+  onConfirm
+}: {
+  item: AnalysisHistoryItem | null;
+  loading: boolean;
+  onCancel: () => void;
+  onConfirm: () => void;
+}) {
+  const { t } = useLanguage();
+  const isFront = item ? getHistoryType(item) === "front_knee_tracking" : false;
+  const itemTitle = item?.summary?.title ?? (isFront ? t("frontKneeTitle") : t("sideFitAnalysis"));
+
+  return (
+    <Modal animationType="fade" onRequestClose={onCancel} transparent visible={Boolean(item)}>
+      <Pressable onPress={onCancel} style={styles.modalOverlay}>
+        <Pressable onPress={() => undefined} style={styles.confirmModal}>
+          <View style={styles.confirmIcon}>
+            <Text style={styles.confirmIconText}>!</Text>
+          </View>
+          <Text style={styles.modalTitle}>{t("deleteAnalysis")}</Text>
+          <Text style={styles.confirmBody}>{t("deleteAnalysisConfirm")}</Text>
+          {item ? (
+            <Text style={styles.confirmItemName}>
+              {itemTitle} · {new Date(item.session.created_at).toLocaleDateString()}
+            </Text>
+          ) : null}
+          <Inline style={styles.confirmActions}>
+            <Button disabled={loading} onPress={onCancel} variant="secondary">
+              {t("cancel")}
+            </Button>
+            <Button loading={loading} onPress={onConfirm} variant="danger">
+              {t("delete")}
+            </Button>
+          </Inline>
+        </Pressable>
+      </Pressable>
+    </Modal>
   );
 }
 
@@ -325,6 +408,47 @@ function AnalysisChoice({
   );
 }
 
+const TRASH_PATH =
+  "M10 3h3v1h-1v9l-1 1H4l-1-1V4H2V3h3V2a1 1 0 0 1 1-1h3a1 1 0 0 1 1 1v1zM9 2H6v1h3V2zM4 13h7V4H4v9zm2-8H5v7h1V5zm1 0h1v7H7V5zm2 0h1v7H9V5z";
+
+function TrashIcon({ color, size = 16 }: { color: string; size?: number }) {
+  if (Platform.OS === "web") {
+    return createElement(
+      "svg",
+      {
+        width: size,
+        height: size,
+        viewBox: "0 0 16 16",
+        fill: color,
+        "aria-hidden": true,
+        focusable: false
+      },
+      createElement("path", {
+        d: TRASH_PATH,
+        fillRule: "evenodd",
+        clipRule: "evenodd"
+      })
+    );
+  }
+
+  return (
+    <View style={{ alignItems: "center", height: size, justifyContent: "center", width: size }}>
+      <View style={{ backgroundColor: color, borderRadius: 1, height: 1.5, width: size * 0.875 }} />
+      <View
+        style={{
+          borderColor: color,
+          borderBottomLeftRadius: 2,
+          borderBottomRightRadius: 2,
+          borderWidth: 1.25,
+          height: size * 0.6875,
+          marginTop: 1,
+          width: size * 0.75
+        }}
+      />
+    </View>
+  );
+}
+
 function PlusMinusIcon({ expanded }: { expanded: boolean }) {
   return (
     <View style={styles.plusMinusIcon}>
@@ -346,12 +470,24 @@ function OptionButton({ label, onPress, selected }: { label: string; onPress: ()
   );
 }
 
-function HistoryCard({ item, previous }: { item: AnalysisHistoryItem; previous?: AnalysisHistoryItem }) {
+function HistoryCard({
+  deleting,
+  item,
+  onDelete,
+  previous
+}: {
+  deleting: boolean;
+  item: AnalysisHistoryItem;
+  onDelete: () => void;
+  previous?: AnalysisHistoryItem;
+}) {
   const { t } = useLanguage();
+  const [hovered, setHovered] = useState(false);
   const isFront = getHistoryType(item) === "front_knee_tracking";
   const score = getPrimaryScore(item);
   const previousScore = previous ? getPrimaryScore(previous) : null;
   const delta = typeof score === "number" && typeof previousScore === "number" ? score - previousScore : null;
+  const iconColor = deleting ? colors.inkMuted : hovered ? colors.danger : colors.inkMuted;
 
   return (
     <View style={styles.historyCard}>
@@ -365,15 +501,34 @@ function HistoryCard({ item, previous }: { item: AnalysisHistoryItem; previous?:
         <HistoryMetric label={t("previousComparison")} value={formatDelta(delta)} />
       </View>
       <Text style={styles.historyMeta}>{formatHistoryDetails(item, t)}</Text>
-      <LinkButton
-        href={{
-          pathname: "/analysis/results",
-          params: { sessionId: item.session.id }
-        }}
-        variant="ghost"
-      >
-        {t("savedMeasurements")}
-      </LinkButton>
+      <View style={styles.historyActions}>
+        <LinkButton
+          href={{
+            pathname: "/analysis/results",
+            params: { sessionId: item.session.id }
+          }}
+          variant="ghost"
+        >
+          {t("viewDetails")}
+        </LinkButton>
+        <Pressable
+          accessibilityLabel={t("deleteAnalysis")}
+          accessibilityRole="button"
+          accessibilityState={{ disabled: deleting }}
+          disabled={deleting}
+          onHoverIn={() => setHovered(true)}
+          onHoverOut={() => setHovered(false)}
+          onPress={onDelete}
+          style={({ pressed }) => [
+            styles.deleteIconButton,
+            hovered && !deleting ? styles.deleteIconButtonHovered : null,
+            pressed && !deleting ? styles.deleteIconButtonPressed : null,
+            deleting && styles.deleteIconButtonDisabled
+          ]}
+        >
+          <TrashIcon color={iconColor} />
+        </Pressable>
+      </View>
     </View>
   );
 }
@@ -695,5 +850,91 @@ const styles = StyleSheet.create({
     color: colors.inkMuted,
     fontSize: 14,
     lineHeight: 20
+  },
+  historyActions: {
+    alignItems: "center",
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: spacing.sm,
+    justifyContent: "space-between"
+  },
+  deleteIconButton: {
+    alignItems: "center",
+    backgroundColor: "transparent",
+    borderRadius: radii.round,
+    height: 32,
+    justifyContent: "center",
+    width: 32
+  },
+  deleteIconButtonHovered: {
+    backgroundColor: colors.dangerSoft
+  },
+  deleteIconButtonPressed: {
+    backgroundColor: colors.dangerSoft,
+    opacity: 0.85
+  },
+  deleteIconButtonDisabled: {
+    opacity: 0.4
+  },
+  modalOverlay: {
+    alignItems: "center",
+    backgroundColor: "rgba(7,18,28,0.46)",
+    flex: 1,
+    justifyContent: "center",
+    padding: spacing.lg
+  },
+  confirmModal: {
+    alignItems: "center",
+    backgroundColor: colors.surface,
+    borderColor: colors.border,
+    borderRadius: radii.xl,
+    borderWidth: 1,
+    gap: spacing.md,
+    maxWidth: 460,
+    padding: spacing.xl,
+    width: "100%",
+    ...shadows.medium
+  },
+  confirmIcon: {
+    alignItems: "center",
+    backgroundColor: colors.dangerSoft,
+    borderRadius: radii.round,
+    height: 52,
+    justifyContent: "center",
+    width: 52
+  },
+  confirmIconText: {
+    color: colors.danger,
+    fontSize: 28,
+    fontWeight: "900",
+    lineHeight: 32
+  },
+  modalTitle: {
+    color: colors.ink,
+    fontSize: 22,
+    fontWeight: "900",
+    lineHeight: 28,
+    textAlign: "center"
+  },
+  confirmBody: {
+    color: colors.inkMuted,
+    fontSize: 15,
+    fontWeight: "700",
+    lineHeight: 22,
+    textAlign: "center"
+  },
+  confirmItemName: {
+    backgroundColor: colors.primaryMist,
+    borderRadius: radii.md,
+    color: colors.ink,
+    fontSize: 14,
+    fontWeight: "900",
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    textAlign: "center",
+    width: "100%"
+  },
+  confirmActions: {
+    justifyContent: "center"
   }
 });

@@ -356,6 +356,20 @@ export async function listAnalysisHistory(input: {
   }));
 }
 
+export async function deleteFitSession(userId: string, sessionId: string): Promise<void> {
+  assertSupabaseConfigured();
+
+  const { error } = await supabase
+    .from("fit_sessions")
+    .delete()
+    .eq("id", sessionId)
+    .eq("user_id", userId);
+
+  if (error) {
+    throw error;
+  }
+}
+
 export async function createMediaAsset(input: {
   sessionId: string;
   userId: string;

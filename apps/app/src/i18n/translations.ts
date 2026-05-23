@@ -97,7 +97,10 @@ export const en = {
   dateOfBirth: "Date of birth",
   dateOfBirthHelp: "Use the calendar to select year, month, and day.",
   delete: "Delete",
+  deleteAnalysis: "Delete analysis",
+  deleteAnalysisConfirm: "Delete this analysis? This action cannot be undone.",
   deleteBike: "Delete bike",
+  viewDetails: "View details",
   educationalNote:
     "Preliminary, camera-based guidance for training and educational purposes. This does not replace a professional fit.",
   editBike: "Edit bike",
@@ -467,7 +470,10 @@ export const es: Record<keyof typeof en, string> = {
   dateOfBirth: "Fecha de nacimiento",
   dateOfBirthHelp: "Usa el calendario para seleccionar ano, mes y dia.",
   delete: "Eliminar",
+  deleteAnalysis: "Eliminar análisis",
+  deleteAnalysisConfirm: "¿Eliminar este análisis? Esta acción no se puede deshacer.",
   deleteBike: "Eliminar bici",
+  viewDetails: "Ver detalles",
   educationalNote:
     "Guía preliminar basada en cámara para entrenamiento y fines educativos. No reemplaza un fit profesional.",
   editBike: "Editar bici",
