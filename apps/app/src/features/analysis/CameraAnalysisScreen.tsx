@@ -1,13 +1,7 @@
-import {
-  createAeroScore,
-  createAnalysisSummary,
-  createFitMeasurement,
-  createFitSession,
-  createRecommendations,
-  getBike
-} from "@athmira/supabase";
+import { AppScreen as Screen } from "@/components/AppScreen";
+import { createAeroScore, createAnalysisSummary, createFitMeasurement, createFitSession, createRecommendations, getBike } from "@athmira/supabase";
 import type { DeviceType, PoseFrameResult } from "@athmira/types";
-import { Body, Button, Card, Heading, Inline, Screen, colors, spacing } from "@athmira/ui";
+import { Body, Button, Card, Heading, Inline, colors, spacing } from "@athmira/ui";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useRef, useState } from "react";
 import { Platform, StyleSheet, Text, View } from "react-native";

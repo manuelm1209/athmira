@@ -55,16 +55,24 @@ export function Card({ children, style }: CardProps) {
   return <View style={[styles.card, style]}>{children}</View>;
 }
 
-type ScreenProps = PropsWithChildren<{
+export type ScreenProps = PropsWithChildren<{
   centered?: boolean;
   maxWidth?: number;
 }>;
 
 export function Screen({ children, centered, maxWidth = 1120 }: ScreenProps) {
+  if (Platform.OS === "web") {
+    return (
+      <View style={[styles.screen, centered && styles.centeredScreen]}>
+        <View style={[styles.screenInner, { maxWidth }]}>{children}</View>
+      </View>
+    );
+  }
+
   return (
     <ScrollView
       automaticallyAdjustKeyboardInsets
-      contentContainerStyle={[styles.screen, centered && styles.centeredScreen]}
+      contentContainerStyle={[styles.screen, styles.nativeScreen, centered && styles.centeredScreen]}
       contentInsetAdjustmentBehavior="automatic"
       keyboardShouldPersistTaps="handled"
     >
@@ -329,7 +337,9 @@ const fontFamily = Platform.select({ default: undefined, web: typography.fontFam
 
 const styles = StyleSheet.create({
   screen: {
-    backgroundColor: colors.background,
+    backgroundColor: colors.background
+  },
+  nativeScreen: {
     flexGrow: 1
   },
   centeredScreen: {

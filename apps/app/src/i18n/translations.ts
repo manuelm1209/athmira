@@ -115,6 +115,11 @@ export const en = {
   fieldOptional: "Optional",
   fitConfidence: "Fit confidence",
   fitResults: "Preliminary results",
+  footerAppStore: "Download on the App Store",
+  footerDescription: "Bike fit, aero posture, nutrition, and preparation guidance for athletes building toward longer goals.",
+  footerGooglePlay: "Get it on Google Play",
+  footerMobileTitle: "athmira links",
+  footerSocialLinks: "Social links",
   frontKneeComplete: "Analysis complete",
   frontKneeCountdownMetric: "Countdown",
   frontKneeDisclaimer:
@@ -484,6 +489,11 @@ export const es: Record<keyof typeof en, string> = {
   fieldOptional: "Opcional",
   fitConfidence: "Confianza del fit",
   fitResults: "Resultados preliminares",
+  footerAppStore: "Descargar en App Store",
+  footerDescription: "Bike fit, postura aero, nutrición y preparación para atletas que avanzan hacia metas más largas.",
+  footerGooglePlay: "Disponible en Google Play",
+  footerMobileTitle: "Enlaces de athmira",
+  footerSocialLinks: "Redes sociales",
   frontKneeComplete: "Análisis completo",
   frontKneeCountdownMetric: "Cuenta regresiva",
   frontKneeDisclaimer:

@@ -1,8 +1,9 @@
 import { listBikes } from "@athmira/supabase";
 import type { Bike } from "@athmira/types";
-import { Body, Card, Heading, Inline, Screen, colors, radii, spacing } from "@athmira/ui";
+import { Body, Card, Heading, Inline, colors, radii, spacing } from "@athmira/ui";
 import { useEffect, useState } from "react";
 import { Image, StyleSheet, Text, View } from "react-native";
+import { AppScreen as Screen } from "@/components/AppScreen";
 
 import { LinkButton } from "@/components/LinkButton";
 import { getBikeImage } from "@/lib/bike-images";

@@ -1,6 +1,7 @@
-import { Body, Card, Heading, Inline, Screen, colors, radii, spacing, typography } from "@athmira/ui";
+import { Body, Card, Heading, Inline, colors, radii, spacing, typography } from "@athmira/ui";
 import { useLocalSearchParams } from "expo-router";
 import { Platform, StyleSheet, Text, View } from "react-native";
+import { AppScreen as Screen } from "@/components/AppScreen";
 
 import { LinkButton } from "@/components/LinkButton";
 import { SeoHead } from "@/components/SeoHead";

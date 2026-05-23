@@ -1,6 +1,7 @@
-import { Body, Screen } from "@athmira/ui";
+import { Body } from "@athmira/ui";
 import { Redirect } from "expo-router";
 import type { PropsWithChildren } from "react";
+import { AppScreen as Screen } from "@/components/AppScreen";
 
 import { useAuth } from "@/providers/AuthProvider";
 

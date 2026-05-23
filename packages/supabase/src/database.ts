@@ -108,6 +108,49 @@ export type Database = {
         };
         Relationships: [];
       };
+      footer_settings: {
+        Row: {
+          id: "primary";
+          instagram_url: string | null;
+          strava_url: string | null;
+          x_url: string | null;
+          facebook_url: string | null;
+          linkedin_url: string | null;
+          youtube_url: string | null;
+          tiktok_url: string | null;
+          app_store_url: string | null;
+          google_play_url: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: "primary";
+          instagram_url?: string | null;
+          strava_url?: string | null;
+          x_url?: string | null;
+          facebook_url?: string | null;
+          linkedin_url?: string | null;
+          youtube_url?: string | null;
+          tiktok_url?: string | null;
+          app_store_url?: string | null;
+          google_play_url?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          instagram_url?: string | null;
+          strava_url?: string | null;
+          x_url?: string | null;
+          facebook_url?: string | null;
+          linkedin_url?: string | null;
+          youtube_url?: string | null;
+          tiktok_url?: string | null;
+          app_store_url?: string | null;
+          google_play_url?: string | null;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
       bikes: {
         Row: {
           id: string;

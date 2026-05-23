@@ -1,3 +1,4 @@
+import { AppScreen as Screen } from "@/components/AppScreen";
 import {
   calculateBottleTotals,
   calculateNutritionItem,
@@ -11,44 +12,13 @@ import {
   type PlanTotals
 } from "@athmira/nutrition-engine";
 import {
-  MAX_CUSTOM_NUTRITION_PRODUCTS,
-  createCustomNutritionProduct,
-  deleteCustomNutritionProduct,
-  deleteNutritionPlan,
-  getNutritionPlan,
-  listNutritionPlans,
-  listNutritionProducts,
-  saveNutritionPlan,
-  updateCustomNutritionProduct
+  MAX_CUSTOM_NUTRITION_PRODUCTS, createCustomNutritionProduct, deleteCustomNutritionProduct, deleteNutritionPlan, getNutritionPlan, listNutritionPlans, listNutritionProducts, saveNutritionPlan, updateCustomNutritionProduct
 } from "@athmira/supabase";
 import type {
-  NutritionActivityType,
-  NutritionIntensity,
-  NutritionPlan,
-  NutritionPlanBottleInput,
-  NutritionPlanInput,
-  NutritionPlanItemInput,
-  NutritionPlanItemLocation,
-  NutritionProduct,
-  NutritionProductCategory,
-  NutritionProductInput,
-  NutritionTimingType
+  NutritionActivityType, NutritionIntensity, NutritionPlan, NutritionPlanBottleInput, NutritionPlanInput, NutritionPlanItemInput, NutritionPlanItemLocation, NutritionProduct, NutritionProductCategory, NutritionProductInput, NutritionTimingType
 } from "@athmira/types";
 import {
-  Body,
-  Button,
-  Card,
-  FadeInView,
-  Field,
-  Inline,
-  Screen,
-  SelectField,
-  colors,
-  radii,
-  shadows,
-  spacing,
-  typography
-} from "@athmira/ui";
+  Body, Button, Card, FadeInView, Field, Inline, SelectField, colors, radii, shadows, spacing, typography } from "@athmira/ui";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,

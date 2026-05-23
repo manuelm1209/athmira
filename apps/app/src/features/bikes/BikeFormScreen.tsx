@@ -1,9 +1,10 @@
 import { createBike, deleteBike, getBike, updateBike } from "@athmira/supabase";
 import type { BikeType } from "@athmira/types";
-import { Body, Button, Card, Field, Heading, Inline, Screen, colors, spacing } from "@athmira/ui";
+import { Body, Button, Card, Field, Heading, Inline, colors, spacing } from "@athmira/ui";
 import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import { Alert, StyleSheet, Text, View } from "react-native";
+import { AppScreen as Screen } from "@/components/AppScreen";
 
 import { LinkButton } from "@/components/LinkButton";
 import { useAuth } from "@/providers/AuthProvider";

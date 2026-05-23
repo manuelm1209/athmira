@@ -1,9 +1,10 @@
 import { listAnalysisHistory, listBikes } from "@athmira/supabase";
 import type { AnalysisHistoryItem, Bike, BikeFitDiscipline, BikeFitGoal, BikeFitPainArea } from "@athmira/types";
-import { Body, Button, Card, Heading, Screen, SelectField, colors, radii, spacing } from "@athmira/ui";
+import { Body, Button, Card, Heading, SelectField, colors, radii, spacing } from "@athmira/ui";
 import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
+import { AppScreen as Screen } from "@/components/AppScreen";
 
 import { LinkButton } from "@/components/LinkButton";
 import type { TranslationKey } from "@/i18n";

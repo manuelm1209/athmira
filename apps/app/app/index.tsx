@@ -1,7 +1,8 @@
-import { Body, FadeInView, Heading, Inline, Screen, colors, radii, shadows, spacing, typography } from "@athmira/ui";
+import { Body, FadeInView, Heading, Inline, colors, radii, shadows, spacing, typography } from "@athmira/ui";
 import { useEffect, useState } from "react";
 import { Image, Platform, StyleSheet, Text, View, useWindowDimensions } from "react-native";
 import type { ImageSourcePropType } from "react-native";
+import { AppScreen as Screen } from "@/components/AppScreen";
 
 import { LinkButton } from "@/components/LinkButton";
 import { SeoHead } from "@/components/SeoHead";

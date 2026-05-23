@@ -1,8 +1,9 @@
 import { supabase } from "@athmira/supabase";
-import { Body, Card, Heading, Screen, colors, spacing } from "@athmira/ui";
+import { Body, Card, Heading, colors, spacing } from "@athmira/ui";
 import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
+import { AppScreen as Screen } from "@/components/AppScreen";
 
 import { SeoHead } from "@/components/SeoHead";
 import { useLanguage } from "@/providers/LanguageProvider";

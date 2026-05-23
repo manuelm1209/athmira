@@ -115,7 +115,7 @@ export function AppShell({ children }: PropsWithChildren) {
   const compactMenuItems = session ? navItems : [...marketingNavItems, ...navItems];
 
   return (
-    <View style={styles.root}>
+    <View style={[styles.root, !isNative && styles.webRoot, isNative && styles.nativeRoot]}>
       <View
         accessibilityLabel="Main navigation"
         style={[
@@ -250,24 +250,7 @@ export function AppShell({ children }: PropsWithChildren) {
           </View>
         )}
       </View>
-      <View style={styles.content}>{children}</View>
-      {isNative ? null : (
-        <View style={styles.footer}>
-          <Text style={styles.footerBrand}>athmira</Text>
-          <View style={styles.footerLinks}>
-            <Link href="/privacy" asChild>
-              <Pressable accessibilityRole="link">
-                <Text style={styles.footerLinkText}>{t("privacyPolicy")}</Text>
-              </Pressable>
-            </Link>
-            <Link href="/terms" asChild>
-              <Pressable accessibilityRole="link">
-                <Text style={styles.footerLinkText}>{t("termsConditions")}</Text>
-              </Pressable>
-            </Link>
-          </View>
-        </View>
-      )}
+      <View style={[styles.content, !isNative && styles.webContent, isNative && styles.nativeContent]}>{children}</View>
     </View>
   );
 }
@@ -276,7 +259,13 @@ const fontFamily = Platform.select({ default: undefined, web: typography.fontFam
 
 const styles = StyleSheet.create({
   root: {
-    backgroundColor: "#f3f8fa",
+    backgroundColor: "#f3f8fa"
+  },
+  webRoot: {
+    display: "block" as never,
+    minHeight: "100vh" as never
+  },
+  nativeRoot: {
     flex: 1
   },
   header: {
@@ -513,36 +502,11 @@ const styles = StyleSheet.create({
   primaryNavText: {
     color: colors.white
   },
-  content: {
+  content: {},
+  webContent: {
+    display: "block" as never
+  },
+  nativeContent: {
     flex: 1
-  },
-  footer: {
-    alignItems: "center",
-    borderTopColor: colors.border,
-    borderTopWidth: 1,
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: spacing.md,
-    justifyContent: "space-between",
-    marginHorizontal: spacing.md,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.lg
-  },
-  footerBrand: {
-    color: colors.inkMuted,
-    fontFamily,
-    fontSize: 12,
-    fontWeight: typography.weights.black
-  },
-  footerLinks: {
-    alignItems: "center",
-    flexDirection: "row",
-    gap: spacing.lg
-  },
-  footerLinkText: {
-    color: colors.primary,
-    fontFamily,
-    fontSize: 12,
-    fontWeight: typography.weights.black
   }
 });

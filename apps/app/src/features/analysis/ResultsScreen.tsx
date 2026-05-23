@@ -4,10 +4,11 @@ import { calculateFitScore, generateFitRecommendations } from "@athmira/fit-engi
 import { analyzePoseFrame } from "@athmira/pose-engine";
 import { getFitAnalysisResults, listAnalysisHistory } from "@athmira/supabase";
 import type { AnalysisHistoryItem, FitMeasurement, FitRecommendation, FrontKneeMeasurement, Recommendation } from "@athmira/types";
-import { Body, Card, Heading, Inline, Screen, colors, spacing } from "@athmira/ui";
+import { Body, Card, Heading, Inline, colors, spacing } from "@athmira/ui";
 import { useLocalSearchParams } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
+import { AppScreen as Screen } from "@/components/AppScreen";
 
 import { LinkButton } from "@/components/LinkButton";
 import type { TranslationKey } from "@/i18n";

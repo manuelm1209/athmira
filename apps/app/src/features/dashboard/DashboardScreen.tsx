@@ -1,18 +1,7 @@
 import { listAnalysisHistory, listBikes } from "@athmira/supabase";
 import type { AnalysisHistoryItem, Bike } from "@athmira/types";
-import {
-  Body,
-  Card,
-  FadeInView,
-  Heading,
-  Inline,
-  Screen,
-  colors,
-  radii,
-  shadows,
-  spacing,
-  typography
-} from "@athmira/ui";
+import { AppScreen as Screen } from "@/components/AppScreen";
+import { Body, Card, FadeInView, Heading, Inline, colors, radii, shadows, spacing, typography } from "@athmira/ui";
 import type { Href } from "expo-router";
 import { Link } from "expo-router";
 import { useEffect, useMemo, useState } from "react";

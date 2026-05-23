@@ -1,6 +1,7 @@
-import { Body, Button, Card, DateField, Field, Heading, Inline, Screen, SelectField, colors, spacing } from "@athmira/ui";
+import { Body, Button, Card, DateField, Field, Heading, Inline, SelectField, colors, spacing } from "@athmira/ui";
 import { useEffect, useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
+import { AppScreen as Screen } from "@/components/AppScreen";
 
 import { LanguageToggle } from "@/components/LanguageToggle";
 import { useAuth } from "@/providers/AuthProvider";

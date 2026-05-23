@@ -235,6 +235,36 @@ export type NutritionProduct = {
   updated_at: string;
 };
 
+export type FooterSettings = {
+  id: "primary";
+  instagram_url: string | null;
+  strava_url: string | null;
+  x_url: string | null;
+  facebook_url: string | null;
+  linkedin_url: string | null;
+  youtube_url: string | null;
+  tiktok_url: string | null;
+  app_store_url: string | null;
+  google_play_url: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type FooterSettingsInput = Partial<
+  Pick<
+    FooterSettings,
+    | "instagram_url"
+    | "strava_url"
+    | "x_url"
+    | "facebook_url"
+    | "linkedin_url"
+    | "youtube_url"
+    | "tiktok_url"
+    | "app_store_url"
+    | "google_play_url"
+  >
+>;
+
 export type NutritionPlanBottle = {
   id: string;
   plan_id: string;

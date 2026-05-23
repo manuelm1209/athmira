@@ -1,9 +1,10 @@
 import { signInWithEmail, signUpWithEmail } from "@athmira/supabase";
-import { Body, Button, Card, Checkbox, Field, Heading, Inline, Screen, colors, spacing } from "@athmira/ui";
+import { Body, Button, Card, Checkbox, Field, Heading, Inline, colors, spacing } from "@athmira/ui";
 import Constants from "expo-constants";
 import { Link, useRouter } from "expo-router";
 import { useState } from "react";
 import { Platform, StyleSheet, Text, View } from "react-native";
+import { AppScreen as Screen } from "@/components/AppScreen";
 
 import { LinkButton } from "@/components/LinkButton";
 import { useLanguage } from "@/providers/LanguageProvider";

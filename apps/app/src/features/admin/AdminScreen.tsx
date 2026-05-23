@@ -1,18 +1,21 @@
+import { AppScreen as Screen } from "@/components/AppScreen";
 import {
   createAdminManagedUser,
   createGlobalNutritionProduct,
+  getFooterSettings,
   getAdminUserDetail,
   listGlobalNutritionProducts,
   listAdminUsers,
   setAdminManagedUserRole,
   setAdminManagedUserTemporaryPassword,
+  updateFooterSettings,
   updateGlobalNutritionProduct,
   updateAdminManagedUserProfile
 } from "@athmira/supabase";
-import type { AdminUserDetail, AdminUserOverview, LanguageCode, NutritionProduct, NutritionProductInput } from "@athmira/types";
-import { Body, Button, Card, DateField, Field, Heading, Inline, Screen, SelectField, colors, spacing } from "@athmira/ui";
+import type { AdminUserDetail, AdminUserOverview, FooterSettings, LanguageCode, NutritionProduct, NutritionProductInput } from "@athmira/types";
+import { Body, Button, Card, DateField, Field, Heading, Inline, SelectField, colors, spacing } from "@athmira/ui";
 import { Link, type Href } from "expo-router";
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type Dispatch, type ReactNode, type SetStateAction } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
 import { useLanguage } from "@/providers/LanguageProvider";
@@ -37,9 +40,22 @@ type CreateUserDraft = {
 };
 
 type AdminDetailTab = "account" | "bikes" | "tests";
-type AdminMode = "hub" | "nutrition-products" | "users";
+type AdminMode = "footer" | "hub" | "nutrition-products" | "users";
 type RoleFilter = "all" | "admin" | "athlete";
 type UserSort = "recent_analysis" | "name" | "created_at" | "analyses";
+
+type FooterSettingsDraft = Pick<
+  FooterSettings,
+  | "app_store_url"
+  | "facebook_url"
+  | "google_play_url"
+  | "instagram_url"
+  | "linkedin_url"
+  | "strava_url"
+  | "tiktok_url"
+  | "x_url"
+  | "youtube_url"
+>;
 
 type NutritionProductDraft = {
   caloriesPerServing: string;
@@ -77,6 +93,18 @@ const emptyNutritionProductDraft: NutritionProductDraft = {
   notes: "",
   sodiumMgPerServing: "",
   weightGPerServing: ""
+};
+
+const emptyFooterSettingsDraft: Record<keyof FooterSettingsDraft, string> = {
+  app_store_url: "",
+  facebook_url: "",
+  google_play_url: "",
+  instagram_url: "",
+  linkedin_url: "",
+  strava_url: "",
+  tiktok_url: "",
+  x_url: "",
+  youtube_url: ""
 };
 
 const adminNutritionCopy = {
@@ -130,6 +158,8 @@ const adminHubCopy = {
   en: {
     createUsersBody: "Create users, review athlete accounts, manage roles, reset temporary passwords, and inspect bikes or Bike Fit analyses.",
     createUsersTitle: "Users and roles",
+    footerBody: "Manage public footer social links and app download destinations.",
+    footerTitle: "Footer and app links",
     hubBody: "Choose the administrative area you want to manage.",
     nutritionBody: "Update global nutrition product composition values used by fueling plans.",
     open: "Open"
@@ -137,9 +167,36 @@ const adminHubCopy = {
   es: {
     createUsersBody: "Crea usuarios, revisa cuentas de atletas, gestiona roles, restablece contraseñas temporales e inspecciona bicicletas o análisis de Bike Fit.",
     createUsersTitle: "Usuarios y roles",
+    footerBody: "Gestiona las redes sociales públicas del footer y los enlaces de descarga de la app.",
+    footerTitle: "Footer y enlaces de app",
     hubBody: "Elige el área administrativa que quieres gestionar.",
     nutritionBody: "Actualiza los valores de composición de productos globales usados en los planes de alimentación.",
     open: "Abrir"
+  }
+};
+
+const adminFooterCopy = {
+  en: {
+    appStore: "Apple App Store URL",
+    footerBody: "Only configured links appear in the web footer and mobile settings.",
+    footerSaved: "Footer settings updated.",
+    googlePlay: "Google Play Store URL",
+    saveFooter: "Save footer links",
+    socialLinks: "Social links",
+    storeLinks: "App download links",
+    title: "Footer and app links",
+    urlHelp: "Use full https:// links. Leave a field empty to hide it."
+  },
+  es: {
+    appStore: "URL de Apple App Store",
+    footerBody: "Solo los enlaces configurados aparecen en el footer web y en configuración móvil.",
+    footerSaved: "Configuración del footer actualizada.",
+    googlePlay: "URL de Google Play Store",
+    saveFooter: "Guardar enlaces del footer",
+    socialLinks: "Redes sociales",
+    storeLinks: "Enlaces de descarga",
+    title: "Footer y enlaces de app",
+    urlHelp: "Usa enlaces completos con https://. Deja el campo vacío para ocultarlo."
   }
 };
 
@@ -165,10 +222,12 @@ const adminProductNameTranslations: Record<string, { en: string; es: string }> =
 
 export function AdminScreen({ mode = "hub" }: { mode?: AdminMode }) {
   const { language, t } = useLanguage();
+  const footerCopy = adminFooterCopy[language];
   const nutritionCopy = adminNutritionCopy[language];
   const hubCopy = adminHubCopy[language];
   const [users, setUsers] = useState<AdminUserOverview[]>([]);
   const [nutritionProducts, setNutritionProducts] = useState<NutritionProduct[]>([]);
+  const [footerSettingsDraft, setFooterSettingsDraft] = useState(emptyFooterSettingsDraft);
   const [selectedUser, setSelectedUser] = useState<AdminUserDetail | null>(null);
   const [selectedNutritionProductId, setSelectedNutritionProductId] = useState<string>("");
   const [creatingNutritionProductMode, setCreatingNutritionProductMode] = useState(false);
@@ -188,8 +247,10 @@ export function AdminScreen({ mode = "hub" }: { mode?: AdminMode }) {
   const [detailTab, setDetailTab] = useState<AdminDetailTab>("account");
   const [temporaryPassword, setTemporaryPassword] = useState("");
   const [loadingUsers, setLoadingUsers] = useState(true);
+  const [loadingFooterSettings, setLoadingFooterSettings] = useState(false);
   const [loadingDetail, setLoadingDetail] = useState(false);
   const [savingProfile, setSavingProfile] = useState(false);
+  const [savingFooterSettings, setSavingFooterSettings] = useState(false);
   const [savingNutritionProduct, setSavingNutritionProduct] = useState(false);
   const [creatingUser, setCreatingUser] = useState(false);
   const [resettingPassword, setResettingPassword] = useState(false);
@@ -242,6 +303,10 @@ export function AdminScreen({ mode = "hub" }: { mode?: AdminMode }) {
     if (mode === "nutrition-products") {
       loadNutritionProducts();
     }
+
+    if (mode === "footer") {
+      loadFooterSettings();
+    }
   // Load once when the protected admin route mounts.
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mode]);
@@ -287,6 +352,20 @@ export function AdminScreen({ mode = "hub" }: { mode?: AdminMode }) {
       setCreatingNutritionProductMode(false);
     } catch (loadError) {
       setError(getErrorMessage(loadError));
+    }
+  }
+
+  async function loadFooterSettings() {
+    setLoadingFooterSettings(true);
+    setError(null);
+
+    try {
+      const settings = await getFooterSettings();
+      setFooterSettingsDraft(toFooterSettingsDraft(settings));
+    } catch (loadError) {
+      setError(getErrorMessage(loadError));
+    } finally {
+      setLoadingFooterSettings(false);
     }
   }
 
@@ -440,6 +519,22 @@ export function AdminScreen({ mode = "hub" }: { mode?: AdminMode }) {
     }
   }
 
+  async function saveFooterSettings() {
+    setSavingFooterSettings(true);
+    setError(null);
+    setMessage(null);
+
+    try {
+      const saved = await updateFooterSettings(footerSettingsDraft);
+      setFooterSettingsDraft(toFooterSettingsDraft(saved));
+      setMessage(footerCopy.footerSaved);
+    } catch (saveError) {
+      setError(getErrorMessage(saveError));
+    } finally {
+      setSavingFooterSettings(false);
+    }
+  }
+
   if (mode === "hub") {
     return (
       <Screen maxWidth={1040}>
@@ -460,6 +555,12 @@ export function AdminScreen({ mode = "hub" }: { mode?: AdminMode }) {
               cta={nutritionCopy.nutritionProductsAction}
               href="/admin/nutrition-products"
               title={nutritionCopy.nutritionProducts}
+            />
+            <AdminHubCard
+              body={hubCopy.footerBody}
+              cta={hubCopy.open}
+              href="/admin/footer"
+              title={hubCopy.footerTitle}
             />
           </View>
         </View>
@@ -605,6 +706,66 @@ export function AdminScreen({ mode = "hub" }: { mode?: AdminMode }) {
               {nutritionCopy.saveProduct}
             </Button>
           </Inline>
+          </Card>
+        ) : null}
+
+        {mode === "footer" ? (
+          <Card style={styles.card}>
+            <View style={styles.sectionHeader}>
+              <View style={styles.roleCopy}>
+                <Text style={styles.sectionTitle}>{footerCopy.title}</Text>
+                <Body>{footerCopy.footerBody}</Body>
+              </View>
+            </View>
+            {loadingFooterSettings ? <Body>Loading...</Body> : null}
+            <Section title={footerCopy.socialLinks}>
+              <Body>{footerCopy.urlHelp}</Body>
+              <View style={styles.formGrid}>
+                <FooterLinkField
+                  draft={footerSettingsDraft}
+                  field="instagram_url"
+                  label="Instagram"
+                  setDraft={setFooterSettingsDraft}
+                />
+                <FooterLinkField draft={footerSettingsDraft} field="strava_url" label="Strava" setDraft={setFooterSettingsDraft} />
+                <FooterLinkField draft={footerSettingsDraft} field="x_url" label="X" setDraft={setFooterSettingsDraft} />
+                <FooterLinkField
+                  draft={footerSettingsDraft}
+                  field="facebook_url"
+                  label="Facebook"
+                  setDraft={setFooterSettingsDraft}
+                />
+                <FooterLinkField
+                  draft={footerSettingsDraft}
+                  field="linkedin_url"
+                  label="LinkedIn"
+                  setDraft={setFooterSettingsDraft}
+                />
+                <FooterLinkField draft={footerSettingsDraft} field="youtube_url" label="YouTube" setDraft={setFooterSettingsDraft} />
+                <FooterLinkField draft={footerSettingsDraft} field="tiktok_url" label="TikTok" setDraft={setFooterSettingsDraft} />
+              </View>
+            </Section>
+            <Section title={footerCopy.storeLinks}>
+              <View style={styles.formGrid}>
+                <FooterLinkField
+                  draft={footerSettingsDraft}
+                  field="app_store_url"
+                  label={footerCopy.appStore}
+                  setDraft={setFooterSettingsDraft}
+                />
+                <FooterLinkField
+                  draft={footerSettingsDraft}
+                  field="google_play_url"
+                  label={footerCopy.googlePlay}
+                  setDraft={setFooterSettingsDraft}
+                />
+              </View>
+            </Section>
+            <Inline>
+              <Button loading={savingFooterSettings} onPress={saveFooterSettings}>
+                {footerCopy.saveFooter}
+              </Button>
+            </Inline>
           </Card>
         ) : null}
 
@@ -892,6 +1053,30 @@ function AdminHubCard({ body, cta, href, title }: { body: string; cta: string; h
   );
 }
 
+function FooterLinkField({
+  draft,
+  field,
+  label,
+  setDraft
+}: {
+  draft: Record<keyof FooterSettingsDraft, string>;
+  field: keyof FooterSettingsDraft;
+  label: string;
+  setDraft: Dispatch<SetStateAction<Record<keyof FooterSettingsDraft, string>>>;
+}) {
+  return (
+    <View style={styles.productWideField}>
+      <Field
+        autoCapitalize="none"
+        inputMode="url"
+        label={label}
+        onChangeText={(value) => setDraft((current) => ({ ...current, [field]: value }))}
+        value={draft[field]}
+      />
+    </View>
+  );
+}
+
 function CameraTestRow({ selectedUser, sessionId }: { selectedUser: AdminUserDetail; sessionId: string }) {
   const { t } = useLanguage();
   const session = selectedUser.sessions.find((candidate) => candidate.id === sessionId);
@@ -993,6 +1178,20 @@ function toNutritionProductDraft(product: NutritionProduct): NutritionProductDra
     notes: product.notes ?? "",
     sodiumMgPerServing: numberToInput(product.sodium_mg_per_serving),
     weightGPerServing: numberToInput(product.weight_g_per_serving)
+  };
+}
+
+function toFooterSettingsDraft(settings: FooterSettings): Record<keyof FooterSettingsDraft, string> {
+  return {
+    app_store_url: settings.app_store_url ?? "",
+    facebook_url: settings.facebook_url ?? "",
+    google_play_url: settings.google_play_url ?? "",
+    instagram_url: settings.instagram_url ?? "",
+    linkedin_url: settings.linkedin_url ?? "",
+    strava_url: settings.strava_url ?? "",
+    tiktok_url: settings.tiktok_url ?? "",
+    x_url: settings.x_url ?? "",
+    youtube_url: settings.youtube_url ?? ""
   };
 }
 

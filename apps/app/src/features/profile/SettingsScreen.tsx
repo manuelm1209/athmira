@@ -1,8 +1,10 @@
-import { Body, Button, Card, Checkbox, Heading, Screen, colors, spacing } from "@athmira/ui";
+import { Body, Button, Card, Checkbox, Heading, colors, spacing } from "@athmira/ui";
 import { useEffect, useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
+import { AppScreen as Screen } from "@/components/AppScreen";
 
 import { LanguageToggle } from "@/components/LanguageToggle";
+import { NativeFooterLinks } from "@/components/AppFooter";
 import { useAuth } from "@/providers/AuthProvider";
 import { useLanguage } from "@/providers/LanguageProvider";
 import { getErrorMessage } from "@/utils/form";
@@ -60,6 +62,10 @@ export function SettingsScreen() {
             onChange={updateNewsletterPreference}
           />
         </View>
+        <View style={styles.footerLinksPanel}>
+          <Text style={styles.label}>{t("footerMobileTitle")}</Text>
+          <NativeFooterLinks />
+        </View>
         {error ? <Text style={styles.error}>{error}</Text> : null}
         {message ? <Text style={styles.message}>{message}</Text> : null}
         <Button onPress={signOut} variant="secondary">
@@ -91,6 +97,9 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     borderWidth: 1,
     padding: spacing.md
+  },
+  footerLinksPanel: {
+    gap: spacing.sm
   },
   label: {
     color: colors.ink,
