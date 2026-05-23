@@ -54,7 +54,10 @@ export function CameraAnalysisScreen() {
     poseDetectionActive: t("poseDetectionActive"),
     poseDetectionFailed: t("poseDetectionFailed"),
     poseDetectorLoading: t("poseDetectorLoading"),
-    poseNotReady: t("poseNotReady")
+    poseNotReady: t("poseNotReady"),
+    riderPositionTitle: t("riderPositionTitle"),
+    riderPositionGuide: t("riderPositionGuide"),
+    riderPositionDetected: t("riderPositionDetected")
   };
 
   async function beginAnalysis() {

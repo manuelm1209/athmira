@@ -6,6 +6,7 @@ import { forwardRef, useEffect, useImperativeHandle, useRef, useState, type Elem
 import { StyleSheet, Text, View, useWindowDimensions } from "react-native";
 
 import type { BikeFitCameraHandle, BikeFitCameraProps } from "./BikeFitCamera.types";
+import { RiderSilhouetteOverlay } from "./RiderSilhouetteOverlay";
 
 export const BikeFitCamera = forwardRef<BikeFitCameraHandle, BikeFitCameraProps>(function BikeFitCamera(
   { labels, onLiveResult, onReadyChange },
@@ -124,11 +125,14 @@ export const BikeFitCamera = forwardRef<BikeFitCameraHandle, BikeFitCameraProps>
           <View style={styles.previewStatus}>
             <Text style={styles.previewStatusText}>{labels.cameraPermissionRequesting}</Text>
           </View>
-        ) : null}
-        <View style={styles.verticalGuide} />
-        <View style={styles.torsoGuide} />
-        <View style={styles.kneeGuide} />
-        <View style={styles.marker} />
+        ) : (
+          <RiderSilhouetteOverlay
+            detected={false}
+            detectedLabel={labels.riderPositionDetected}
+            guide={labels.riderPositionGuide}
+            title={labels.riderPositionTitle}
+          />
+        )}
         <Text style={styles.nativeNotice}>{labels.nativePoseNotice}</Text>
       </View>
     </View>
@@ -176,43 +180,6 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: "800",
     textAlign: "center"
-  },
-  verticalGuide: {
-    backgroundColor: "rgba(255,255,255,0.45)",
-    height: "86%",
-    left: "50%",
-    position: "absolute",
-    top: "7%",
-    width: 2
-  },
-  torsoGuide: {
-    backgroundColor: colors.accent,
-    height: 3,
-    left: "30%",
-    position: "absolute",
-    top: "38%",
-    transform: [{ rotate: "-18deg" }],
-    width: "34%"
-  },
-  kneeGuide: {
-    backgroundColor: "#b6eadc",
-    height: 3,
-    left: "42%",
-    position: "absolute",
-    top: "64%",
-    transform: [{ rotate: "28deg" }],
-    width: "24%"
-  },
-  marker: {
-    backgroundColor: colors.primarySoft,
-    borderColor: colors.primary,
-    borderRadius: 10,
-    borderWidth: 2,
-    height: 20,
-    left: "48%",
-    position: "absolute",
-    top: "58%",
-    width: 20
   },
   nativeNotice: {
     backgroundColor: "rgba(20,35,29,0.72)",

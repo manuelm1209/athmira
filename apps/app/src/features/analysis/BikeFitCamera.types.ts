@@ -14,6 +14,9 @@ export type BikeFitCameraLabels = {
   poseDetectionFailed: string;
   poseDetectorLoading: string;
   poseNotReady: string;
+  riderPositionTitle: string;
+  riderPositionGuide: string;
+  riderPositionDetected: string;
 };
 
 export type BikeFitCameraHandle = {

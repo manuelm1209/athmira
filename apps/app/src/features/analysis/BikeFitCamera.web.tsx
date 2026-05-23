@@ -12,6 +12,9 @@ import {
 import { StyleSheet, Text, View } from "react-native";
 
 import type { BikeFitCameraHandle, BikeFitCameraProps } from "./BikeFitCamera.types";
+import { RiderSilhouetteOverlay } from "./RiderSilhouetteOverlay";
+
+const POSE_CONFIDENCE_THRESHOLD = 0.35;
 
 type PoseDetector = {
   dispose?: () => void;
@@ -45,6 +48,7 @@ export const BikeFitCamera = forwardRef<BikeFitCameraHandle, BikeFitCameraProps>
   const [status, setStatus] = useState(labels.cameraPermissionRequesting);
   const [error, setError] = useState<string | null>(null);
   const [progress, setProgress] = useState<number | null>(null);
+  const [poseDetected, setPoseDetected] = useState(false);
 
   useImperativeHandle(ref, () => ({
     async captureSnapshot() {
@@ -57,7 +61,7 @@ export const BikeFitCamera = forwardRef<BikeFitCameraHandle, BikeFitCameraProps>
       return canvas.toDataURL("image/jpeg", 0.82);
     },
     async startAnalysis(durationMs = 8000) {
-      if (!latestResultRef.current || latestResultRef.current.confidenceScore < 0.35) {
+      if (!latestResultRef.current || latestResultRef.current.confidenceScore < POSE_CONFIDENCE_THRESHOLD) {
         throw new Error(labels.poseNotReady);
       }
 
@@ -175,6 +179,7 @@ export const BikeFitCamera = forwardRef<BikeFitCameraHandle, BikeFitCameraProps>
         const poses = await detector.estimatePoses(video, { flipHorizontal: false, maxPoses: 1 });
         const result = createResultFromPose(poses[0], video);
         latestResultRef.current = result;
+        setPoseDetected(Boolean(result && result.confidenceScore >= POSE_CONFIDENCE_THRESHOLD));
         onLiveResult?.(result);
         handleRecording(result);
         drawOverlay(result);
@@ -248,7 +253,16 @@ export const BikeFitCamera = forwardRef<BikeFitCameraHandle, BikeFitCameraProps>
   return (
     <View style={styles.frame}>
       <video autoPlay muted playsInline ref={videoRef} style={videoStyle} />
-      <canvas ref={canvasRef} style={canvasStyle} />
+      <canvas
+        ref={canvasRef}
+        style={{ ...canvasStyle, opacity: poseDetected ? 1 : 0 }}
+      />
+      <RiderSilhouetteOverlay
+        detected={poseDetected}
+        detectedLabel={labels.riderPositionDetected}
+        guide={labels.riderPositionGuide}
+        title={labels.riderPositionTitle}
+      />
       <View style={[styles.statusPanel, styles.noPointerEvents]}>
         <Text style={styles.statusText}>
           {progress === null ? status : `${labels.analyzing} ${(progress * 100).toFixed(0)}%`}
@@ -397,6 +411,7 @@ const canvasStyle: CSSProperties = {
   pointerEvents: "none",
   position: "absolute",
   top: 0,
+  transition: "opacity 300ms ease",
   width: "100%"
 };
 
