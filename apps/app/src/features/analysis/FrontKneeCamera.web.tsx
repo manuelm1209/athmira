@@ -281,17 +281,13 @@ export const FrontKneeCamera = forwardRef<FrontKneeCameraHandle, FrontKneeCamera
       activeSamples.map((activeSample) => sampleToPoseFrame(activeSample, width, height)),
       { durationMs: 10000 }
     );
-    drawMeasurementBox(context, sample.leftKnee, sample.leftAnkle, analysis.left.horizontalTravelPx, analysis.left.verticalTravelPx);
-    drawMeasurementBox(
-      context,
-      sample.rightKnee,
-      sample.rightAnkle,
-      analysis.right.horizontalTravelPx,
-      analysis.right.verticalTravelPx
-    );
+    drawAlignmentTrack(context, sample.leftHip, sample.leftAnkle);
+    drawAlignmentTrack(context, sample.rightHip, sample.rightAnkle);
+    drawDriftBadge(context, "L", sample.leftKnee, analysis.left.kneeDriftMm, analysis.left.kneeDriftPx, "left");
+    drawDriftBadge(context, "R", sample.rightKnee, analysis.right.kneeDriftMm, analysis.right.kneeDriftPx, "right");
   }
 
-  const overlayLabel = getOverlayLabel({
+  const overlay = getPhaseOverlay({
     countdownSeconds,
     labels,
     phase,
@@ -306,9 +302,16 @@ export const FrontKneeCamera = forwardRef<FrontKneeCameraHandle, FrontKneeCamera
         <Text style={styles.statusText}>{status}</Text>
         {error ? <Text style={styles.errorText}>{error}</Text> : null}
       </View>
-      {overlayLabel ? (
-        <View style={[styles.bigOverlay, styles.noPointerEvents]}>
-          <Text style={styles.bigOverlayText}>{overlayLabel}</Text>
+      {overlay ? (
+        <View style={[styles.phaseOverlay, styles.noPointerEvents]}>
+          {overlay.heading ? <Text style={styles.phaseHeading}>{overlay.heading}</Text> : null}
+          {overlay.bigNumber ? <Text style={styles.phaseBigNumber}>{overlay.bigNumber}</Text> : null}
+        </View>
+      ) : null}
+      {phase === "idle" ? (
+        <View style={[styles.positionGuide, styles.noPointerEvents]}>
+          <Text style={styles.positionGuideTitle}>{labels.frontKneePositionTitle}</Text>
+          <Text style={styles.positionGuideBody}>{labels.frontKneePositionGuide}</Text>
         </View>
       ) : null}
     </View>
@@ -368,11 +371,17 @@ function toPoseKeypoint(name: string, point?: { confidence: number; x: number; y
   };
 }
 
+const SKELETON_COLOR = "#b7e64a";
+const SKELETON_GLOW = "rgba(183, 230, 74, 0.55)";
+const PATH_COLOR = "rgba(239, 113, 95, 0.85)";
+const LABEL_BG = "rgba(13, 27, 34, 0.82)";
+const LABEL_BORDER = "rgba(183, 230, 74, 0.85)";
+
 function drawCenterGuide(context: CanvasRenderingContext2D, width: number, height: number) {
   context.save();
-  context.strokeStyle = "rgba(255,255,255,0.4)";
-  context.lineWidth = 3;
-  context.setLineDash([12, 12]);
+  context.strokeStyle = "rgba(255, 255, 255, 0.32)";
+  context.lineWidth = 1;
+  context.setLineDash([6, 8]);
   context.beginPath();
   context.moveTo(width / 2, height * 0.06);
   context.lineTo(width / 2, height * 0.94);
@@ -381,11 +390,11 @@ function drawCenterGuide(context: CanvasRenderingContext2D, width: number, heigh
 }
 
 function drawPaths(context: CanvasRenderingContext2D, samples: FrontKneeTrackingSample[]) {
-  drawPath(context, samples.map((sample) => sample.leftKnee), "rgba(255,45,22,0.86)");
-  drawPath(context, samples.map((sample) => sample.rightKnee), "rgba(255,45,22,0.86)");
+  drawPath(context, samples.map((sample) => sample.leftKnee));
+  drawPath(context, samples.map((sample) => sample.rightKnee));
 }
 
-function drawPath(context: CanvasRenderingContext2D, points: ({ x: number; y: number } | undefined)[], color: string) {
+function drawPath(context: CanvasRenderingContext2D, points: ({ x: number; y: number } | undefined)[]) {
   const usable = points.filter((point): point is { x: number; y: number } => Boolean(point));
 
   if (usable.length < 2) {
@@ -395,8 +404,10 @@ function drawPath(context: CanvasRenderingContext2D, points: ({ x: number; y: nu
   context.save();
   context.lineCap = "round";
   context.lineJoin = "round";
-  context.lineWidth = 10;
-  context.strokeStyle = color;
+  context.lineWidth = 2.5;
+  context.strokeStyle = PATH_COLOR;
+  context.shadowColor = "rgba(239, 113, 95, 0.45)";
+  context.shadowBlur = 4;
   context.beginPath();
   context.moveTo(usable[0]?.x ?? 0, usable[0]?.y ?? 0);
 
@@ -421,8 +432,11 @@ function drawJointGroup(
 ) {
   context.save();
   context.lineCap = "round";
-  context.lineWidth = 7;
-  context.strokeStyle = "rgba(33,255,71,0.85)";
+  context.lineJoin = "round";
+  context.lineWidth = 3;
+  context.strokeStyle = SKELETON_COLOR;
+  context.shadowColor = SKELETON_GLOW;
+  context.shadowBlur = 6;
 
   if (hip && knee) {
     context.beginPath();
@@ -438,75 +452,160 @@ function drawJointGroup(
     context.stroke();
   }
 
-  drawCircle(context, hip, 9, "#21ff47");
-  drawCircle(context, knee, 15, "#ff2d16");
-  drawCircle(context, ankle, 13, "#21ff47");
+  drawJointMarker(context, hip);
+  drawJointMarker(context, knee);
+  drawJointMarker(context, ankle);
   context.restore();
 }
 
-function drawMeasurementBox(
-  context: CanvasRenderingContext2D,
-  knee?: { x: number; y: number },
-  ankle?: { x: number; y: number },
-  horizontalPx = 0,
-  verticalPx = 0
-) {
-  if (!knee || !ankle) {
-    return;
-  }
-
-  const x = knee.x;
-  const top = Math.min(knee.y, ankle.y);
-  const bottom = Math.max(knee.y, ankle.y);
-  const horizontal = Math.max(28, horizontalPx);
-  const vertical = Math.max(40, verticalPx);
-
-  context.save();
-  context.strokeStyle = "#21ff47";
-  context.lineWidth = 5;
-  context.beginPath();
-  context.moveTo(x - horizontal / 2, knee.y);
-  context.lineTo(x + horizontal / 2, knee.y);
-  context.moveTo(x, top);
-  context.lineTo(x, bottom + vertical * 0.1);
-  context.moveTo(x - horizontal / 2, top);
-  context.lineTo(x - horizontal / 2, top + vertical);
-  context.moveTo(x + horizontal / 2, top);
-  context.lineTo(x + horizontal / 2, top + vertical);
-  context.stroke();
-  context.restore();
-}
-
-function drawCircle(context: CanvasRenderingContext2D, point: { x: number; y: number } | undefined, radius: number, color: string) {
+function drawJointMarker(context: CanvasRenderingContext2D, point: { x: number; y: number } | undefined) {
   if (!point) {
     return;
   }
 
+  context.save();
+  context.shadowColor = SKELETON_GLOW;
+  context.shadowBlur = 8;
   context.beginPath();
-  context.arc(point.x, point.y, radius, 0, Math.PI * 2);
-  context.fillStyle = color;
+  context.arc(point.x, point.y, 5.5, 0, Math.PI * 2);
+  context.lineWidth = 2;
+  context.strokeStyle = SKELETON_COLOR;
+  context.fillStyle = "rgba(13, 27, 34, 0.9)";
   context.fill();
-  context.lineWidth = 4;
-  context.strokeStyle = "rgba(255,255,255,0.75)";
   context.stroke();
+
+  context.shadowBlur = 0;
+  context.beginPath();
+  context.arc(point.x, point.y, 1.8, 0, Math.PI * 2);
+  context.fillStyle = SKELETON_COLOR;
+  context.fill();
+  context.restore();
 }
 
-function getOverlayLabel(input: {
+function drawAlignmentTrack(
+  context: CanvasRenderingContext2D,
+  hip?: { x: number; y: number },
+  ankle?: { x: number; y: number }
+) {
+  if (!hip || !ankle) {
+    return;
+  }
+
+  context.save();
+  context.strokeStyle = "rgba(183, 230, 74, 0.45)";
+  context.lineWidth = 1;
+  context.setLineDash([4, 6]);
+  context.beginPath();
+  context.moveTo(hip.x, hip.y);
+  context.lineTo(ankle.x, ankle.y);
+  context.stroke();
+  context.restore();
+}
+
+function drawDriftBadge(
+  context: CanvasRenderingContext2D,
+  side: "L" | "R",
+  point: { x: number; y: number } | undefined,
+  driftMm: number | null,
+  driftPx: number,
+  direction: "left" | "right"
+) {
+  if (!point) {
+    return;
+  }
+
+  const labelText = `${side} DRIFT`;
+  const valueText = driftMm !== null ? `${driftMm} mm` : `${Math.round(driftPx)} px`;
+
+  context.save();
+  context.font = "700 16px system-ui, -apple-system, BlinkMacSystemFont, sans-serif";
+  const labelWidth = context.measureText(labelText).width;
+  context.font = "900 30px system-ui, -apple-system, BlinkMacSystemFont, sans-serif";
+  const valueWidth = context.measureText(valueText).width;
+
+  const paddingX = 16;
+  const paddingY = 10;
+  const innerWidth = Math.max(labelWidth, valueWidth);
+  const width = innerWidth + paddingX * 2;
+  const height = 62;
+  const offset = 28;
+  const x = direction === "left" ? point.x - width - offset : point.x + offset;
+  const y = point.y - height / 2;
+
+  context.strokeStyle = LABEL_BORDER;
+  context.lineWidth = 1;
+  context.setLineDash([3, 3]);
+  context.beginPath();
+  context.moveTo(point.x, point.y);
+  context.lineTo(direction === "left" ? x + width : x, y + height / 2);
+  context.stroke();
+  context.setLineDash([]);
+
+  context.fillStyle = LABEL_BG;
+  context.strokeStyle = LABEL_BORDER;
+  context.lineWidth = 1.25;
+  roundRect(context, x, y, width, height, 8);
+  context.fill();
+  context.stroke();
+
+  context.save();
+  context.scale(-1, 1);
+  context.textBaseline = "top";
+
+  const textAnchor = -(x + width - paddingX);
+  context.fillStyle = "rgba(183, 230, 74, 0.95)";
+  context.font = "700 16px system-ui, -apple-system, BlinkMacSystemFont, sans-serif";
+  context.fillText(labelText, textAnchor, y + paddingY - 2);
+
+  context.fillStyle = "#ffffff";
+  context.font = "900 30px system-ui, -apple-system, BlinkMacSystemFont, sans-serif";
+  context.fillText(valueText, textAnchor, y + paddingY + 18);
+  context.restore();
+  context.restore();
+}
+
+function roundRect(
+  context: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+  radius: number
+) {
+  context.beginPath();
+  context.moveTo(x + radius, y);
+  context.arcTo(x + width, y, x + width, y + height, radius);
+  context.arcTo(x + width, y + height, x, y + height, radius);
+  context.arcTo(x, y + height, x, y, radius);
+  context.arcTo(x, y, x + width, y, radius);
+  context.closePath();
+}
+
+function getPhaseOverlay(input: {
   countdownSeconds: number | null;
   labels: FrontKneeCameraLabels;
   phase: TrackingPhase;
   progress: number | null;
 }) {
   if (input.phase === "countdown") {
-    return `${input.labels.frontKneeGetReady}\n${input.countdownSeconds ?? 0}`;
+    return {
+      bigNumber: String(input.countdownSeconds ?? 0),
+      heading: input.labels.frontKneeGetReady
+    };
   }
 
   if (input.phase === "recording") {
-    return `${input.labels.frontKneeRecording}\n${Math.round((input.progress ?? 0) * 100)}%`;
+    return {
+      bigNumber: `${Math.round((input.progress ?? 0) * 100)}%`,
+      heading: input.labels.frontKneeRecording
+    };
   }
 
   if (input.phase === "complete") {
-    return input.labels.frontKneeComplete;
+    return {
+      bigNumber: null as string | null,
+      heading: input.labels.frontKneeComplete
+    };
   }
 
   return null;
@@ -567,21 +666,58 @@ const styles = StyleSheet.create({
     fontWeight: "800",
     marginTop: 4
   },
-  bigOverlay: {
+  phaseOverlay: {
     ...StyleSheet.absoluteFillObject,
     alignItems: "center",
-    backgroundColor: "rgba(6,11,9,0.22)",
+    backgroundColor: "rgba(6,11,9,0.32)",
+    gap: spacing.sm,
     justifyContent: "center",
     padding: spacing.xl
   },
-  bigOverlayText: {
+  phaseHeading: {
     color: "#ffffff",
-    fontSize: 44,
-    fontWeight: "900",
-    lineHeight: 54,
+    fontSize: 22,
+    fontWeight: "800",
+    lineHeight: 28,
     textAlign: "center",
     textShadowColor: "rgba(0,0,0,0.75)",
     textShadowOffset: { height: 2, width: 0 },
     textShadowRadius: 8
+  },
+  phaseBigNumber: {
+    color: "#b7e64a",
+    fontSize: 96,
+    fontWeight: "900",
+    lineHeight: 104,
+    textAlign: "center",
+    textShadowColor: "rgba(0,0,0,0.75)",
+    textShadowOffset: { height: 2, width: 0 },
+    textShadowRadius: 12
+  },
+  positionGuide: {
+    backgroundColor: "rgba(13, 27, 34, 0.78)",
+    borderColor: "rgba(183, 230, 74, 0.6)",
+    borderRadius: 12,
+    borderWidth: 1,
+    bottom: spacing.lg,
+    gap: spacing.xs,
+    left: spacing.md,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
+    position: "absolute",
+    right: spacing.md
+  },
+  positionGuideTitle: {
+    color: "#b7e64a",
+    fontSize: 16,
+    fontWeight: "900",
+    letterSpacing: 0.3,
+    textTransform: "uppercase"
+  },
+  positionGuideBody: {
+    color: "#ffffff",
+    fontSize: 15,
+    fontWeight: "600",
+    lineHeight: 21
   }
 });

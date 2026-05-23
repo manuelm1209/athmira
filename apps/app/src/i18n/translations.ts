@@ -130,6 +130,9 @@ export const en = {
   frontKneeMaxDrift: "Max drift from foot line",
   frontKneeNativeNotice: "Native camera capture is ready. This MVP saves a preliminary mocked knee-tracking sample.",
   frontKneeOverallScore: "Knee tracking score",
+  frontKneePositionGuide:
+    "Align the dashed center line with the middle of your body, face the camera straight on, and press Start front knee tracking when you're ready.",
+  frontKneePositionTitle: "Position yourself in front of the camera",
   frontKneeRecording: "Tracking knees",
   frontKneeRecordingMetric: "Tracking",
   frontKneeResults: "Front knee tracking results",
@@ -496,6 +499,9 @@ export const es: Record<keyof typeof en, string> = {
   frontKneeMaxDrift: "Desvío máximo desde la línea del pie",
   frontKneeNativeNotice: "La captura nativa de cámara está lista. Este MVP guarda una muestra preliminar simulada de rodilla.",
   frontKneeOverallScore: "Puntaje de tracking",
+  frontKneePositionGuide:
+    "Alinea la línea punteada del centro con la mitad de tu cuerpo, ubícate de frente a la cámara y presiona Iniciar tracking frontal cuando estés listo.",
+  frontKneePositionTitle: "Posiciónate frente a la cámara",
   frontKneeRecording: "Analizando rodillas",
   frontKneeRecordingMetric: "Tracking",
   frontKneeResults: "Resultados de tracking frontal",

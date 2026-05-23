@@ -47,6 +47,8 @@ export function FrontKneeAnalysisScreen() {
     frontKneeComplete: t("frontKneeComplete"),
     frontKneeGetReady: t("frontKneeGetReady"),
     frontKneeNativeNotice: t("frontKneeNativeNotice"),
+    frontKneePositionGuide: t("frontKneePositionGuide"),
+    frontKneePositionTitle: t("frontKneePositionTitle"),
     frontKneeRecording: t("frontKneeRecording"),
     insufficientPoseSamples: t("insufficientPoseSamples"),
     poseDetectionActive: t("poseDetectionActive"),

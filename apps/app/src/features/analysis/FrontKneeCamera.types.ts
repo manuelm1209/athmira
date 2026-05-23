@@ -11,6 +11,8 @@ export type FrontKneeCameraLabels = {
   frontKneeComplete: string;
   frontKneeGetReady: string;
   frontKneeNativeNotice: string;
+  frontKneePositionGuide: string;
+  frontKneePositionTitle: string;
   frontKneeRecording: string;
   insufficientPoseSamples: string;
   poseDetectionActive: string;
