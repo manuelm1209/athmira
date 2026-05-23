@@ -59,14 +59,14 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     borderRadius: radii.md,
     borderWidth: 1,
+    height: 180,
     justifyContent: "center",
     overflow: "hidden",
-    paddingVertical: spacing.md
+    paddingVertical: spacing.sm
   },
   previewImage: {
-    aspectRatio: 3 / 2,
-    height: undefined,
-    maxWidth: 420,
+    height: "100%",
+    maxWidth: 320,
     width: "100%"
   },
   options: {
