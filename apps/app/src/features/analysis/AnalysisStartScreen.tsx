@@ -33,7 +33,6 @@ export function AnalysisStartScreen() {
   const [goal, setGoal] = useState<BikeFitGoal>("balanced");
   const [discipline, setDiscipline] = useState<BikeFitDiscipline>("road_endurance");
   const [painAreas, setPainAreas] = useState<BikeFitPainArea[]>(["none"]);
-  const [setupOpen, setSetupOpen] = useState(false);
   const [painOpen, setPainOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const selectedBike = bikes.find((bike) => bike.id === selectedBikeId) ?? null;
@@ -147,14 +146,6 @@ export function AnalysisStartScreen() {
                     : "Add a bike to begin."}
               </Text>
             </View>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityState={{ expanded: setupOpen }}
-              onPress={() => setSetupOpen((current) => !current)}
-              style={styles.disclosureButton}
-            >
-              <Text style={styles.disclosureButtonText}>{setupOpen ? "−" : "+"}</Text>
-            </Pressable>
           </View>
 
           {bikes.length === 0 ? (
@@ -200,17 +191,10 @@ export function AnalysisStartScreen() {
             </View>
           )}
 
-          {setupOpen ? (
-            <View style={styles.instructions}>
-              <Text style={styles.instruction}>{t("placeCamera")}</Text>
-              <Text style={styles.instruction}>{t("showEntireBike")}</Text>
-              <Text style={styles.instruction}>{t("steadyPedaling")}</Text>
-            </View>
-          ) : null}
-
           <View style={styles.divider} />
 
           <Pressable
+            accessibilityLabel={language === "es" ? "Mostrar molestias" : "Show discomfort"}
             accessibilityRole="button"
             accessibilityState={{ expanded: painOpen }}
             onPress={() => setPainOpen((current) => !current)}
@@ -220,7 +204,7 @@ export function AnalysisStartScreen() {
               <Text style={styles.compactDisclosureLabel}>{language === "es" ? "Molestias" : "Discomfort"}</Text>
               <Text style={styles.compactDisclosureValue}>{selectedPainLabel}</Text>
             </View>
-            <Text style={styles.compactDisclosureIcon}>{painOpen ? "−" : "+"}</Text>
+            <PlusMinusIcon expanded={painOpen} />
           </Pressable>
 
           {painOpen ? (
@@ -246,6 +230,7 @@ export function AnalysisStartScreen() {
                 : "Review side posture, key angles, estimated aero guidance, and fit recommendations."
             }
             disabled={bikes.length === 0}
+            instructions={[t("placeCamera"), t("showEntireBike"), t("steadyPedaling")]}
             onPress={openCamera}
             title={t("sideFitAnalysis")}
           />
@@ -256,6 +241,11 @@ export function AnalysisStartScreen() {
                 : "Track frontal knee movement, stability, and side-to-side drift."
             }
             disabled={bikes.length === 0}
+            instructions={[
+              t("frontKneeInstructionCamera"),
+              t("frontKneeInstructionVisible"),
+              t("frontKneeInstructionCountdown")
+            ]}
             onPress={openFrontKneeCamera}
             secondary
             title={t("frontKneeTitle")}
@@ -286,27 +276,59 @@ export function AnalysisStartScreen() {
 function AnalysisChoice({
   body,
   disabled,
+  instructions,
   onPress,
   secondary,
   title
 }: {
   body: string;
   disabled: boolean;
+  instructions: string[];
   onPress: () => void;
   secondary?: boolean;
   title: string;
 }) {
   const { language } = useLanguage();
+  const [expanded, setExpanded] = useState(false);
 
   return (
     <View style={[styles.analysisChoice, disabled && styles.analysisChoiceDisabled]}>
+      <View style={styles.analysisChoiceHeader}>
+        <View style={styles.analysisChoiceCopy}>
+          <Text style={styles.analysisChoiceTitle}>{title}</Text>
+        </View>
+        <Pressable
+          accessibilityLabel={expanded ? (language === "es" ? "Ocultar detalles" : "Hide details") : (language === "es" ? "Mostrar detalles" : "Show details")}
+          accessibilityRole="button"
+          accessibilityState={{ expanded }}
+          onPress={() => setExpanded((current) => !current)}
+          style={styles.detailButton}
+        >
+          <PlusMinusIcon expanded={expanded} />
+        </Pressable>
+      </View>
       <View style={styles.analysisChoiceCopy}>
-        <Text style={styles.analysisChoiceTitle}>{title}</Text>
         <Text style={styles.analysisChoiceBody}>{body}</Text>
       </View>
+      {expanded ? (
+        <View style={styles.instructions}>
+          {instructions.map((instruction) => (
+            <Text key={instruction} style={styles.instruction}>{instruction}</Text>
+          ))}
+        </View>
+      ) : null}
       <Button disabled={disabled} onPress={onPress} variant={secondary ? "secondary" : "primary"} style={styles.analysisChoiceButton}>
         {language === "es" ? "Continuar" : "Continue"}
       </Button>
+    </View>
+  );
+}
+
+function PlusMinusIcon({ expanded }: { expanded: boolean }) {
+  return (
+    <View style={styles.plusMinusIcon}>
+      <View style={styles.plusMinusHorizontal} />
+      {expanded ? null : <View style={styles.plusMinusVertical} />}
     </View>
   );
 }
@@ -459,22 +481,6 @@ const styles = StyleSheet.create({
     fontWeight: "900",
     lineHeight: 24
   },
-  disclosureButton: {
-    alignItems: "center",
-    backgroundColor: colors.primaryMist,
-    borderColor: colors.border,
-    borderRadius: radii.round,
-    borderWidth: 1,
-    height: 36,
-    justifyContent: "center",
-    width: 36
-  },
-  disclosureButtonText: {
-    color: colors.primary,
-    fontSize: 22,
-    fontWeight: "900",
-    lineHeight: 24
-  },
   sectionLabel: {
     color: colors.primary,
     fontSize: 13,
@@ -559,12 +565,6 @@ const styles = StyleSheet.create({
     fontWeight: "800",
     lineHeight: 20
   },
-  compactDisclosureIcon: {
-    color: colors.primary,
-    fontSize: 22,
-    fontWeight: "900",
-    lineHeight: 24
-  },
   error: {
     color: colors.danger,
     fontWeight: "800"
@@ -588,7 +588,14 @@ const styles = StyleSheet.create({
   analysisChoiceDisabled: {
     opacity: 0.65
   },
+  analysisChoiceHeader: {
+    alignItems: "flex-start",
+    flexDirection: "row",
+    gap: spacing.md,
+    justifyContent: "space-between"
+  },
   analysisChoiceCopy: {
+    flex: 1,
     gap: spacing.sm
   },
   analysisChoiceTitle: {
@@ -604,6 +611,37 @@ const styles = StyleSheet.create({
   },
   analysisChoiceButton: {
     alignSelf: "flex-start"
+  },
+  detailButton: {
+    alignItems: "center",
+    backgroundColor: colors.primaryMist,
+    borderColor: colors.border,
+    borderRadius: radii.round,
+    borderWidth: 1,
+    height: 34,
+    justifyContent: "center",
+    width: 34
+  },
+  plusMinusIcon: {
+    alignItems: "center",
+    height: 16,
+    justifyContent: "center",
+    position: "relative",
+    width: 16
+  },
+  plusMinusHorizontal: {
+    backgroundColor: colors.primary,
+    borderRadius: radii.round,
+    height: 3,
+    position: "absolute",
+    width: 13
+  },
+  plusMinusVertical: {
+    backgroundColor: colors.primary,
+    borderRadius: radii.round,
+    height: 13,
+    position: "absolute",
+    width: 3
   },
   historyList: {
     gap: spacing.md

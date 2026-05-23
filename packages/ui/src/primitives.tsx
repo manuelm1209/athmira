@@ -182,7 +182,7 @@ export function SelectField({ helper, label, onValueChange, options, placeholder
         >
           {displayValue}
         </Text>
-        <Text style={styles.nativeSelectChevron}>{nativeOpen ? "^" : "v"}</Text>
+        <NativeSelectChevron expanded={nativeOpen} />
       </Pressable>
       {nativeOpen ? (
         <View style={styles.nativeSelectMenu}>
@@ -222,6 +222,15 @@ export function SelectField({ helper, label, onValueChange, options, placeholder
         </View>
       ) : null}
       {helper ? <Text style={styles.helper}>{helper}</Text> : null}
+    </View>
+  );
+}
+
+function NativeSelectChevron({ expanded }: { expanded: boolean }) {
+  return (
+    <View style={styles.nativeSelectChevronBox}>
+      <View style={[styles.nativeSelectChevronStroke, styles.nativeSelectChevronStrokeLeft, expanded && styles.nativeSelectChevronStrokeLeftOpen]} />
+      <View style={[styles.nativeSelectChevronStroke, styles.nativeSelectChevronStrokeRight, expanded && styles.nativeSelectChevronStrokeRightOpen]} />
     </View>
   );
 }
@@ -457,12 +466,33 @@ const styles = StyleSheet.create({
   nativeSelectPlaceholder: {
     color: colors.inkMuted
   },
-  nativeSelectChevron: {
-    color: colors.ink,
-    fontFamily,
-    fontSize: 14,
-    fontWeight: typography.weights.black,
-    lineHeight: 18
+  nativeSelectChevronBox: {
+    height: 18,
+    justifyContent: "center",
+    position: "relative",
+    width: 18
+  },
+  nativeSelectChevronStroke: {
+    backgroundColor: colors.ink,
+    borderRadius: radii.round,
+    height: 2,
+    position: "absolute",
+    top: 8,
+    width: 8
+  },
+  nativeSelectChevronStrokeLeft: {
+    left: 3,
+    transform: [{ rotate: "45deg" }]
+  },
+  nativeSelectChevronStrokeRight: {
+    right: 3,
+    transform: [{ rotate: "-45deg" }]
+  },
+  nativeSelectChevronStrokeLeftOpen: {
+    transform: [{ rotate: "-45deg" }]
+  },
+  nativeSelectChevronStrokeRightOpen: {
+    transform: [{ rotate: "45deg" }]
   },
   nativeSelectMenu: {
     backgroundColor: colors.surface,
