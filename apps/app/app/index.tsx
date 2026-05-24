@@ -453,7 +453,7 @@ export default function WelcomeRoute() {
                 <Text style={[styles.scoreRingValue, mobile && styles.scoreRingValueMobile]}>82</Text>
               </View>
             </View>
-            <View style={styles.dashboardGrid}>
+            <View style={[styles.dashboardGrid, mobile && styles.dashboardGridMobile]}>
               {copy.dashboardCards.map((card) => (
                 <View key={card.label} style={[styles.dashboardCard, mobile && styles.dashboardCardMobile]}>
                   <Text style={styles.dashboardLabel}>{card.label}</Text>
@@ -473,7 +473,7 @@ export default function WelcomeRoute() {
               </Text>
             </View>
           </View>
-          <View style={styles.cockpitCopy}>
+          <View style={[styles.cockpitCopy, mobile && styles.cockpitCopyMobile]}>
             <Text style={[styles.sectionTitleLeft, mobile && styles.sectionTitleMobile, mobileBox]}>{copy.cockpitTitle}</Text>
             <Text style={[styles.sectionBodyLeft, mobileBox]}>{copy.cockpitBody}</Text>
           </View>
@@ -996,7 +996,8 @@ const styles = StyleSheet.create({
   },
   cockpitSectionMobile: {
     alignItems: "stretch",
-    flexDirection: "column"
+    flexDirection: "column",
+    gap: spacing.xl
   },
   dashboardMock: {
     backgroundColor: colors.surface,
@@ -1010,6 +1011,9 @@ const styles = StyleSheet.create({
     ...shadows.medium
   },
   dashboardMockMobile: {
+    flexBasis: "auto",
+    flexGrow: 0,
+    flexShrink: 0,
     minWidth: 0,
     padding: spacing.lg,
     width: "100%"
@@ -1078,6 +1082,10 @@ const styles = StyleSheet.create({
     flexWrap: "wrap",
     gap: spacing.md
   },
+  dashboardGridMobile: {
+    flexDirection: "column",
+    flexWrap: "nowrap"
+  },
   dashboardCard: {
     backgroundColor: colors.surfaceMuted,
     borderColor: colors.border,
@@ -1089,7 +1097,7 @@ const styles = StyleSheet.create({
     padding: spacing.md
   },
   dashboardCardMobile: {
-    flexBasis: "100%",
+    flexBasis: "auto",
     padding: spacing.md
   },
   dashboardLabel: {
@@ -1139,6 +1147,13 @@ const styles = StyleSheet.create({
     flex: 0.8,
     gap: spacing.md,
     minWidth: 300
+  },
+  cockpitCopyMobile: {
+    flexBasis: "auto",
+    flexGrow: 0,
+    flexShrink: 0,
+    minWidth: 0,
+    width: "100%"
   },
   futureTitle: {
     color: colors.primary,
