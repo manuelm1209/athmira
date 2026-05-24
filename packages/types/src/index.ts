@@ -86,7 +86,6 @@ export type NutritionProductCategory =
   | "powder"
   | "fruit"
   | "candy"
-  | "sandwich"
   | "custom";
 
 export type NutritionProductScope = "global" | "user";

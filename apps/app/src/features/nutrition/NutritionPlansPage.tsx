@@ -99,7 +99,6 @@ const categoryOptions: { label: string; value: NutritionProductCategory }[] = [
   { label: "Powder", value: "powder" },
   { label: "Fruit", value: "fruit" },
   { label: "Candy", value: "candy" },
-  { label: "Sandwich", value: "sandwich" },
   { label: "Custom", value: "custom" }
 ];
 
@@ -465,7 +464,8 @@ const globalProductNameTranslations: Record<string, { en: string; es: string }> 
   "00000000-0000-4000-8000-000000000113": { en: "Dates", es: "Datiles" },
   "00000000-0000-4000-8000-000000000114": { en: "Raisins", es: "Uvas pasas" },
   "00000000-0000-4000-8000-000000000115": { en: "Pretzels", es: "Pretzels" },
-  "00000000-0000-4000-8000-000000000116": { en: "Sandwich", es: "Sandwich" }
+  "00000000-0000-4000-8000-000000000116": { en: "Sandwich", es: "Sandwich" },
+  "00000000-0000-4000-8000-000000000117": { en: "Maple syrup", es: "Jarabe de maple" }
 };
 
 export function NutritionPlansPage() {
@@ -4069,7 +4069,7 @@ export function autoGeneratePlan({
   const dates = findProduct(products, (product) => product.icon_key === "dates");
   const bocadillo = findProduct(products, (product) => product.category === "candy" && /bocadillo/i.test(product.name));
   const gummies = findProduct(products, (product) => product.category === "candy" && !/bocadillo/i.test(product.name));
-  const sandwich = findProduct(products, (product) => product.category === "sandwich");
+  const sandwich = findProduct(products, (product) => product.icon_key === "sandwich");
   const riceCake = findProduct(products, (product) => product.icon_key === "rice");
 
   const bottleCount = hours <= 1.25 ? 1 : hours <= 2.75 ? 2 : Math.min(4, Math.ceil(hours / 1.6));
@@ -4366,7 +4366,6 @@ function getCategoryOptions(language: "en" | "es") {
       { label: "Polvo", value: "powder" },
       { label: "Fruta", value: "fruit" },
       { label: "Dulce", value: "candy" },
-      { label: "Sandwich", value: "sandwich" },
       { label: "Personalizado", value: "custom" }
     ] satisfies { label: string; value: NutritionProductCategory }[];
   }
@@ -4542,8 +4541,6 @@ function getDefaultProductIconKey(category: NutritionProductCategory): NonNullab
       return "banana";
     case "candy":
       return "candy";
-    case "sandwich":
-      return "sandwich";
     case "solid_food":
     case "custom":
     default:

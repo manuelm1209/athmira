@@ -1258,7 +1258,6 @@ function adminNutritionCategoryOptions(language: "en" | "es"): { label: string; 
       { label: "Polvo", value: "powder" },
       { label: "Fruta", value: "fruit" },
       { label: "Dulce", value: "candy" },
-      { label: "Sandwich", value: "sandwich" },
       { label: "Personalizado", value: "custom" }
     ];
   }
@@ -1272,7 +1271,6 @@ function adminNutritionCategoryOptions(language: "en" | "es"): { label: string; 
     { label: "Powder", value: "powder" },
     { label: "Fruit", value: "fruit" },
     { label: "Candy", value: "candy" },
-    { label: "Sandwich", value: "sandwich" },
     { label: "Custom", value: "custom" }
   ];
 }
@@ -1292,8 +1290,6 @@ function getDefaultNutritionIconKey(category: NutritionProduct["category"]): Non
       return "banana";
     case "candy":
       return "candy";
-    case "sandwich":
-      return "sandwich";
     case "solid_food":
     case "custom":
     default:
