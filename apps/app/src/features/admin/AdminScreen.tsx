@@ -1321,6 +1321,7 @@ const styles = StyleSheet.create({
     gap: spacing.sm
   },
   hubGrid: {
+    alignItems: "flex-start",
     flexDirection: "row",
     flexWrap: "wrap",
     gap: spacing.lg
@@ -1329,7 +1330,6 @@ const styles = StyleSheet.create({
     flexBasis: 320,
     flexGrow: 1,
     gap: spacing.lg,
-    justifyContent: "space-between",
     minHeight: 220
   },
   hubAction: {
