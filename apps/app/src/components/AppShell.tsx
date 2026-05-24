@@ -1,5 +1,5 @@
 import { Link, type Href, usePathname } from "expo-router";
-import { useEffect, useState, type PropsWithChildren } from "react";
+import { useEffect, useRef, useState, type PropsWithChildren } from "react";
 import { Image, Platform, Pressable, StyleSheet, Text, View, useWindowDimensions } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { colors, radii, shadows, spacing, typography } from "@athmira/ui";
@@ -44,6 +44,8 @@ export function AppShell({ children }: PropsWithChildren) {
   const compact = !webHydrated || width < 760;
   const [headerDocked, setHeaderDocked] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [accountMenuOpen, setAccountMenuOpen] = useState(false);
+  const accountMenuRef = useRef<View | null>(null);
 
   useEffect(() => {
     if (Platform.OS === "web") {
@@ -53,7 +55,36 @@ export function AppShell({ children }: PropsWithChildren) {
 
   useEffect(() => {
     setMenuOpen(false);
+    setAccountMenuOpen(false);
   }, [pathname]);
+
+  useEffect(() => {
+    if (Platform.OS !== "web" || !accountMenuOpen) {
+      return undefined;
+    }
+
+    function handlePointerDown(event: MouseEvent) {
+      const node = accountMenuRef.current as unknown as HTMLElement | null;
+      if (node && event.target instanceof Node && node.contains(event.target)) {
+        return;
+      }
+      setAccountMenuOpen(false);
+    }
+
+    function handleKey(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        setAccountMenuOpen(false);
+      }
+    }
+
+    window.addEventListener("mousedown", handlePointerDown);
+    window.addEventListener("keydown", handleKey);
+
+    return () => {
+      window.removeEventListener("mousedown", handlePointerDown);
+      window.removeEventListener("keydown", handleKey);
+    };
+  }, [accountMenuOpen]);
 
   useEffect(() => {
     if (Platform.OS !== "web") {
@@ -91,21 +122,26 @@ export function AppShell({ children }: PropsWithChildren) {
     };
   }, []);
 
-  const navItems: NavItem[] = session
+  const primaryNavItems: NavItem[] = session
     ? [
         { href: "/dashboard", key: "dashboard", label: t("dashboard") },
         { href: "/bikes", key: "bikes", label: t("bikes") },
         { href: "/analysis", key: "analysis", label: t("camera") },
         { href: "/nutrition", key: "nutrition", label: t("nutritionPlanningNav") },
-        { href: "/tire-pressure", key: "tirePressure", label: t("tirePressureNav") },
-        { href: "/profile", key: "profile", label: t("profile") },
-        { href: "/settings", key: "settings", label: t("settings") },
-        ...(isAdmin ? [{ href: "/admin" as const, key: "admin", label: t("admin") }] : [])
+        { href: "/tire-pressure", key: "tirePressure", label: t("tirePressureNav") }
       ]
     : [
         { href: "/auth/login", key: "login", label: t("login") },
         { href: "/auth/signup", key: "signup", label: t("createAccount") }
       ];
+  const accountNavItems: NavItem[] = session
+    ? [
+        { href: "/profile", key: "profile", label: t("profile") },
+        { href: "/settings", key: "settings", label: t("settings") },
+        ...(isAdmin ? [{ href: "/admin" as const, key: "admin", label: t("admin") }] : [])
+      ]
+    : [];
+  const navItems: NavItem[] = [...primaryNavItems, ...accountNavItems];
   const marketingNavItems: MarketingNavItem[] = [
     { href: "/#funciones" as Href, key: "features", label: t("homeNavFeatures") },
     { href: "/#como-funciona" as Href, key: "howItWorks", label: t("homeNavHowItWorks") },
@@ -113,6 +149,9 @@ export function AppShell({ children }: PropsWithChildren) {
     { href: "/#progreso" as Href, key: "resources", label: t("homeNavResources") }
   ];
   const compactMenuItems = session ? navItems : [...marketingNavItems, ...navItems];
+  const accountMenuActive = accountNavItems.some(
+    (item) => pathname === item.href || pathname.startsWith(`${item.href}/`)
+  );
 
   return (
     <View style={styles.root}>
@@ -166,7 +205,117 @@ export function AppShell({ children }: PropsWithChildren) {
                 {menuOpen ? t("closeMenu") : t("menu")}
               </Text>
             </Pressable>
-          ) : null}
+          ) : (
+            <View style={styles.nav}>
+              {session ? null : (
+                <View style={styles.marketingNav}>
+                  {marketingNavItems.map((item) => (
+                    <Link href={item.href} asChild key={item.key}>
+                      <Pressable accessibilityRole="link">
+                        <Text style={styles.marketingNavText}>{item.label}</Text>
+                      </Pressable>
+                    </Link>
+                  ))}
+                </View>
+              )}
+              {primaryNavItems.map((item) => (
+                <Link href={item.href} asChild key={item.key}>
+                  <Pressable
+                    accessibilityRole="link"
+                    style={StyleSheet.flatten([
+                      styles.navLink,
+                      item.key === "signup" && styles.primaryNavLink,
+                      pathname === item.href && styles.activeLink
+                    ])}
+                  >
+                    <Text
+                      style={[
+                        styles.navText,
+                        item.key === "signup" && styles.primaryNavText,
+                        pathname === item.href && styles.activeText
+                      ]}
+                    >
+                      {item.label}
+                    </Text>
+                  </Pressable>
+                </Link>
+              ))}
+              {session ? (
+                <View ref={accountMenuRef} style={styles.accountMenuWrapper}>
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityState={{ expanded: accountMenuOpen }}
+                    onPress={() => {
+                      setAccountMenuOpen((current) => !current);
+                    }}
+                    style={StyleSheet.flatten([
+                      styles.navLink,
+                      styles.accountTrigger,
+                      (accountMenuOpen || accountMenuActive) && styles.accountTriggerActive
+                    ])}
+                  >
+                    <Text
+                      style={[
+                        styles.navText,
+                        (accountMenuOpen || accountMenuActive) && styles.activeText
+                      ]}
+                    >
+                      {t("account")}
+                    </Text>
+                    <Text
+                      allowFontScaling={false}
+                      style={[
+                        styles.accountTriggerCaret,
+                        (accountMenuOpen || accountMenuActive) && styles.activeText
+                      ]}
+                    >
+                      {accountMenuOpen ? "▴" : "▾"}
+                    </Text>
+                  </Pressable>
+                  {accountMenuOpen ? (
+                    <View style={styles.accountMenu}>
+                      {accountNavItems.map((item) => {
+                        const href = String(item.href);
+                        const active = pathname === href || pathname.startsWith(`${href}/`);
+
+                        return (
+                          <Link href={item.href} asChild key={item.key}>
+                            <Pressable
+                              accessibilityRole="link"
+                              onPress={() => {
+                                setAccountMenuOpen(false);
+                              }}
+                              style={StyleSheet.flatten([styles.accountMenuItem, active && styles.accountMenuItemActive])}
+                            >
+                              <Text style={[styles.accountMenuItemText, active && styles.compactMenuItemTextActive]}>
+                                {item.label}
+                              </Text>
+                            </Pressable>
+                          </Link>
+                        );
+                      })}
+                      <View style={styles.accountMenuDivider} />
+                      <View style={styles.accountMenuLanguageRow}>
+                        <LanguageToggle />
+                      </View>
+                      <Pressable
+                        accessibilityRole="button"
+                        onPress={() => {
+                          setAccountMenuOpen(false);
+                          signOut();
+                        }}
+                        style={styles.accountMenuSignOut}
+                      >
+                        <Text style={styles.accountMenuSignOutText}>{t("logout")}</Text>
+                      </Pressable>
+                    </View>
+                  ) : null}
+                </View>
+              ) : (
+                <LanguageToggle />
+              )}
+            </View>
+          )}
         </View>
 
         {compact && menuOpen ? (
@@ -206,49 +355,6 @@ export function AppShell({ children }: PropsWithChildren) {
           </View>
         ) : null}
 
-        {compact ? null : (
-          <View style={styles.nav}>
-            {session ? null : (
-              <View style={styles.marketingNav}>
-                {marketingNavItems.map((item) => (
-                  <Link href={item.href} asChild key={item.key}>
-                    <Pressable accessibilityRole="link">
-                      <Text style={styles.marketingNavText}>{item.label}</Text>
-                    </Pressable>
-                  </Link>
-                ))}
-              </View>
-            )}
-            {navItems.map((item) => (
-              <Link href={item.href} asChild key={item.key}>
-                <Pressable
-                  accessibilityRole="link"
-                  style={StyleSheet.flatten([
-                    styles.navLink,
-                    item.key === "signup" && styles.primaryNavLink,
-                    pathname === item.href && styles.activeLink
-                  ])}
-                >
-                  <Text
-                    style={[
-                      styles.navText,
-                      item.key === "signup" && styles.primaryNavText,
-                      pathname === item.href && styles.activeText
-                    ]}
-                  >
-                    {item.label}
-                  </Text>
-                </Pressable>
-              </Link>
-            ))}
-            <LanguageToggle />
-            {session ? (
-              <Pressable accessibilityRole="button" onPress={signOut} style={styles.navLink}>
-                <Text style={styles.navText}>{t("logout")}</Text>
-              </Pressable>
-            ) : null}
-          </View>
-        )}
       </View>
       <View style={styles.content}>{children}</View>
     </View>
@@ -268,14 +374,14 @@ const styles = StyleSheet.create({
     borderColor: "rgba(184,206,209,0.72)",
     borderRadius: 18,
     borderWidth: 1,
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: spacing.lg,
-    justifyContent: "space-between",
+    flexDirection: "column",
+    gap: spacing.sm,
     marginHorizontal: spacing.md,
     marginTop: spacing.sm,
     paddingHorizontal: spacing.xl,
-    paddingVertical: spacing.md,
+    paddingVertical: spacing.sm,
+    position: "relative",
+    zIndex: 100,
     ...shadows.soft
   },
   headerCompact: {
@@ -377,8 +483,80 @@ const styles = StyleSheet.create({
   nav: {
     alignItems: "center",
     flexDirection: "row",
+    flexShrink: 1,
     flexWrap: "wrap",
-    gap: spacing.xl
+    gap: spacing.md,
+    justifyContent: "flex-end"
+  },
+  accountMenuWrapper: {
+    position: "relative",
+    zIndex: 200
+  },
+  accountTrigger: {
+    alignItems: "center",
+    flexDirection: "row",
+    gap: spacing.xs
+  },
+  accountTriggerActive: {
+    backgroundColor: colors.primary,
+    borderColor: colors.primary
+  },
+  accountTriggerCaret: {
+    color: colors.ink,
+    fontFamily,
+    fontSize: 11,
+    fontWeight: typography.weights.black
+  },
+  accountMenu: {
+    backgroundColor: colors.surface,
+    borderColor: colors.border,
+    borderRadius: radii.md,
+    borderWidth: 1,
+    gap: spacing.xs,
+    minWidth: 200,
+    padding: spacing.sm,
+    position: "absolute",
+    right: 0,
+    top: "100%",
+    ...shadows.medium,
+    marginTop: spacing.xs,
+    zIndex: 300
+  },
+  accountMenuItem: {
+    borderRadius: radii.sm,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm
+  },
+  accountMenuItemActive: {
+    backgroundColor: colors.primary
+  },
+  accountMenuItemText: {
+    color: colors.ink,
+    fontFamily,
+    fontSize: 13,
+    fontWeight: typography.weights.black
+  },
+  accountMenuDivider: {
+    backgroundColor: colors.border,
+    height: 1,
+    marginVertical: spacing.xs
+  },
+  accountMenuLanguageRow: {
+    alignItems: "flex-start",
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs
+  },
+  accountMenuSignOut: {
+    alignItems: "flex-start",
+    borderRadius: radii.sm,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm
+  },
+  accountMenuSignOutText: {
+    color: colors.ink,
+    fontFamily,
+    fontSize: 13,
+    fontWeight: typography.weights.black
   },
   navCompact: {
     gap: spacing.sm,

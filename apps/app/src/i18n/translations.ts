@@ -1,4 +1,5 @@
 export const en = {
+  account: "Account",
   addBike: "Add bike",
   admin: "Admin",
   adminAccountTab: "Account",
@@ -372,6 +373,7 @@ export const en = {
 } as const;
 
 export const es: Record<keyof typeof en, string> = {
+  account: "Cuenta",
   addBike: "Agregar bici",
   admin: "Admin",
   adminAccountTab: "Cuenta",
