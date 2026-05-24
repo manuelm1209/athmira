@@ -418,10 +418,12 @@ export default function WelcomeRoute() {
 
         <FadeInView delayMs={200} style={[styles.workflow, mobile && styles.workflowMobile]}>
           <View style={[styles.workflowCopy, mobile && styles.workflowCopyMobile]}>
-            <Text style={[styles.sectionTitleLeft, styles.workflowTitle, mobile && styles.sectionTitleMobile, mobileBox]}>
+            <Text style={[styles.sectionTitleLeft, styles.workflowTitle, mobile && styles.sectionTitleMobile, mobile && styles.textMobile]}>
               {copy.workflowTitle}
             </Text>
-            <Text style={[styles.sectionBodyLeft, styles.workflowBody, mobileBox]}>{copy.workflowBody}</Text>
+            <Text style={[styles.sectionBodyLeft, styles.workflowBody, mobile && styles.workflowBodyMobile]}>
+              {copy.workflowBody}
+            </Text>
           </View>
           <View style={[styles.stepStack, mobile && styles.stepStackMobile]}>
             {copy.steps.map((step, index) => (
@@ -474,8 +476,6 @@ export default function WelcomeRoute() {
           <View style={styles.cockpitCopy}>
             <Text style={[styles.sectionTitleLeft, mobile && styles.sectionTitleMobile, mobileBox]}>{copy.cockpitTitle}</Text>
             <Text style={[styles.sectionBodyLeft, mobileBox]}>{copy.cockpitBody}</Text>
-            <Text style={styles.futureTitle}>{copy.futureTitle}</Text>
-            <Text style={styles.futureBody}>{copy.futureBody}</Text>
           </View>
         </FadeInView>
 
@@ -916,6 +916,11 @@ const styles = StyleSheet.create({
   },
   workflowBody: {
     color: "#d8f0ed"
+  },
+  workflowBodyMobile: {
+    maxWidth: "100%",
+    paddingRight: spacing.xs,
+    width: "100%"
   },
   stepStack: {
     flexBasis: 0,
