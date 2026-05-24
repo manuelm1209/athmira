@@ -3,7 +3,7 @@ import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useEffect, useRef, useState, type PropsWithChildren } from "react";
 import { Image, Platform, Pressable, StyleSheet, Text, View, useWindowDimensions } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import Svg, { G, Path } from "react-native-svg";
+import Svg, { Circle, G, Path } from "react-native-svg";
 import { colors, radii, shadows, spacing, typography } from "@athmira/ui";
 
 import { useAuth } from "@/providers/AuthProvider";
@@ -37,7 +37,7 @@ type MarketingNavItem = {
 };
 
 type MobileNavItem = NavItem & {
-  icon: keyof typeof MaterialCommunityIcons.glyphMap | "nutrition-bottle";
+  icon: keyof typeof MaterialCommunityIcons.glyphMap | "nutrition-bottle" | "bike-custom";
 };
 
 export function AppShell({ children }: PropsWithChildren) {
@@ -172,7 +172,7 @@ export function AppShell({ children }: PropsWithChildren) {
   const mobileAppNavItems: MobileNavItem[] = session
     ? [
         { href: "/dashboard", icon: "home-variant", key: "mobileHome", label: t("mobileHome") },
-        { href: "/bikes", icon: "bike", key: "mobileBike", label: t("mobileBike") },
+        { href: "/bikes", icon: "bike-custom", key: "mobileBike", label: t("mobileBike") },
         { href: "/nutrition", icon: "nutrition-bottle", key: "mobileNutrition", label: t("nutritionPlanningNav") },
         { href: "/analysis", icon: "bike-fast", key: "mobileBikeFit", label: t("camera") },
         { href: "/profile", icon: "account", key: "mobileYou", label: t("mobileYou") }
@@ -524,6 +524,21 @@ const fontFamily = Platform.select({ default: undefined, web: typography.fontFam
 
 function MobileNavIcon({ active, icon }: { active: boolean; icon: MobileNavItem["icon"] }) {
   const color = active ? colors.primary : colors.inkMuted;
+
+  if (icon === "bike-custom") {
+    return (
+      <Svg fill="none" height={26} viewBox="0 0 24 24" width={26}>
+        <Path
+          d="M7 12.5L8.5 9.5M8.5 9.5H16M8.5 9.5L10.5 16.5L16 9.5M8.5 9.5L7.5 7M16 9.5L17 12.5M16 9.5L15.5 8.5L18.5 8V9.5M9 15.5C9 17.433 7.433 19 5.5 19C3.567 19 2 17.433 2 15.5C2 13.567 3.567 12 5.5 12C7.433 12 9 13.567 9 15.5Z"
+          stroke={color}
+          strokeWidth={1.6}
+          strokeLinejoin="round"
+        />
+        <Circle cx={18.5} cy={15.5} r={3.5} stroke={color} strokeWidth={1.6} />
+        <Path d="M7 7H9.5" stroke={color} strokeWidth={1.6} strokeLinecap="round" />
+      </Svg>
+    );
+  }
 
   if (icon === "nutrition-bottle") {
     return (
