@@ -2460,7 +2460,7 @@ function ReadOnlyCarriedCard({ cardStyle, compact, items }: { cardStyle?: StyleP
         </View>
       </View>
       <NutrientBars calories={calories} carbs={carbs} fluids={fluids} sodium={sodium} />
-      <IngredientComposition items={items} onRemoveItem={() => undefined} readonly />
+      <IngredientComposition groupByLocation items={items} onRemoveItem={() => undefined} readonly />
     </View>
   );
 }
@@ -2569,7 +2569,7 @@ function CarriedFuelCard({
         <Button onPress={onAddFood}>{copy.addFood}</Button>
       </View>
       <NutrientBars calories={calories} carbs={carbs} fluids={fluids} sodium={sodium} />
-      <IngredientComposition items={items} onRemoveItem={onRemoveItem} />
+      <IngredientComposition groupByLocation items={items} onRemoveItem={onRemoveItem} />
     </View>
   );
 }
@@ -2842,11 +2842,23 @@ function CompactNutritionBar({
   );
 }
 
+const CARRIED_LOCATION_ORDER: NutritionPlanItemLocation[] = ["before", "carried", "during", "after"];
+
+const CARRIED_LOCATION_TONES: Record<NutritionPlanItemLocation, { background: string; border: string; text: string }> = {
+  before: { background: "#fff1d2", border: colors.amber, text: "#7a4a00" },
+  carried: { background: colors.primaryMist, border: colors.primary, text: colors.primaryDark },
+  during: { background: colors.accentSoft, border: colors.accent, text: "#3a5a00" },
+  after: { background: colors.dangerSoft, border: colors.coral, text: "#8a2a1f" },
+  bottle: { background: colors.surfaceMuted, border: colors.border, text: colors.inkMuted }
+};
+
 function IngredientComposition({
+  groupByLocation,
   items,
   onRemoveItem,
   readonly
 }: {
+  groupByLocation?: boolean;
   items: DraftItem[];
   onRemoveItem: (itemId: string) => void;
   readonly?: boolean;
@@ -2858,30 +2870,84 @@ function IngredientComposition({
     return <Text style={styles.helperCopy}>{copy.noItemsAssigned}</Text>;
   }
 
+  if (!groupByLocation) {
+    return (
+      <View style={styles.compositionList}>
+        <Text style={styles.compositionTitle}>{copy.composition}</Text>
+        {items.map((item, index) => (
+          <IngredientCompositionRow
+            color={getProductColor(item.product, index)}
+            item={item}
+            key={item.id}
+            onRemove={readonly ? undefined : () => onRemoveItem(item.id)}
+          />
+        ))}
+      </View>
+    );
+  }
+
+  const grouped = CARRIED_LOCATION_ORDER.map((location) => ({
+    items: items.filter((item) => item.location === location),
+    location
+  })).filter((group) => group.items.length > 0);
+
   return (
     <View style={styles.compositionList}>
       <Text style={styles.compositionTitle}>{copy.composition}</Text>
-      {items.map((item, index) => {
-        const calculated = calculateNutritionItem(item.product, stripDraftItem(item));
-        const color = getProductColor(item.product, index);
-
+      {grouped.map(({ items: groupItems, location }) => {
+        const tone = CARRIED_LOCATION_TONES[location];
         return (
-          <View key={item.id} style={styles.compositionRow}>
-            <View style={[styles.ingredientDot, { backgroundColor: color }]} />
-            <View style={styles.simpleItemCopy}>
-              <Text style={styles.simpleItemTitle}>{getProductDisplayName(item.product, language)}</Text>
-              <Text style={styles.simpleItemMeta}>
-                {item.quantity} {item.unit ?? (language === "es" ? "porción" : "serving")} / {round(calculated.calculated_carbs, 0)} g {copy.carbs.toLowerCase()} / {round(calculated.calculated_sodium_mg, 0)} mg {copy.sodium.toLowerCase()}
+          <View key={location} style={styles.compositionGroup}>
+            <View style={[styles.compositionGroupHeader, { backgroundColor: tone.background, borderColor: tone.border }]}>
+              <Text style={[styles.compositionGroupTitle, { color: tone.text }]}>
+                {getLocationLabel(location, language)}
+              </Text>
+              <Text style={[styles.compositionGroupCount, { color: tone.text }]}>
+                {groupItems.length}
               </Text>
             </View>
-            {readonly ? null : (
-              <Pressable accessibilityRole="button" onPress={() => onRemoveItem(item.id)} style={styles.removeItemButton}>
-                <Text style={styles.removeItemButtonText}>x</Text>
-              </Pressable>
-            )}
+            {groupItems.map((item, index) => (
+              <IngredientCompositionRow
+                color={getProductColor(item.product, index)}
+                item={item}
+                key={item.id}
+                onRemove={readonly ? undefined : () => onRemoveItem(item.id)}
+              />
+            ))}
           </View>
         );
       })}
+    </View>
+  );
+}
+
+function IngredientCompositionRow({
+  color,
+  item,
+  onRemove
+}: {
+  color: string | undefined;
+  item: DraftItem;
+  onRemove?: () => void;
+}) {
+  const { language } = useLanguage();
+  const copy = nutritionCopy[language];
+  const calculated = calculateNutritionItem(item.product, stripDraftItem(item));
+
+  return (
+    <View style={styles.compositionRow}>
+      <View style={[styles.ingredientDot, { backgroundColor: color }]} />
+      <View style={styles.simpleItemCopy}>
+        <Text style={styles.simpleItemTitle}>{getProductDisplayName(item.product, language)}</Text>
+        <Text style={styles.simpleItemMeta}>
+          {item.quantity} {item.unit ?? (language === "es" ? "porción" : "serving")} / {round(calculated.calculated_carbs, 0)} g {copy.carbs.toLowerCase()} / {round(calculated.calculated_sodium_mg, 0)} mg {copy.sodium.toLowerCase()}
+        </Text>
+      </View>
+      {onRemove ? (
+        <Pressable accessibilityRole="button" onPress={onRemove} style={styles.removeItemButton}>
+          <Text style={styles.removeItemButtonText}>x</Text>
+        </Pressable>
+      ) : null}
     </View>
   );
 }
@@ -5871,6 +5937,31 @@ const styles = StyleSheet.create({
     gap: spacing.md,
     minWidth: 0,
     padding: spacing.md
+  },
+  compositionGroup: {
+    gap: spacing.xs
+  },
+  compositionGroupHeader: {
+    alignItems: "center",
+    borderRadius: radii.round,
+    borderWidth: 1,
+    flexDirection: "row",
+    gap: spacing.sm,
+    justifyContent: "space-between",
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs
+  },
+  compositionGroupTitle: {
+    fontFamily,
+    fontSize: 12,
+    fontWeight: typography.weights.black,
+    letterSpacing: 0.8,
+    textTransform: "uppercase"
+  },
+  compositionGroupCount: {
+    fontFamily,
+    fontSize: 12,
+    fontWeight: typography.weights.bold
   },
   ingredientDot: {
     borderRadius: radii.round,
