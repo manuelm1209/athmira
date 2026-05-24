@@ -1,4 +1,5 @@
-import { Link, type Href, usePathname } from "expo-router";
+import { Link, type Href, usePathname, useRouter } from "expo-router";
+import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useEffect, useRef, useState, type PropsWithChildren } from "react";
 import { Image, Platform, Pressable, StyleSheet, Text, View, useWindowDimensions } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -6,6 +7,7 @@ import { colors, radii, shadows, spacing, typography } from "@athmira/ui";
 
 import { useAuth } from "@/providers/AuthProvider";
 import { useLanguage } from "@/providers/LanguageProvider";
+import { getNotificationPreview } from "@/services/notifications/notification-service";
 
 import { LanguageToggle } from "./LanguageToggle";
 
@@ -33,8 +35,13 @@ type MarketingNavItem = {
   label: string;
 };
 
+type MobileNavItem = NavItem & {
+  icon: keyof typeof MaterialCommunityIcons.glyphMap;
+};
+
 export function AppShell({ children }: PropsWithChildren) {
   const pathname = usePathname();
+  const router = useRouter();
   const { isAdmin, session, signOut } = useAuth();
   const { t } = useLanguage();
   const { width } = useWindowDimensions();
@@ -45,7 +52,9 @@ export function AppShell({ children }: PropsWithChildren) {
   const [headerDocked, setHeaderDocked] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [accountMenuOpen, setAccountMenuOpen] = useState(false);
+  const [notificationMenuOpen, setNotificationMenuOpen] = useState(false);
   const accountMenuRef = useRef<View | null>(null);
+  const notificationMenuRef = useRef<View | null>(null);
 
   useEffect(() => {
     if (Platform.OS === "web") {
@@ -56,24 +65,34 @@ export function AppShell({ children }: PropsWithChildren) {
   useEffect(() => {
     setMenuOpen(false);
     setAccountMenuOpen(false);
+    setNotificationMenuOpen(false);
   }, [pathname]);
 
   useEffect(() => {
-    if (Platform.OS !== "web" || !accountMenuOpen) {
+    if (Platform.OS !== "web" || (!accountMenuOpen && !notificationMenuOpen)) {
       return undefined;
     }
 
     function handlePointerDown(event: MouseEvent) {
-      const node = accountMenuRef.current as unknown as HTMLElement | null;
-      if (node && event.target instanceof Node && node.contains(event.target)) {
+      const accountNode = accountMenuRef.current as unknown as HTMLElement | null;
+      const notificationNode = notificationMenuRef.current as unknown as HTMLElement | null;
+
+      if (accountNode && event.target instanceof Node && accountNode.contains(event.target)) {
         return;
       }
+
+      if (notificationNode && event.target instanceof Node && notificationNode.contains(event.target)) {
+        return;
+      }
+
       setAccountMenuOpen(false);
+      setNotificationMenuOpen(false);
     }
 
     function handleKey(event: KeyboardEvent) {
       if (event.key === "Escape") {
         setAccountMenuOpen(false);
+        setNotificationMenuOpen(false);
       }
     }
 
@@ -84,7 +103,7 @@ export function AppShell({ children }: PropsWithChildren) {
       window.removeEventListener("mousedown", handlePointerDown);
       window.removeEventListener("keydown", handleKey);
     };
-  }, [accountMenuOpen]);
+  }, [accountMenuOpen, notificationMenuOpen]);
 
   useEffect(() => {
     if (Platform.OS !== "web") {
@@ -149,9 +168,20 @@ export function AppShell({ children }: PropsWithChildren) {
     { href: "/#progreso" as Href, key: "resources", label: t("homeNavResources") }
   ];
   const compactMenuItems = session ? navItems : [...marketingNavItems, ...navItems];
+  const mobileAppNavItems: MobileNavItem[] = session
+    ? [
+        { href: "/dashboard", icon: "home-variant", key: "mobileHome", label: t("mobileHome") },
+        { href: "/bikes", icon: "bike", key: "mobileBike", label: t("mobileBike") },
+        { href: "/nutrition", icon: "bottle-soda-outline", key: "mobileNutrition", label: t("nutritionPlanningNav") },
+        { href: "/analysis", icon: "bike-fast", key: "mobileBikeFit", label: t("camera") },
+        { href: "/profile", icon: "account", key: "mobileYou", label: t("mobileYou") }
+      ]
+    : [];
   const accountMenuActive = accountNavItems.some(
     (item) => pathname === item.href || pathname.startsWith(`${item.href}/`)
   );
+  const mobileAppChrome = Boolean(session) && compact;
+  const notificationPreview = getNotificationPreview();
 
   return (
     <View style={styles.root}>
@@ -160,6 +190,7 @@ export function AppShell({ children }: PropsWithChildren) {
         style={[
           styles.header,
           compact && styles.headerCompact,
+          mobileAppChrome && styles.mobileAppHeader,
           isNative && styles.nativeHeader,
           isNative && { paddingTop: insets.top + spacing.sm },
           headerMotionStyle,
@@ -172,6 +203,7 @@ export function AppShell({ children }: PropsWithChildren) {
               accessibilityRole="link"
               onPress={() => {
                 setMenuOpen(false);
+                setNotificationMenuOpen(false);
               }}
               style={styles.brand}
             >
@@ -193,18 +225,42 @@ export function AppShell({ children }: PropsWithChildren) {
           </Link>
 
           {compact ? (
-            <Pressable
-              accessibilityRole="button"
-              accessibilityState={{ expanded: menuOpen }}
-              onPress={() => {
-                setMenuOpen((current) => !current);
-              }}
-              style={styles.menuButton}
-            >
-              <Text allowFontScaling={false} style={styles.menuButtonText}>
-                {menuOpen ? t("closeMenu") : t("menu")}
-              </Text>
-            </Pressable>
+            mobileAppChrome ? (
+              <View ref={notificationMenuRef} style={styles.notificationWrapper}>
+                <Pressable
+                  accessibilityLabel={t("notifications")}
+                  accessibilityRole="button"
+                  accessibilityState={{ expanded: notificationMenuOpen }}
+                  onPress={() => {
+                    setNotificationMenuOpen((current) => !current);
+                    setAccountMenuOpen(false);
+                  }}
+                  style={({ pressed }) => [styles.iconButton, pressed && styles.pressedControl]}
+                >
+                  <MaterialCommunityIcons color={colors.ink} name="bell-outline" size={22} />
+                  {notificationPreview.unreadCount > 0 ? <View style={styles.notificationDot} /> : null}
+                </Pressable>
+                {notificationMenuOpen ? (
+                  <View style={styles.notificationMenu}>
+                    <Text style={styles.notificationTitle}>{t("notifications")}</Text>
+                    <Text style={styles.notificationEmptyText}>{t("noNotifications")}</Text>
+                  </View>
+                ) : null}
+              </View>
+            ) : (
+              <Pressable
+                accessibilityRole="button"
+                accessibilityState={{ expanded: menuOpen }}
+                onPress={() => {
+                  setMenuOpen((current) => !current);
+                }}
+                style={styles.menuButton}
+              >
+                <Text allowFontScaling={false} style={styles.menuButtonText}>
+                  {menuOpen ? t("closeMenu") : t("menu")}
+                </Text>
+              </Pressable>
+            )
           ) : (
             <View style={styles.nav}>
               {session ? null : (
@@ -318,7 +374,7 @@ export function AppShell({ children }: PropsWithChildren) {
           )}
         </View>
 
-        {compact && menuOpen ? (
+        {compact && !mobileAppChrome && menuOpen ? (
           <View style={styles.compactMenu}>
             <View style={styles.compactMenuGrid}>
               {compactMenuItems.map((item) => {
@@ -356,7 +412,114 @@ export function AppShell({ children }: PropsWithChildren) {
         ) : null}
 
       </View>
-      <View style={styles.content}>{children}</View>
+      <View style={[styles.content, mobileAppChrome && styles.contentWithMobileNav]}>{children}</View>
+      {mobileAppChrome && accountMenuOpen ? (
+        <View
+          ref={accountMenuRef}
+          style={[
+            styles.mobileAccountSheet,
+            { bottom: 72 + Math.max(insets.bottom, spacing.sm) }
+          ]}
+        >
+          {accountNavItems.map((item) => {
+            const href = String(item.href);
+            const active = pathname === href || pathname.startsWith(`${href}/`);
+
+            return (
+              <Pressable
+                accessibilityRole="link"
+                key={item.key}
+                onPress={() => {
+                  setAccountMenuOpen(false);
+                  router.push(item.href);
+                }}
+                style={({ pressed }) => [
+                  styles.mobileAccountItem,
+                  active && styles.mobileAccountItemActive,
+                  pressed && styles.pressedControl
+                ]}
+              >
+                <Text style={[styles.mobileAccountItemText, active && styles.compactMenuItemTextActive]}>
+                  {item.label}
+                </Text>
+              </Pressable>
+            );
+          })}
+          <View style={styles.accountMenuDivider} />
+          <View style={styles.accountMenuLanguageRow}>
+            <LanguageToggle />
+          </View>
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => {
+              setAccountMenuOpen(false);
+              signOut();
+            }}
+            style={({ pressed }) => [styles.mobileAccountItem, pressed && styles.pressedControl]}
+          >
+            <Text style={styles.mobileAccountItemText}>{t("logout")}</Text>
+          </Pressable>
+        </View>
+      ) : null}
+      {mobileAppChrome ? (
+        <View
+          accessibilityLabel="Mobile navigation"
+          style={[
+            styles.mobileBottomNav,
+            { paddingBottom: Math.max(insets.bottom, spacing.sm) }
+          ]}
+        >
+          {mobileAppNavItems.map((item) => {
+            const href = String(item.href);
+            const isYou = item.key === "mobileYou";
+            const active =
+              isYou
+                ? accountMenuOpen || accountMenuActive
+                : pathname === href || pathname.startsWith(`${href}/`);
+
+            return (
+              <View key={item.key} style={styles.mobileNavSlot}>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityState={isYou ? { expanded: accountMenuOpen, selected: active } : { selected: active }}
+                  onPress={() => {
+                    if (isYou) {
+                      setAccountMenuOpen((current) => !current);
+                      setNotificationMenuOpen(false);
+                    } else {
+                      setAccountMenuOpen(false);
+                      setNotificationMenuOpen(false);
+                      router.push(item.href);
+                    }
+                  }}
+                  style={({ pressed }) => [
+                    styles.mobileNavItem,
+                    active && styles.mobileNavItemActive,
+                    pressed && styles.pressedControl
+                  ]}
+                >
+                  <View style={styles.mobileNavIconFrame}>
+                    <MaterialCommunityIcons
+                      color={active ? colors.primary : colors.inkMuted}
+                      name={item.icon}
+                      size={22}
+                      style={styles.mobileNavIcon}
+                    />
+                  </View>
+                  <View style={styles.mobileNavLabelFrame}>
+                    <Text
+                      numberOfLines={1}
+                      style={[styles.mobileNavLabel, active && styles.mobileNavLabelActive]}
+                    >
+                      {item.label}
+                    </Text>
+                  </View>
+                </Pressable>
+              </View>
+            );
+          })}
+        </View>
+      ) : null}
     </View>
   );
 }
@@ -399,6 +562,19 @@ const styles = StyleSheet.create({
     marginTop: 0,
     paddingHorizontal: spacing.md,
     paddingBottom: spacing.sm
+  },
+  mobileAppHeader: {
+    borderBottomColor: colors.border,
+    borderRadius: 0,
+    borderLeftWidth: 0,
+    borderRightWidth: 0,
+    borderTopWidth: 0,
+    gap: 0,
+    marginHorizontal: 0,
+    marginTop: 0,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.sm,
+    shadowOpacity: 0.05
   },
   headerDocked: {
     backgroundColor: "rgba(255,255,255,0.86)",
@@ -479,6 +655,63 @@ const styles = StyleSheet.create({
     fontFamily,
     fontSize: 13,
     fontWeight: typography.weights.black
+  },
+  notificationWrapper: {
+    flexShrink: 0,
+    position: "relative",
+    zIndex: 260
+  },
+  iconButton: {
+    alignItems: "center",
+    backgroundColor: colors.surfaceMuted,
+    borderColor: colors.border,
+    borderRadius: radii.md,
+    borderWidth: 1,
+    height: 42,
+    justifyContent: "center",
+    width: 42
+  },
+  pressedControl: {
+    opacity: 0.74
+  },
+  notificationDot: {
+    backgroundColor: colors.primary,
+    borderColor: colors.surface,
+    borderRadius: radii.round,
+    borderWidth: 2,
+    height: 10,
+    position: "absolute",
+    right: 9,
+    top: 9,
+    width: 10
+  },
+  notificationMenu: {
+    backgroundColor: colors.surface,
+    borderColor: colors.border,
+    borderRadius: radii.md,
+    borderWidth: 1,
+    gap: spacing.xs,
+    marginTop: spacing.xs,
+    minWidth: 220,
+    padding: spacing.md,
+    position: "absolute",
+    right: 0,
+    top: "100%",
+    zIndex: 320,
+    ...shadows.medium
+  },
+  notificationTitle: {
+    color: colors.ink,
+    fontFamily,
+    fontSize: 13,
+    fontWeight: typography.weights.black
+  },
+  notificationEmptyText: {
+    color: colors.inkMuted,
+    fontFamily,
+    fontSize: 13,
+    fontWeight: typography.weights.medium,
+    lineHeight: 18
   },
   nav: {
     alignItems: "center",
@@ -676,5 +909,99 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1
+  },
+  contentWithMobileNav: {
+    paddingBottom: 84
+  },
+  mobileAccountSheet: {
+    backgroundColor: colors.surface,
+    borderColor: colors.border,
+    borderRadius: radii.lg,
+    borderWidth: 1,
+    gap: spacing.sm,
+    left: spacing.lg,
+    padding: spacing.sm,
+    position: "absolute",
+    right: spacing.lg,
+    zIndex: 250,
+    ...shadows.medium
+  },
+  mobileAccountItem: {
+    borderRadius: radii.md,
+    justifyContent: "center",
+    minHeight: 48,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    width: "100%"
+  },
+  mobileAccountItemActive: {
+    backgroundColor: colors.primary
+  },
+  mobileAccountItemText: {
+    color: colors.ink,
+    fontFamily,
+    fontSize: 14,
+    fontWeight: typography.weights.black
+  },
+  mobileBottomNav: {
+    alignItems: "stretch",
+    backgroundColor: "rgba(255,255,255,0.98)",
+    borderTopColor: colors.border,
+    borderTopWidth: 1,
+    bottom: 0,
+    flexDirection: "row",
+    gap: spacing.xs,
+    justifyContent: "space-around",
+    left: 0,
+    paddingHorizontal: spacing.sm,
+    paddingTop: spacing.sm,
+    position: "absolute",
+    right: 0,
+    zIndex: 220,
+    ...shadows.medium
+  },
+  mobileNavSlot: {
+    flex: 1,
+    minWidth: 0
+  },
+  mobileNavItem: {
+    alignItems: "center",
+    borderRadius: radii.md,
+    flexDirection: "column",
+    gap: 3,
+    justifyContent: "center",
+    minHeight: 56,
+    minWidth: 0,
+    paddingHorizontal: spacing.xs,
+    paddingVertical: spacing.xs,
+    width: "100%"
+  },
+  mobileNavItemActive: {
+    backgroundColor: colors.primaryMist
+  },
+  mobileNavIconFrame: {
+    alignItems: "center",
+    height: 24,
+    justifyContent: "center",
+    width: "100%"
+  },
+  mobileNavIcon: {
+    lineHeight: 24
+  },
+  mobileNavLabelFrame: {
+    alignItems: "center",
+    minWidth: 0,
+    width: "100%"
+  },
+  mobileNavLabel: {
+    color: colors.inkMuted,
+    fontFamily,
+    fontSize: 10,
+    fontWeight: typography.weights.black,
+    lineHeight: 14,
+    textAlign: "center"
+  },
+  mobileNavLabelActive: {
+    color: colors.primary
   }
 });

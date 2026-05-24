@@ -25,6 +25,7 @@
     "@athmira/supabase": "0.1.0",
     "@athmira/types": "0.1.0",
     "@athmira/ui": "0.1.0",
+    "@expo/vector-icons": "^15.1.1",
     "@react-native-async-storage/async-storage": "2.2.0",
     "@supabase/supabase-js": "^2.105.4",
     "@tensorflow-models/pose-detection": "^2.1.3",
