@@ -3,6 +3,7 @@ import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useEffect, useRef, useState, type PropsWithChildren } from "react";
 import { Image, Platform, Pressable, StyleSheet, Text, View, useWindowDimensions } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import Svg, { G, Path } from "react-native-svg";
 import { colors, radii, shadows, spacing, typography } from "@athmira/ui";
 
 import { useAuth } from "@/providers/AuthProvider";
@@ -36,7 +37,7 @@ type MarketingNavItem = {
 };
 
 type MobileNavItem = NavItem & {
-  icon: keyof typeof MaterialCommunityIcons.glyphMap;
+  icon: keyof typeof MaterialCommunityIcons.glyphMap | "nutrition-bottle";
 };
 
 export function AppShell({ children }: PropsWithChildren) {
@@ -172,7 +173,7 @@ export function AppShell({ children }: PropsWithChildren) {
     ? [
         { href: "/dashboard", icon: "home-variant", key: "mobileHome", label: t("mobileHome") },
         { href: "/bikes", icon: "bike", key: "mobileBike", label: t("mobileBike") },
-        { href: "/nutrition", icon: "bottle-soda-outline", key: "mobileNutrition", label: t("nutritionPlanningNav") },
+        { href: "/nutrition", icon: "nutrition-bottle", key: "mobileNutrition", label: t("nutritionPlanningNav") },
         { href: "/analysis", icon: "bike-fast", key: "mobileBikeFit", label: t("camera") },
         { href: "/profile", icon: "account", key: "mobileYou", label: t("mobileYou") }
       ]
@@ -499,12 +500,7 @@ export function AppShell({ children }: PropsWithChildren) {
                   ]}
                 >
                   <View style={styles.mobileNavIconFrame}>
-                    <MaterialCommunityIcons
-                      color={active ? colors.primary : colors.inkMuted}
-                      name={item.icon}
-                      size={22}
-                      style={styles.mobileNavIcon}
-                    />
+                    <MobileNavIcon active={active} icon={item.icon} />
                   </View>
                   <View style={styles.mobileNavLabelFrame}>
                     <Text
@@ -525,6 +521,24 @@ export function AppShell({ children }: PropsWithChildren) {
 }
 
 const fontFamily = Platform.select({ default: undefined, web: typography.fontFamily });
+
+function MobileNavIcon({ active, icon }: { active: boolean; icon: MobileNavItem["icon"] }) {
+  const color = active ? colors.primary : colors.inkMuted;
+
+  if (icon === "nutrition-bottle") {
+    return (
+      <Svg fill={color} height={22} viewBox="0 0 60 60" width={22}>
+        <G>
+          <G>
+            <Path d="M43.977,17.987c0.158-0.998-0.127-2.01-0.783-2.778C42.537,14.44,41.581,14,40.571,14h-1.76v-2h1c0.553,0,1-0.448,1-1c0-2.757-2.243-5-5-5h-3V5.347C32.812,5.156,32.967,5,33.158,5h0.653c0.553,0,1-0.448,1-1V1c0-0.552-0.447-1-1-1h-7c-0.553,0-1,0.448-1,1v3c0,0.552,0.447,1,1,1h0.653c0.191,0,0.347,0.156,0.347,0.347V6h-3c-2.757,0-5,2.243-5,5c0,0.552,0.447,1,1,1h1v2h-2.385c-1.01,0-1.966,0.44-2.622,1.209c-0.656,0.768-0.941,1.78-0.78,2.796l1.8,10.151c0.507,3.212,0.718,6.54,0.645,9.844l0,0l0,0c-0.049,2.188-0.219,4.366-0.522,6.493l-1.143,6.793c-0.33,2.31,0.396,4.611,1.994,6.314c1.446,1.544,3.429,2.4,5.514,2.4c0.196,0,0.395-0.008,0.592-0.023c3.482-0.271,6.914-0.3,10.199-0.088c2.325,0.148,4.557-0.74,6.132-2.442c1.563-1.69,2.273-3.968,1.95-6.228l-0.807-6.7c-0.305-2.139-0.476-4.324-0.525-6.518l0,0l0,0c-0.074-3.309,0.138-6.637,0.646-9.856L43.977,17.987z M27.812,2h5v1.025c-1.13,0.168-2,1.145-2,2.321V6h-1V5.347c0-1.176-0.87-2.153-2-2.321V2z M24.812,8h4h3h4c1.304,0,2.416,0.836,2.829,2H21.983C22.396,8.836,23.508,8,24.812,8z M36.812,12v2h-13v-2H36.812z M39.766,56.088c-1.163,1.258-2.811,1.919-4.534,1.805c-3.379-0.218-6.907-0.188-10.482,0.09c-1.689,0.126-3.327-0.507-4.492-1.75c-1.18-1.258-1.717-2.958-1.477-4.639L19.553,47h21.109l0.539,4.48C41.443,53.163,40.919,54.843,39.766,56.088z M39.883,39c0.026,0.669,0.062,1.335,0.111,2H20.326c0.049-0.665,0.085-1.332,0.111-2H39.883z M20.452,35h19.415c-0.02,0.667-0.029,1.333-0.026,2H20.479C20.481,36.333,20.472,35.667,20.452,35z M39.962,33H20.358c-0.043-0.669-0.098-1.335-0.164-2h19.932C40.06,31.664,40.005,32.331,39.962,33z M40.176,43c0.065,0.596,0.135,1.19,0.219,1.779L40.421,45H19.89l0.033-0.199c0.085-0.596,0.156-1.198,0.222-1.801H40.176z M40.362,29H19.959c-0.053-0.392-0.101-0.785-0.163-1.174L19.65,27h20.995l-0.123,0.844C40.461,28.227,40.414,28.614,40.362,29z M42,17.687L40.936,25H19.295l-1.299-7.326c-0.066-0.419,0.054-0.844,0.329-1.167C18.602,16.185,19.003,16,19.427,16h2.385h17h1.76c0.424,0,0.825,0.185,1.102,0.508C41.948,16.83,42.069,17.255,42,17.687z" />
+          </G>
+        </G>
+      </Svg>
+    );
+  }
+
+  return <MaterialCommunityIcons color={color} name={icon} size={22} style={styles.mobileNavIcon} />;
+}
 
 const styles = StyleSheet.create({
   root: {
