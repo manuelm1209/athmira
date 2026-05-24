@@ -786,6 +786,31 @@ export type Database = {
         };
         Relationships: [];
       };
+      nutrition_auto_generate_preferences: {
+        Row: {
+          user_id: string;
+          restrict_to_available_products: boolean;
+          allowed_product_ids: string[];
+          max_bottles: number | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          user_id: string;
+          restrict_to_available_products?: boolean;
+          allowed_product_ids?: string[];
+          max_bottles?: number | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          restrict_to_available_products?: boolean;
+          allowed_product_ids?: string[];
+          max_bottles?: number | null;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
     };
     Views: Record<string, never>;
     Functions: Record<string, never>;

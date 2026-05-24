@@ -372,6 +372,21 @@ export type NutritionProductInput = {
   notes?: string | null;
 };
 
+export type NutritionAutoGeneratePreferences = {
+  user_id: string;
+  restrict_to_available_products: boolean;
+  allowed_product_ids: string[];
+  max_bottles: number | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type NutritionAutoGeneratePreferencesInput = {
+  restrict_to_available_products: boolean;
+  allowed_product_ids: string[];
+  max_bottles: number | null;
+};
+
 export type TireSurfaceRecommendation = {
   label: string;
   surface: TireSurface;

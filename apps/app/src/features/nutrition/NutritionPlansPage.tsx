@@ -12,13 +12,14 @@ import {
   type PlanTotals
 } from "@athmira/nutrition-engine";
 import {
-  MAX_CUSTOM_NUTRITION_PRODUCTS, createCustomNutritionProduct, deleteCustomNutritionProduct, deleteNutritionPlan, getNutritionPlan, listNutritionPlans, listNutritionProducts, saveNutritionPlan, updateCustomNutritionProduct
+  MAX_AUTO_GENERATE_BOTTLES,
+  MAX_CUSTOM_NUTRITION_PRODUCTS, createCustomNutritionProduct, deleteCustomNutritionProduct, deleteNutritionPlan, getNutritionAutoGeneratePreferences, getNutritionPlan, listNutritionPlans, listNutritionProducts, saveNutritionAutoGeneratePreferences, saveNutritionPlan, updateCustomNutritionProduct
 } from "@athmira/supabase";
 import type {
-  NutritionActivityType, NutritionIntensity, NutritionPlan, NutritionPlanBottleInput, NutritionPlanInput, NutritionPlanItemInput, NutritionPlanItemLocation, NutritionProduct, NutritionProductCategory, NutritionProductInput, NutritionTimingType
+  NutritionActivityType, NutritionAutoGeneratePreferences, NutritionAutoGeneratePreferencesInput, NutritionIntensity, NutritionPlan, NutritionPlanBottleInput, NutritionPlanInput, NutritionPlanItemInput, NutritionPlanItemLocation, NutritionProduct, NutritionProductCategory, NutritionProductInput, NutritionTimingType
 } from "@athmira/types";
 import {
-  Body, Button, Card, FadeInView, Field, Inline, SelectField, colors, radii, shadows, spacing, typography } from "@athmira/ui";
+  Body, Button, Card, Checkbox, FadeInView, Field, Inline, SelectField, colors, radii, shadows, spacing, typography } from "@athmira/ui";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
@@ -149,8 +150,17 @@ const nutritionCopy = {
     autoGenerate: "Auto-generate plan",
     autoGenerateBody: "Build bottles and carried food from your duration, intensity, and targets.",
     autoGenerateApplied: "Auto-generated plan applied. Review and adjust as needed.",
-    autoGenerateMissingProducts: "Missing global ingredients required for auto-generation.",
+    autoGenerateMissingProducts: "No ingredients matched your selection. Add at least one option to continue.",
     autoGenerateReplaceConfirm: "Replace existing bottles and items with an auto-generated plan?",
+    autoGenerateStartBody: "Generate a plan from your duration, intensity, and targets.",
+    autoGenerateRestrictLabel: "Use only ingredients I have available",
+    autoGenerateRestrictHelper: "Pick the bottle ingredients and carried foods you actually have. We will only build the plan with those.",
+    autoGenerateBottleIngredients: "Bottle ingredients",
+    autoGenerateCarriedFoods: "Carried food",
+    autoGenerateSelectAll: "Select all",
+    autoGenerateClear: "Clear",
+    autoGenerateLimitBottlesLabel: "Limit number of bottles",
+    autoGenerateLimitBottlesHelper: "Useful if your bike only carries a fixed number of bottles. Off by default — no limit.",
     allProducts: "All products",
     atStart: "At start",
     athmiraFuelingPlan: "athmira Fueling Plan",
@@ -303,8 +313,17 @@ const nutritionCopy = {
     autoGenerate: "Generar plan automático",
     autoGenerateBody: "Arma caramañolas y comida para llevar a partir de tu duración, intensidad y objetivos.",
     autoGenerateApplied: "Plan automático aplicado. Revisa y ajusta según tu experiencia.",
-    autoGenerateMissingProducts: "Faltan ingredientes globales necesarios para generar el plan automático.",
+    autoGenerateMissingProducts: "Ningún ingrediente coincide con tu selección. Agrega al menos una opción para continuar.",
     autoGenerateReplaceConfirm: "¿Reemplazar las caramañolas e items actuales con un plan generado automáticamente?",
+    autoGenerateStartBody: "Genera un plan a partir de tu duración, intensidad y objetivos.",
+    autoGenerateRestrictLabel: "Usar solo los ingredientes que tengo disponibles",
+    autoGenerateRestrictHelper: "Selecciona los ingredientes de caramañola y la comida para llevar que tengas. Solo armaremos el plan con esos.",
+    autoGenerateBottleIngredients: "Ingredientes de caramañola",
+    autoGenerateCarriedFoods: "Comida para llevar",
+    autoGenerateSelectAll: "Seleccionar todos",
+    autoGenerateClear: "Limpiar",
+    autoGenerateLimitBottlesLabel: "Limitar número de caramañolas",
+    autoGenerateLimitBottlesHelper: "Útil si tu bicicleta solo carga un número fijo de caramañolas. Apagado por defecto — sin límite.",
     allProducts: "Todos los productos",
     atStart: "Al inicio",
     athmiraFuelingPlan: "Plan de fueling athmira",
@@ -476,6 +495,7 @@ export function NutritionPlansPage() {
   const compact = width < 1040;
   const [plans, setPlans] = useState<NutritionPlan[]>([]);
   const [products, setProducts] = useState<NutritionProduct[]>([]);
+  const [autoGeneratePrefs, setAutoGeneratePrefs] = useState<NutritionAutoGeneratePreferences | null>(null);
   const [draft, setDraft] = useState<DraftPlan | null>(null);
   const [viewingDraft, setViewingDraft] = useState<DraftPlan | null>(null);
   const [loading, setLoading] = useState(true);
@@ -498,14 +518,16 @@ export function NutritionPlansPage() {
       setError(null);
 
       try {
-        const [nextPlans, nextProducts] = await Promise.all([
+        const [nextPlans, nextProducts, nextPrefs] = await Promise.all([
           listNutritionPlans(currentUser.id),
-          listNutritionProducts(currentUser.id)
+          listNutritionProducts(currentUser.id),
+          getNutritionAutoGeneratePreferences(currentUser.id)
         ]);
 
         if (!cancelled) {
           setPlans(nextPlans);
           setProducts(nextProducts);
+          setAutoGeneratePrefs(nextPrefs);
         }
       } catch (loadError) {
         if (!cancelled) {
@@ -524,6 +546,19 @@ export function NutritionPlansPage() {
       cancelled = true;
     };
   }, [user]);
+
+  async function persistAutoGeneratePrefs(input: NutritionAutoGeneratePreferencesInput) {
+    if (!user) {
+      return;
+    }
+
+    try {
+      const saved = await saveNutritionAutoGeneratePreferences(user.id, input);
+      setAutoGeneratePrefs(saved);
+    } catch (saveError) {
+      setError(getErrorMessage(saveError));
+    }
+  }
 
   const customProductCount = products.filter((product) => product.product_scope === "user").length;
 
@@ -760,6 +795,7 @@ export function NutritionPlansPage() {
           <FadeInView delayMs={140} style={[styles.editorColumn, draft && styles.editorColumnFull]}>
             {draft ? (
               <NutritionPlanEditor
+                autoGeneratePrefs={autoGeneratePrefs}
                 customProductCount={customProductCount}
                 draft={draft}
                 onCancel={() => setDraft(null)}
@@ -767,6 +803,7 @@ export function NutritionPlansPage() {
                 onCreateOrUpdateProduct={saveCustomProduct}
                 onDeleteProduct={removeCustomProduct}
                 onSave={saveDraft}
+                onSaveAutoGeneratePrefs={persistAutoGeneratePrefs}
                 products={products}
                 saving={saving}
               />
@@ -893,6 +930,7 @@ export function NutritionPlanCard({
 }
 
 export function NutritionPlanEditor({
+  autoGeneratePrefs,
   customProductCount,
   draft,
   onCancel,
@@ -900,9 +938,11 @@ export function NutritionPlanEditor({
   onCreateOrUpdateProduct,
   onDeleteProduct,
   onSave,
+  onSaveAutoGeneratePrefs,
   products,
   saving
 }: {
+  autoGeneratePrefs: NutritionAutoGeneratePreferences | null;
   customProductCount: number;
   draft: DraftPlan;
   onCancel: () => void;
@@ -910,6 +950,7 @@ export function NutritionPlanEditor({
   onCreateOrUpdateProduct: (input: NutritionProductInput, productId?: string) => Promise<NutritionProduct>;
   onDeleteProduct: (productId: string) => Promise<void>;
   onSave: (payload: PreparedPlanPayload) => Promise<void>;
+  onSaveAutoGeneratePrefs: (input: NutritionAutoGeneratePreferencesInput) => Promise<void>;
   products: NutritionProduct[];
   saving: boolean;
 }) {
@@ -1028,8 +1069,8 @@ export function NutritionPlanEditor({
     onChange({ ...draft, items: draft.items.filter((item) => item.id !== itemId) });
   }
 
-  function applyAutoGeneratedPlan() {
-    const generated = autoGeneratePlan({ draft, language, products });
+  function applyAutoGeneratedPlan(options: AutoGenerateOptions = {}) {
+    const generated = autoGeneratePlan({ draft, language, options, products });
 
     if (!generated.bottles.length && !generated.items.length) {
       setLocalError(copy.autoGenerateMissingProducts);
@@ -1052,19 +1093,17 @@ export function NutritionPlanEditor({
   }
 
   function handleAutoGenerate() {
-    const hasExistingContent = draft.bottles.length > 0 || draft.items.length > 0;
-
-    if (hasExistingContent) {
-      setAutoGenerateConfirmVisible(true);
-      return;
-    }
-
-    applyAutoGeneratedPlan();
+    setAutoGenerateConfirmVisible(true);
   }
 
-  function confirmAutoGenerate() {
+  async function confirmAutoGenerate(input: NutritionAutoGeneratePreferencesInput) {
     setAutoGenerateConfirmVisible(false);
-    applyAutoGeneratedPlan();
+    const options: AutoGenerateOptions = {
+      allowedProductIds: input.restrict_to_available_products ? new Set(input.allowed_product_ids) : null,
+      maxBottles: input.max_bottles
+    };
+    applyAutoGeneratedPlan(options);
+    await onSaveAutoGeneratePrefs(input);
   }
 
   async function handleSave() {
@@ -1135,44 +1174,308 @@ export function NutritionPlanEditor({
       />
 
       <AutoGenerateConfirmModal
+        hasExistingContent={draft.bottles.length > 0 || draft.items.length > 0}
         onCancel={() => setAutoGenerateConfirmVisible(false)}
         onConfirm={confirmAutoGenerate}
+        preferences={autoGeneratePrefs}
+        products={products}
         visible={autoGenerateConfirmVisible}
       />
     </View>
   );
 }
 
+type AutoGenerateProductGroup = {
+  key: "bottle" | "carried";
+  label: string;
+  products: NutritionProduct[];
+};
+
+function isBottleSelectableProduct(product: NutritionProduct) {
+  return ["bottle_ingredient", "powder", "drink"].includes(product.category);
+}
+
+function isCarriedSelectableProduct(product: NutritionProduct) {
+  return !isBottleSelectableProduct(product);
+}
+
 function AutoGenerateConfirmModal({
+  hasExistingContent,
   onCancel,
   onConfirm,
+  preferences,
+  products,
   visible
 }: {
+  hasExistingContent: boolean;
   onCancel: () => void;
-  onConfirm: () => void;
+  onConfirm: (input: NutritionAutoGeneratePreferencesInput) => void | Promise<void>;
+  preferences: NutritionAutoGeneratePreferences | null;
+  products: NutritionProduct[];
   visible: boolean;
 }) {
   const { language } = useLanguage();
   const copy = nutritionCopy[language];
+  const { width } = useWindowDimensions();
+  const compact = width < 720;
+
+  const selectableProducts = useMemo(
+    () => products.filter((product) => product.is_active && !isWaterProduct(product)),
+    [products]
+  );
+
+  const selectableIds = useMemo(
+    () => new Set(selectableProducts.map((product) => product.id)),
+    [selectableProducts]
+  );
+
+  const groups = useMemo<AutoGenerateProductGroup[]>(() => {
+    const sortByName = (a: NutritionProduct, b: NutritionProduct) =>
+      getProductDisplayName(a, language).localeCompare(getProductDisplayName(b, language));
+
+    return [
+      {
+        key: "bottle",
+        label: copy.autoGenerateBottleIngredients,
+        products: selectableProducts.filter(isBottleSelectableProduct).sort(sortByName)
+      },
+      {
+        key: "carried",
+        label: copy.autoGenerateCarriedFoods,
+        products: selectableProducts.filter(isCarriedSelectableProduct).sort(sortByName)
+      }
+    ];
+  }, [copy.autoGenerateBottleIngredients, copy.autoGenerateCarriedFoods, language, selectableProducts]);
+
+  const [restrict, setRestrict] = useState(false);
+  const [allowedIds, setAllowedIds] = useState<Set<string>>(() => new Set());
+  const [limitBottles, setLimitBottles] = useState(false);
+  const [maxBottles, setMaxBottles] = useState<number>(2);
+
+  useEffect(() => {
+    if (!visible) {
+      return;
+    }
+
+    const prefRestrict = preferences?.restrict_to_available_products ?? false;
+    const savedAllowed = (preferences?.allowed_product_ids ?? []).filter((id) => selectableIds.has(id));
+
+    setRestrict(prefRestrict);
+    setAllowedIds(
+      prefRestrict
+        ? new Set(savedAllowed)
+        : savedAllowed.length
+          ? new Set(savedAllowed)
+          : new Set(selectableProducts.map((product) => product.id))
+    );
+
+    const prefMax = preferences?.max_bottles ?? null;
+    if (prefMax != null) {
+      setLimitBottles(true);
+      setMaxBottles(Math.max(1, Math.min(MAX_AUTO_GENERATE_BOTTLES, prefMax)));
+    } else {
+      setLimitBottles(false);
+      setMaxBottles(2);
+    }
+  }, [preferences, selectableIds, selectableProducts, visible]);
+
+  function toggleProduct(id: string) {
+    setAllowedIds((current) => {
+      const next = new Set(current);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  }
+
+  function selectAllInGroup(group: AutoGenerateProductGroup) {
+    setAllowedIds((current) => {
+      const next = new Set(current);
+      group.products.forEach((product) => next.add(product.id));
+      return next;
+    });
+  }
+
+  function clearGroup(group: AutoGenerateProductGroup) {
+    setAllowedIds((current) => {
+      const next = new Set(current);
+      group.products.forEach((product) => next.delete(product.id));
+      return next;
+    });
+  }
+
+  function handleConfirm() {
+    const filteredAllowed = Array.from(allowedIds).filter((id) => selectableIds.has(id));
+    const payload: NutritionAutoGeneratePreferencesInput = {
+      allowed_product_ids: filteredAllowed,
+      max_bottles: limitBottles ? Math.max(1, Math.min(MAX_AUTO_GENERATE_BOTTLES, Math.round(maxBottles))) : null,
+      restrict_to_available_products: restrict
+    };
+    void onConfirm(payload);
+  }
+
+  const totalSelected = groups.reduce(
+    (sum, group) => sum + group.products.filter((product) => allowedIds.has(product.id)).length,
+    0
+  );
 
   return (
     <Modal animationType="fade" onRequestClose={onCancel} transparent visible={visible}>
       <View style={styles.modalOverlay}>
-        <View style={styles.confirmModal}>
-          <View style={styles.confirmIcon}>
-            <Text style={styles.confirmIconText}>!</Text>
-          </View>
-          <Text style={styles.modalTitle}>{copy.autoGenerate}</Text>
-          <Text style={styles.confirmBody}>{copy.autoGenerateReplaceConfirm}</Text>
+        <View style={[styles.autoGenerateModal, compact && styles.autoGenerateModalCompact]}>
+          <ScrollView contentContainerStyle={styles.autoGenerateScrollContent} style={styles.autoGenerateScroll}>
+            <View style={styles.autoGenerateHeader}>
+              <View style={styles.confirmIcon}>
+                <Text style={styles.confirmIconText}>!</Text>
+              </View>
+              <Text style={styles.modalTitle}>{copy.autoGenerate}</Text>
+              <Text style={styles.confirmBody}>
+                {hasExistingContent ? copy.autoGenerateReplaceConfirm : copy.autoGenerateStartBody}
+              </Text>
+            </View>
+
+            <View style={styles.autoGenerateSection}>
+              <Checkbox
+                checked={restrict}
+                helper={copy.autoGenerateRestrictHelper}
+                label={copy.autoGenerateRestrictLabel}
+                onChange={setRestrict}
+              />
+
+              {restrict ? (
+                <View style={styles.autoGenerateGroups}>
+                  {groups.map((group) => (
+                    <AutoGenerateProductGroupBlock
+                      group={group}
+                      key={group.key}
+                      onClear={() => clearGroup(group)}
+                      onSelectAll={() => selectAllInGroup(group)}
+                      onToggle={toggleProduct}
+                      selected={allowedIds}
+                    />
+                  ))}
+
+                  <Text style={styles.autoGenerateCountHint}>
+                    {language === "es"
+                      ? `${totalSelected} ingredientes seleccionados`
+                      : `${totalSelected} ingredients selected`}
+                  </Text>
+                </View>
+              ) : null}
+            </View>
+
+            <View style={styles.autoGenerateSection}>
+              <Checkbox
+                checked={limitBottles}
+                helper={copy.autoGenerateLimitBottlesHelper}
+                label={copy.autoGenerateLimitBottlesLabel}
+                onChange={setLimitBottles}
+              />
+
+              {limitBottles ? (
+                <View style={styles.autoGenerateBottleStepper}>
+                  <Button
+                    disabled={maxBottles <= 1}
+                    onPress={() => setMaxBottles((value) => Math.max(1, value - 1))}
+                    variant="secondary"
+                  >
+                    -
+                  </Button>
+                  <Text style={styles.autoGenerateBottleValue}>{maxBottles}</Text>
+                  <Button
+                    disabled={maxBottles >= MAX_AUTO_GENERATE_BOTTLES}
+                    onPress={() => setMaxBottles((value) => Math.min(MAX_AUTO_GENERATE_BOTTLES, value + 1))}
+                    variant="secondary"
+                  >
+                    +
+                  </Button>
+                  <Text style={styles.autoGenerateBottleLabel}>
+                    {language === "es"
+                      ? `${maxBottles === 1 ? "caramañola" : "caramañolas"} máx.`
+                      : `bottle${maxBottles === 1 ? "" : "s"} max.`}
+                  </Text>
+                </View>
+              ) : null}
+            </View>
+          </ScrollView>
+
           <Inline style={styles.confirmActions}>
             <Button onPress={onCancel} variant="secondary">
               {copy.cancel}
             </Button>
-            <Button onPress={onConfirm}>{copy.autoGenerate}</Button>
+            <Button disabled={restrict && totalSelected === 0} onPress={handleConfirm}>
+              {copy.autoGenerate}
+            </Button>
           </Inline>
         </View>
       </View>
     </Modal>
+  );
+}
+
+function AutoGenerateProductGroupBlock({
+  group,
+  onClear,
+  onSelectAll,
+  onToggle,
+  selected
+}: {
+  group: AutoGenerateProductGroup;
+  onClear: () => void;
+  onSelectAll: () => void;
+  onToggle: (id: string) => void;
+  selected: Set<string>;
+}) {
+  const { language } = useLanguage();
+  const copy = nutritionCopy[language];
+  const selectedCount = group.products.filter((product) => selected.has(product.id)).length;
+
+  if (!group.products.length) {
+    return null;
+  }
+
+  return (
+    <View style={styles.autoGenerateGroup}>
+      <View style={styles.autoGenerateGroupHeader}>
+        <Text style={styles.autoGenerateGroupTitle}>{group.label}</Text>
+        <Text style={styles.autoGenerateGroupCount}>
+          {selectedCount} / {group.products.length}
+        </Text>
+      </View>
+      <Inline style={styles.autoGenerateGroupActions}>
+        <Pressable accessibilityRole="button" onPress={onSelectAll} style={styles.autoGenerateLinkAction}>
+          <Text style={styles.autoGenerateLinkText}>{copy.autoGenerateSelectAll}</Text>
+        </Pressable>
+        <Pressable accessibilityRole="button" onPress={onClear} style={styles.autoGenerateLinkAction}>
+          <Text style={styles.autoGenerateLinkText}>{copy.autoGenerateClear}</Text>
+        </Pressable>
+      </Inline>
+      <View style={styles.autoGenerateChips}>
+        {group.products.map((product) => {
+          const isSelected = selected.has(product.id);
+          return (
+            <Pressable
+              accessibilityRole="checkbox"
+              accessibilityState={{ checked: isSelected }}
+              key={product.id}
+              onPress={() => onToggle(product.id)}
+              style={[styles.autoGenerateChip, isSelected && styles.autoGenerateChipSelected]}
+            >
+              <View style={[styles.autoGenerateChipDot, { backgroundColor: getProductColor(product) }]} />
+              <Text style={[styles.autoGenerateChipText, isSelected && styles.autoGenerateChipTextSelected]}>
+                {getProductDisplayName(product, language)}
+              </Text>
+              {product.product_scope === "user" ? (
+                <Text style={styles.autoGenerateChipBadge}>★</Text>
+              ) : null}
+            </Pressable>
+          );
+        })}
+      </View>
+    </View>
   );
 }
 
@@ -3990,8 +4293,13 @@ type AutoGenerateResult = {
   items: DraftItem[];
 };
 
-function findProduct(products: NutritionProduct[], match: (product: NutritionProduct) => boolean) {
-  return products.find((product) => product.product_scope === "global" && product.is_active && match(product));
+export type AutoGenerateOptions = {
+  allowedProductIds?: ReadonlySet<string> | null;
+  maxBottles?: number | null;
+};
+
+function findProduct(pool: NutritionProduct[], match: (product: NutritionProduct) => boolean) {
+  return pool.find((product) => match(product));
 }
 
 function makeCarriedDraftItem(
@@ -4038,14 +4346,59 @@ function makeBottleDraftItem(
   };
 }
 
+const CARRIED_CATEGORIES: NutritionProductCategory[] = ["gel", "bar", "candy", "fruit", "solid_food", "drink", "custom"];
+const BOTTLE_CARB_CATEGORIES: NutritionProductCategory[] = ["powder", "bottle_ingredient"];
+const MAX_CARBS_PER_HOUR_HARD_LIMIT = 100;
+
+function isCarriedCarbCandidate(product: NutritionProduct) {
+  return (
+    product.is_active
+    && !isWaterProduct(product)
+    && product.carbs_per_serving > 0
+    && CARRIED_CATEGORIES.includes(product.category)
+  );
+}
+
+function isBottleCarbCandidate(product: NutritionProduct) {
+  return (
+    product.is_active
+    && !isWaterProduct(product)
+    && product.carbs_per_serving > 0
+    && BOTTLE_CARB_CATEGORIES.includes(product.category)
+  );
+}
+
+function isSodiumIngredient(product: NutritionProduct) {
+  return (
+    product.is_active
+    && !isWaterProduct(product)
+    && product.sodium_mg_per_serving >= 200
+    && product.carbs_per_serving < 5
+    && BOTTLE_CARB_CATEGORIES.includes(product.category)
+  );
+}
+
+function buildCandidatePool(products: NutritionProduct[], options: AutoGenerateOptions): NutritionProduct[] {
+  const active = products.filter((product) => product.is_active);
+
+  if (!options.allowedProductIds) {
+    return active.filter((product) => product.product_scope === "global");
+  }
+
+  const allowed = options.allowedProductIds;
+  return active.filter((product) => allowed.has(product.id) || isWaterProduct(product));
+}
+
 export function autoGeneratePlan({
   draft,
   language,
-  products
+  products,
+  options = {}
 }: {
   draft: DraftPlan;
   language: "en" | "es";
   products: NutritionProduct[];
+  options?: AutoGenerateOptions;
 }): AutoGenerateResult {
   const hours = Math.max(0.25, draft.duration_minutes / 60);
   const intensity = draft.intensity;
@@ -4055,24 +4408,42 @@ export function autoGeneratePlan({
     durationMinutes: draft.duration_minutes,
     intensity: draft.intensity
   });
-  const targetCarbsHr = draft.target_carbs_per_hour ?? suggested.carbsPerHour;
-  const targetSodiumHr = draft.target_sodium_mg_per_hour ?? suggested.sodiumMgPerHour;
+  const rawCarbsHr = draft.target_carbs_per_hour ?? suggested.carbsPerHour;
+  const targetCarbsHr = Math.min(MAX_CARBS_PER_HOUR_HARD_LIMIT, Math.max(0, rawCarbsHr));
+  const targetSodiumHr = Math.max(0, draft.target_sodium_mg_per_hour ?? suggested.sodiumMgPerHour);
   const totalCarbsNeeded = targetCarbsHr * hours;
   const totalSodiumNeeded = targetSodiumHr * hours;
 
-  const maltodextrin = findProduct(products, (product) => product.icon_key === "powder");
-  const sugar = findProduct(products, (product) => product.icon_key === "sugar");
-  const salt = findProduct(products, (product) => product.icon_key === "salt");
-  const gel = findProduct(products, (product) => product.category === "gel");
-  const bar = findProduct(products, (product) => product.category === "bar");
-  const banana = findProduct(products, (product) => product.icon_key === "banana");
-  const dates = findProduct(products, (product) => product.icon_key === "dates");
-  const bocadillo = findProduct(products, (product) => product.category === "candy" && /bocadillo/i.test(product.name));
-  const gummies = findProduct(products, (product) => product.category === "candy" && !/bocadillo/i.test(product.name));
-  const sandwich = findProduct(products, (product) => product.icon_key === "sandwich");
-  const riceCake = findProduct(products, (product) => product.icon_key === "rice");
+  const pool = buildCandidatePool(products, options);
 
-  const bottleCount = hours <= 1.25 ? 1 : hours <= 2.75 ? 2 : Math.min(4, Math.ceil(hours / 1.6));
+  const maltodextrin =
+    findProduct(pool, (product) => product.icon_key === "powder")
+    ?? findProduct(pool, (product) => product.category === "powder")
+    ?? findProduct(pool, isBottleCarbCandidate);
+  const sugar =
+    findProduct(pool, (product) => product.icon_key === "sugar")
+    ?? findProduct(pool, (product) => product.icon_key === "honey")
+    ?? findProduct(pool, (product) => isBottleCarbCandidate(product) && product.id !== (maltodextrin?.id ?? ""));
+  const salt =
+    findProduct(pool, (product) => product.icon_key === "salt")
+    ?? findProduct(pool, isSodiumIngredient);
+  const gel = findProduct(pool, (product) => product.category === "gel");
+  const bar = findProduct(pool, (product) => product.category === "bar");
+  const banana = findProduct(pool, (product) => product.icon_key === "banana");
+  const dates = findProduct(pool, (product) => product.icon_key === "dates");
+  const bocadillo = findProduct(pool, (product) => product.category === "candy" && /bocadillo/i.test(product.name));
+  const gummies = findProduct(pool, (product) => product.category === "candy" && !/bocadillo/i.test(product.name));
+  const sandwich = findProduct(pool, (product) => product.icon_key === "sandwich");
+  const riceCake = findProduct(pool, (product) => product.icon_key === "rice");
+
+  let bottleCount = hours <= 1.25 ? 1 : hours <= 2.75 ? 2 : Math.min(4, Math.ceil(hours / 1.6));
+
+  if (options.maxBottles != null && options.maxBottles > 0) {
+    bottleCount = Math.min(bottleCount, Math.max(1, Math.floor(options.maxBottles)));
+  }
+
+  bottleCount = Math.max(1, bottleCount);
+
   const bottles: DraftBottle[] = Array.from({ length: bottleCount }, (_, index) => ({
     bottle_size_label: "620 ml / 21 oz",
     bottle_size_ml: 620,
@@ -4112,23 +4483,24 @@ export function autoGeneratePlan({
 
   bottles.forEach((bottle) => {
     if (targetCarbsPerBottle >= 5) {
-      const maltoGrams = maltodextrin
-        ? Math.round((targetCarbsPerBottle * 0.6) / 5) * 5
-        : 0;
-      const sugarGrams = sugar
-        ? Math.round((targetCarbsPerBottle * 0.4) / 5) * 5
-        : 0;
-
-      if (maltodextrin && maltoGrams >= 5) {
-        pushBottleItem(maltodextrin, bottle.id, maltoGrams);
-      }
-      if (sugar && sugarGrams >= 5) {
-        pushBottleItem(sugar, bottle.id, sugarGrams);
+      if (maltodextrin && sugar && maltodextrin.id !== sugar.id) {
+        const maltoGrams = Math.round((targetCarbsPerBottle * 0.6) / 5) * 5;
+        const sugarGrams = Math.round((targetCarbsPerBottle * 0.4) / 5) * 5;
+        if (maltoGrams >= 5) pushBottleItem(maltodextrin, bottle.id, maltoGrams);
+        if (sugarGrams >= 5) pushBottleItem(sugar, bottle.id, sugarGrams);
+      } else {
+        const fallback = maltodextrin ?? sugar;
+        if (fallback) {
+          const grams = Math.round(targetCarbsPerBottle / 5) * 5;
+          if (grams >= 5) pushBottleItem(fallback, bottle.id, grams);
+        }
       }
     }
     if (salt && sodiumPerBottle >= 150) {
-      const saltGrams = Math.max(0.5, Math.min(1.5, Math.round((sodiumPerBottle / 390) * 2) / 2));
-      pushBottleItem(salt, bottle.id, saltGrams);
+      const perServingSodium = salt.sodium_mg_per_serving || 390;
+      const servingSize = salt.default_serving_size && salt.default_serving_size > 0 ? salt.default_serving_size : 1;
+      const desiredServings = Math.max(0.5, Math.min(2, Math.round((sodiumPerBottle / perServingSodium) * 2) / 2));
+      pushBottleItem(salt, bottle.id, desiredServings * servingSize);
     }
   });
 
@@ -4179,11 +4551,32 @@ export function autoGeneratePlan({
     }
   }
 
+  if (carbsRemaining() > 15) {
+    const usedProductIds = new Set(items.map((item) => item.product_id));
+    const fallbacks = pool
+      .filter(isCarriedCarbCandidate)
+      .filter((product) => !usedProductIds.has(product.id))
+      .sort((a, b) => b.carbs_per_serving - a.carbs_per_serving);
+
+    for (const product of fallbacks) {
+      if (carbsRemaining() <= 15) break;
+      const carbsPerServing = product.carbs_per_serving;
+      if (carbsPerServing <= 0) continue;
+      const servings = Math.min(
+        6,
+        Math.max(1, Math.ceil(carbsRemaining() / carbsPerServing))
+      );
+      pushCarried(product, servings, "hourly");
+    }
+  }
+
   if (salt && sodiumAdded < totalSodiumNeeded * 0.6) {
     const sodiumDeficit = totalSodiumNeeded - sodiumAdded;
-    const extraSaltPerBottle = Math.max(0, Math.min(0.5, Math.round((sodiumDeficit / bottleCount / 390) * 2) / 2));
-    if (extraSaltPerBottle >= 0.5) {
-      bottles.forEach((bottle) => pushBottleItem(salt, bottle.id, extraSaltPerBottle));
+    const perServingSodium = salt.sodium_mg_per_serving || 390;
+    const servingSize = salt.default_serving_size && salt.default_serving_size > 0 ? salt.default_serving_size : 1;
+    const extraServingsPerBottle = Math.max(0, Math.min(1, Math.round((sodiumDeficit / bottleCount / perServingSodium) * 2) / 2));
+    if (extraServingsPerBottle >= 0.5) {
+      bottles.forEach((bottle) => pushBottleItem(salt, bottle.id, extraServingsPerBottle * servingSize));
     }
   }
 
@@ -5551,6 +5944,147 @@ const styles = StyleSheet.create({
   },
   confirmActions: {
     justifyContent: "center"
+  },
+  autoGenerateModal: {
+    backgroundColor: colors.surface,
+    borderColor: colors.border,
+    borderRadius: radii.xl,
+    borderWidth: 1,
+    gap: spacing.md,
+    maxHeight: "92%",
+    maxWidth: 620,
+    padding: spacing.xl,
+    width: "100%",
+    ...shadows.medium
+  },
+  autoGenerateModalCompact: {
+    padding: spacing.lg
+  },
+  autoGenerateScroll: {
+    flexShrink: 1
+  },
+  autoGenerateScrollContent: {
+    gap: spacing.lg
+  },
+  autoGenerateHeader: {
+    alignItems: "center",
+    gap: spacing.sm
+  },
+  autoGenerateSection: {
+    backgroundColor: colors.surfaceMuted,
+    borderRadius: radii.lg,
+    gap: spacing.md,
+    padding: spacing.md
+  },
+  autoGenerateGroups: {
+    gap: spacing.md
+  },
+  autoGenerateGroup: {
+    backgroundColor: colors.surface,
+    borderColor: colors.border,
+    borderRadius: radii.md,
+    borderWidth: 1,
+    gap: spacing.sm,
+    padding: spacing.md
+  },
+  autoGenerateGroupHeader: {
+    alignItems: "center",
+    flexDirection: "row",
+    justifyContent: "space-between"
+  },
+  autoGenerateGroupTitle: {
+    color: colors.ink,
+    fontFamily,
+    fontSize: 14,
+    fontWeight: typography.weights.black,
+    letterSpacing: 0.6,
+    textTransform: "uppercase"
+  },
+  autoGenerateGroupCount: {
+    color: colors.inkMuted,
+    fontFamily,
+    fontSize: 13,
+    fontWeight: typography.weights.bold
+  },
+  autoGenerateGroupActions: {
+    flexWrap: "wrap"
+  },
+  autoGenerateLinkAction: {
+    paddingVertical: spacing.xs
+  },
+  autoGenerateLinkText: {
+    color: colors.primary,
+    fontFamily,
+    fontSize: 13,
+    fontWeight: typography.weights.bold,
+    textDecorationLine: "underline"
+  },
+  autoGenerateChips: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: spacing.xs
+  },
+  autoGenerateChip: {
+    alignItems: "center",
+    backgroundColor: colors.surface,
+    borderColor: colors.border,
+    borderRadius: radii.round,
+    borderWidth: 1,
+    flexDirection: "row",
+    gap: spacing.xs,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs
+  },
+  autoGenerateChipSelected: {
+    backgroundColor: colors.primaryMist,
+    borderColor: colors.primary
+  },
+  autoGenerateChipDot: {
+    borderRadius: radii.round,
+    height: 10,
+    width: 10
+  },
+  autoGenerateChipText: {
+    color: colors.inkMuted,
+    fontFamily,
+    fontSize: 13,
+    fontWeight: typography.weights.bold
+  },
+  autoGenerateChipTextSelected: {
+    color: colors.ink
+  },
+  autoGenerateChipBadge: {
+    color: colors.primary,
+    fontFamily,
+    fontSize: 12,
+    fontWeight: typography.weights.bold
+  },
+  autoGenerateCountHint: {
+    color: colors.inkMuted,
+    fontFamily,
+    fontSize: 12,
+    fontWeight: typography.weights.bold,
+    textAlign: "right"
+  },
+  autoGenerateBottleStepper: {
+    alignItems: "center",
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: spacing.sm
+  },
+  autoGenerateBottleValue: {
+    color: colors.ink,
+    fontFamily,
+    fontSize: 22,
+    fontWeight: typography.weights.black,
+    minWidth: 36,
+    textAlign: "center"
+  },
+  autoGenerateBottleLabel: {
+    color: colors.inkMuted,
+    fontFamily,
+    fontSize: 13,
+    fontWeight: typography.weights.bold
   },
   modalHeader: {
     alignItems: "center",

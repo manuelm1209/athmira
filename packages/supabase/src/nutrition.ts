@@ -1,4 +1,6 @@
 import type {
+  NutritionAutoGeneratePreferences,
+  NutritionAutoGeneratePreferencesInput,
   NutritionPlan,
   NutritionPlanBottle,
   NutritionPlanBottleInput,
@@ -14,6 +16,7 @@ import type {
 import { assertSupabaseConfigured, supabase } from "./client";
 
 export const MAX_CUSTOM_NUTRITION_PRODUCTS = 15;
+export const MAX_AUTO_GENERATE_BOTTLES = 10;
 
 type SaveNutritionPlanInput = {
   bottles: NutritionPlanBottleInput[];
@@ -387,6 +390,59 @@ export async function deleteCustomNutritionProduct(userId: string, productId: st
   if (error) {
     throw error;
   }
+}
+
+export async function getNutritionAutoGeneratePreferences(
+  userId: string
+): Promise<NutritionAutoGeneratePreferences | null> {
+  assertSupabaseConfigured();
+
+  const { data, error } = await supabase
+    .from("nutrition_auto_generate_preferences")
+    .select("*")
+    .eq("user_id", userId)
+    .maybeSingle();
+
+  if (error) {
+    throw error;
+  }
+
+  return (data ?? null) as NutritionAutoGeneratePreferences | null;
+}
+
+export async function saveNutritionAutoGeneratePreferences(
+  userId: string,
+  input: NutritionAutoGeneratePreferencesInput
+): Promise<NutritionAutoGeneratePreferences> {
+  assertSupabaseConfigured();
+
+  const normalizedMaxBottles =
+    input.max_bottles == null
+      ? null
+      : Math.max(1, Math.min(MAX_AUTO_GENERATE_BOTTLES, Math.round(input.max_bottles)));
+
+  const uniqueAllowed = Array.from(new Set(input.allowed_product_ids.filter((id) => typeof id === "string" && id.length > 0)));
+
+  const { data, error } = await supabase
+    .from("nutrition_auto_generate_preferences")
+    .upsert(
+      {
+        user_id: userId,
+        restrict_to_available_products: input.restrict_to_available_products,
+        allowed_product_ids: uniqueAllowed,
+        max_bottles: normalizedMaxBottles,
+        updated_at: new Date().toISOString()
+      },
+      { onConflict: "user_id" }
+    )
+    .select("*")
+    .single();
+
+  if (error) {
+    throw error;
+  }
+
+  return data as NutritionAutoGeneratePreferences;
 }
 
 async function loadProductsForPlan(items: NutritionPlanItem[], activeProducts: NutritionProduct[]): Promise<NutritionProduct[]> {
