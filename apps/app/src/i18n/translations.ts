@@ -554,7 +554,7 @@ export const es: Record<keyof typeof en, string> = {
   menu: "Menú",
   mobileBike: "Bici",
   mobileHome: "Home",
-  mobileYou: "Tu",
+  mobileYou: "Cuenta",
   model: "Modelo",
   mountain: "Montaña",
   nameRequired: "El nombre de la bici es obligatorio.",
