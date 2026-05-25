@@ -164,10 +164,7 @@ export function AppShell({ children }: PropsWithChildren) {
     : [];
   const navItems: NavItem[] = [...primaryNavItems, ...accountNavItems];
   const marketingNavItems: MarketingNavItem[] = [
-    { href: "/#funciones" as Href, key: "features", label: t("homeNavFeatures") },
-    { href: "/#como-funciona" as Href, key: "howItWorks", label: t("homeNavHowItWorks") },
-    { href: "/#limitaciones" as Href, key: "science", label: t("homeNavScience") },
-    { href: "/#progreso" as Href, key: "resources", label: t("homeNavResources") }
+    { href: "/pricing" as Href, key: "pricing", label: t("homeNavPricing") }
   ];
   const compactMenuItems = session ? navItems : [...marketingNavItems, ...navItems];
   const mobileAppNavItems: MobileNavItem[] = session
