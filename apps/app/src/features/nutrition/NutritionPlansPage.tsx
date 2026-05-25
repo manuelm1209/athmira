@@ -41,6 +41,7 @@ import {
 import { LinkButton } from "@/components/LinkButton";
 import { useAuth } from "@/providers/AuthProvider";
 import { useLanguage } from "@/providers/LanguageProvider";
+import { subscribeTabReselect } from "@/lib/tab-reselect";
 import { getErrorMessage, numberToInput, parseOptionalNumber } from "@/utils/form";
 
 type DraftBottle = NutritionPlanBottleInput & {
@@ -504,6 +505,18 @@ export function NutritionPlansPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
+
+  useEffect(() => {
+    const unsubscribe = subscribeTabReselect("mobileNutrition", () => {
+      setDraft(null);
+      setViewingDraft(null);
+      setDeletePlanId(null);
+      setError(null);
+      setMessage(null);
+    });
+
+    return unsubscribe;
+  }, []);
 
   useEffect(() => {
     if (!user) {

@@ -8,6 +8,7 @@ import { colors, radii, shadows, spacing, typography } from "@athmira/ui";
 
 import { useAuth } from "@/providers/AuthProvider";
 import { useLanguage } from "@/providers/LanguageProvider";
+import { emitTabReselect } from "@/lib/tab-reselect";
 import { getNotificationPreview } from "@/services/notifications/notification-service";
 
 import { LanguageToggle } from "./LanguageToggle";
@@ -490,6 +491,10 @@ export function AppShell({ children }: PropsWithChildren) {
                     } else {
                       setAccountMenuOpen(false);
                       setNotificationMenuOpen(false);
+                      if (pathname === href) {
+                        emitTabReselect(item.key);
+                        return;
+                      }
                       router.push(item.href);
                     }
                   }}
