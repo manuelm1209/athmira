@@ -86,6 +86,10 @@ Use modules/services for:
 Web, iOS, and Android must remain first-class targets. New features should be designed as shared TypeScript business logic with thin platform adapters.
 
 - Unless a request explicitly says it is only for web, only for iOS, or only for Android, treat every UI and behavior change as cross-platform work for web, iOS, and Android.
+- This rule is mandatory: any new label, copy, color, animation, phase machine, overlay, instruction, badge, or interaction added to a `*.web.tsx` component MUST also land in the matching `*.native.tsx` sibling (and vice versa) in the same change set.
+- Camera tracking UX (countdown phases, big-number overlays, position guides, brand colors, recording progress, completion states) must stay visually and behaviorally consistent across `*.web.tsx` and `*.native.tsx` siblings.
+- When pose detection or any other capability is not yet available natively, still implement the surrounding UX (countdowns, instructions, phase overlays) so users see the same flow on every platform; gate only the capability-dependent visuals behind feature detection until the native implementation ships.
+- Add or update i18n keys in `apps/app/src/i18n/translations.ts` (both `en` and `es`) for every user-facing string introduced in any platform variant.
 - When changing shared screens, verify that shared primitives render acceptably on native as well as React Native Web; do not leave native with a different interaction model unless there is a documented platform reason.
 - Prefer Expo SDK modules before adding custom native code.
 - Test native functionality in Expo Go first when possible.

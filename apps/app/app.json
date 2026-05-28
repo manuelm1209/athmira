@@ -5,7 +5,7 @@
     "scheme": "athmira",
     "version": "0.1.0",
     "platforms": ["ios", "android", "web"],
-    "orientation": "portrait",
+    "orientation": "default",
     "icon": "./assets/icon.png",
     "primaryColor": "#00857d",
     "runtimeVersion": {

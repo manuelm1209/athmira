@@ -5,6 +5,8 @@ export type BikeFitCameraLabels = {
   bikeFitComplete: string;
   bikeFitGetReady: string;
   bikeFitRecording: string;
+  bikeFitRotatePromptBody: string;
+  bikeFitRotatePromptTitle: string;
   cameraAnalysisUnavailable: string;
   cameraDenied: string;
   cameraEnable: string;
@@ -12,7 +14,6 @@ export type BikeFitCameraLabels = {
   cameraPermissionRequesting: string;
   cameraUnsupported: string;
   insufficientPoseSamples: string;
-  nativePoseNotice: string;
   poseDetectionActive: string;
   poseDetectionFailed: string;
   poseDetectorLoading: string;

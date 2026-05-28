@@ -46,10 +46,11 @@ export function AppShell({ children }: PropsWithChildren) {
   const router = useRouter();
   const { isAdmin, session, signOut } = useAuth();
   const { t } = useLanguage();
-  const { width } = useWindowDimensions();
+  const { height, width } = useWindowDimensions();
   const insets = useSafeAreaInsets();
   const isNative = Platform.OS !== "web";
   const [webHydrated, setWebHydrated] = useState(Platform.OS !== "web");
+  const nativeLandscape = isNative && width > height && height < 500;
   const compact = !webHydrated || width < 760;
   const [headerDocked, setHeaderDocked] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -179,8 +180,132 @@ export function AppShell({ children }: PropsWithChildren) {
   const accountMenuActive = accountNavItems.some(
     (item) => pathname === item.href || pathname.startsWith(`${item.href}/`)
   );
-  const mobileAppChrome = Boolean(session) && compact;
+  const mobileAppChrome = Boolean(session) && compact && !nativeLandscape;
+  const sideRailActive = Boolean(session) && nativeLandscape;
   const notificationPreview = getNotificationPreview();
+
+  if (sideRailActive) {
+    return (
+      <View style={styles.root}>
+        <View style={styles.landscapeFrame}>
+          <View
+            accessibilityLabel="Main navigation"
+            style={[styles.sideRail, { paddingTop: Math.max(insets.top, spacing.sm), paddingBottom: Math.max(insets.bottom, spacing.sm) }]}
+          >
+            <Link href="/dashboard" asChild>
+              <Pressable
+                accessibilityRole="link"
+                onPress={() => {
+                  setAccountMenuOpen(false);
+                  setNotificationMenuOpen(false);
+                }}
+                style={styles.sideRailBrand}
+              >
+                <Image
+                  accessibilityIgnoresInvertColors
+                  accessibilityLabel="athmira logo"
+                  source={brandMarkSource}
+                  style={styles.sideRailBrandMark}
+                />
+              </Pressable>
+            </Link>
+            <View style={styles.sideRailNav}>
+              {mobileAppNavItems.map((item) => {
+                const href = String(item.href);
+                const isYou = item.key === "mobileYou";
+                const active = isYou
+                  ? accountMenuOpen || accountMenuActive
+                  : pathname === href || pathname.startsWith(`${href}/`);
+
+                return (
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityState={isYou ? { expanded: accountMenuOpen, selected: active } : { selected: active }}
+                    key={item.key}
+                    onPress={() => {
+                      if (isYou) {
+                        setAccountMenuOpen((current) => !current);
+                        setNotificationMenuOpen(false);
+                      } else {
+                        setAccountMenuOpen(false);
+                        setNotificationMenuOpen(false);
+                        if (pathname === href) {
+                          emitTabReselect(item.key);
+                          return;
+                        }
+                        router.push(item.href);
+                      }
+                    }}
+                    style={({ pressed }) => [
+                      styles.sideRailItem,
+                      active && styles.sideRailItemActive,
+                      pressed && styles.pressedControl
+                    ]}
+                  >
+                    <View style={styles.sideRailIconFrame}>
+                      <MobileNavIcon active={active} icon={item.icon} />
+                    </View>
+                    <Text numberOfLines={1} style={[styles.sideRailLabel, active && styles.sideRailLabelActive]}>
+                      {item.label}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+          </View>
+          <View style={styles.landscapeContent}>{children}</View>
+        </View>
+        {accountMenuOpen ? (
+          <View
+            ref={accountMenuRef}
+            style={[
+              styles.sideRailAccountSheet,
+              { left: 72 + spacing.sm, bottom: Math.max(insets.bottom, spacing.md) }
+            ]}
+          >
+            {accountNavItems.map((item) => {
+              const href = String(item.href);
+              const active = pathname === href || pathname.startsWith(`${href}/`);
+
+              return (
+                <Pressable
+                  accessibilityRole="link"
+                  key={item.key}
+                  onPress={() => {
+                    setAccountMenuOpen(false);
+                    router.push(item.href);
+                  }}
+                  style={({ pressed }) => [
+                    styles.mobileAccountItem,
+                    active && styles.mobileAccountItemActive,
+                    pressed && styles.pressedControl
+                  ]}
+                >
+                  <Text style={[styles.mobileAccountItemText, active && styles.compactMenuItemTextActive]}>
+                    {item.label}
+                  </Text>
+                </Pressable>
+              );
+            })}
+            <View style={styles.accountMenuDivider} />
+            <View style={styles.accountMenuLanguageRow}>
+              <LanguageToggle />
+            </View>
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => {
+                setAccountMenuOpen(false);
+                signOut();
+              }}
+              style={({ pressed }) => [styles.mobileAccountItem, pressed && styles.pressedControl]}
+            >
+              <Text style={styles.mobileAccountItemText}>{t("logout")}</Text>
+            </Pressable>
+          </View>
+        ) : null}
+      </View>
+    );
+  }
 
   return (
     <View style={styles.root}>
@@ -1034,5 +1159,82 @@ const styles = StyleSheet.create({
   },
   mobileNavLabelActive: {
     color: colors.primary
+  },
+  landscapeFrame: {
+    flex: 1,
+    flexDirection: "row"
+  },
+  landscapeContent: {
+    flex: 1,
+    minWidth: 0
+  },
+  sideRail: {
+    alignItems: "center",
+    backgroundColor: "rgba(255,255,255,0.98)",
+    borderRightColor: colors.border,
+    borderRightWidth: 1,
+    gap: spacing.sm,
+    paddingHorizontal: spacing.xs,
+    width: 72,
+    ...shadows.soft
+  },
+  sideRailBrand: {
+    alignItems: "center",
+    borderRadius: radii.md,
+    height: 48,
+    justifyContent: "center",
+    marginBottom: spacing.xs,
+    width: 48
+  },
+  sideRailBrandMark: {
+    borderRadius: radii.sm,
+    height: 34,
+    width: 34
+  },
+  sideRailNav: {
+    flex: 1,
+    gap: spacing.xs,
+    width: "100%"
+  },
+  sideRailItem: {
+    alignItems: "center",
+    borderRadius: radii.md,
+    gap: 2,
+    justifyContent: "center",
+    minHeight: 56,
+    paddingHorizontal: 4,
+    paddingVertical: spacing.xs,
+    width: "100%"
+  },
+  sideRailItemActive: {
+    backgroundColor: colors.primaryMist
+  },
+  sideRailIconFrame: {
+    alignItems: "center",
+    height: 26,
+    justifyContent: "center"
+  },
+  sideRailLabel: {
+    color: colors.inkMuted,
+    fontFamily,
+    fontSize: 9,
+    fontWeight: typography.weights.black,
+    lineHeight: 11,
+    textAlign: "center"
+  },
+  sideRailLabelActive: {
+    color: colors.primary
+  },
+  sideRailAccountSheet: {
+    backgroundColor: colors.surface,
+    borderColor: colors.border,
+    borderRadius: radii.lg,
+    borderWidth: 1,
+    gap: spacing.sm,
+    maxWidth: 280,
+    padding: spacing.sm,
+    position: "absolute",
+    zIndex: 280,
+    ...shadows.medium
   }
 });
