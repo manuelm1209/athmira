@@ -31,7 +31,7 @@ const pricingStructuredData = [
       {
         "@type": "Offer",
         name: "athmira monthly",
-        price: "9900",
+        price: "11900",
         priceCurrency: "COP"
       },
       {
@@ -62,7 +62,7 @@ const pricingCopy = {
     plansTitle: "Simple plans for consistent improvement.",
     plansBody:
       "The trial lets you test the complete system. Paid plans are designed for athletes who want every bike, retest, pressure plan, and nutrition plan in one place.",
-    trialNote: "15 days full access",
+    trialNote: "15 days with 2 Bike Fits",
     bestValue: "Best value",
     chooseTrial: "Start trial",
     chooseMonthly: "Choose monthly",
@@ -77,19 +77,19 @@ const pricingCopy = {
         name: "Free",
         price: "COP $0",
         cadence: "after trial",
-        highlight: "Full access for 15 days",
+        highlight: "2 Bike Fits during the first 15 days",
         cta: "chooseTrial",
         features: [
-          "15-day trial with all athmira features",
-          "After trial: 1 bike profile",
-          "After trial: 1 nutrition plan",
-          "After trial: 2 Bike Fits with side and front computer vision tracking"
+          "First 15 days: 2 Bike Fits with side and front computer vision tracking",
+          "First 15 days: unlimited bikes and recommendations",
+          "First 15 days: personalized tire pressure analysis",
+          "First 15 days: unlimited nutrition plans"
         ]
       },
       {
         description: "For riders who want to make regular setup changes and compare progress every month.",
         name: "Monthly",
-        price: "COP $9,900",
+        price: "COP $11,900",
         cadence: "per month",
         highlight: "Flexible performance system",
         cta: "chooseMonthly",
@@ -144,7 +144,7 @@ const pricingCopy = {
     plansTitle: "Planes simples para mejorar con consistencia.",
     plansBody:
       "La prueba te deja evaluar el sistema completo. Los planes pagos están pensados para atletas que quieren cada bici, re-test, plan de presión y plan de nutrición en un solo lugar.",
-    trialNote: "15 días con acceso completo",
+    trialNote: "15 días con 2 Bike Fits",
     bestValue: "Mejor valor",
     chooseTrial: "Comenzar prueba",
     chooseMonthly: "Elegir mensual",
@@ -159,19 +159,19 @@ const pricingCopy = {
         name: "Gratis",
         price: "COP $0",
         cadence: "después de la prueba",
-        highlight: "Acceso completo por 15 días",
+        highlight: "2 Bike Fits durante los primeros 15 días",
         cta: "chooseTrial",
         features: [
-          "Prueba de 15 días con todas las funciones",
-          "Después de la prueba: 1 perfil de bici",
-          "Después de la prueba: 1 plan de alimentación",
-          "Después de la prueba: 2 Bike Fits con tracking lateral y frontal por visión por computador"
+          "Primeros 15 días: 2 Bike Fits con tracking lateral y frontal por visión por computador",
+          "Primeros 15 días: bicis y recomendaciones ilimitadas",
+          "Primeros 15 días: análisis personalizado de presión de llantas",
+          "Primeros 15 días: planes de nutrición ilimitados"
         ]
       },
       {
         description: "Para ciclistas que hacen ajustes frecuentes y quieren comparar progreso cada mes.",
         name: "Mensual",
-        price: "COP $9.900",
+        price: "COP $11.900",
         cadence: "al mes",
         highlight: "Sistema flexible de rendimiento",
         cta: "chooseMonthly",
