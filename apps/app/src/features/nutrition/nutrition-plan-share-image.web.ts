@@ -72,19 +72,20 @@ function drawShareImage(context: CanvasRenderingContext2D, payload: NutritionPla
   strokeRoundedRect(context, PADDING, PADDING, SIZE - PADDING * 2, SIZE - PADDING * 2, 34);
 
   drawBrand(context, payload, splashIcon);
-  drawText(context, payload.title, contentX, 142, 44, 52, 760, COLORS.ink, 900, 2);
-  drawText(context, payload.meta, contentX, 244, 23, 30, 780, COLORS.inkMuted, 800, 1);
+  drawText(context, payload.title, contentX, 108, 44, 52, 610, COLORS.ink, 900, 2);
+  drawText(context, payload.meta, contentX, 218, 23, 30, 780, COLORS.inkMuted, 800, 1);
 
-  drawSectionLabel(context, payload.copy.goals, contentX, 310);
-  drawMetrics(context, payload.metrics, contentX, 342, contentWidth);
+  drawSectionLabel(context, payload.copy.goals, contentX, 286);
+  drawMetrics(context, payload.metrics, contentX, 318, contentWidth);
 
-  drawSectionLabel(context, payload.copy.strategy, contentX, 492);
-  drawStrategy(context, payload, contentX, 524, contentWidth);
+  drawSectionLabel(context, payload.copy.strategy, contentX, 466);
+  drawStrategy(context, payload, contentX, 498, contentWidth);
 }
 
 function drawBrand(context: CanvasRenderingContext2D, payload: NutritionPlanShareImagePayload, splashIcon: HTMLImageElement | null) {
-  const x = PADDING + 16;
-  const y = PADDING + 16;
+  const brandWidth = 282;
+  const x = SIZE - PADDING - INNER_PADDING - brandWidth;
+  const y = 104;
   drawSplashIcon(context, splashIcon, x, y, 58, 16);
   drawText(context, payload.copy.domain, x + 75, y + 12, 30, 36, 300, COLORS.ink, 900, 1);
 }
@@ -132,7 +133,7 @@ function drawStrategy(context: CanvasRenderingContext2D, payload: NutritionPlanS
   const gap = 18;
   const carriedWidth = 320;
   const bottleWidth = (totalWidth - carriedWidth - gap * 2) / 2;
-  const bottleHeight = 444;
+  const bottleHeight = 470;
   const visibleBottles = payload.bottles.slice(0, 2);
 
   visibleBottles.forEach((bottle, index) => {
@@ -149,7 +150,7 @@ function drawStrategy(context: CanvasRenderingContext2D, payload: NutritionPlanS
 function drawCompactStrategyGrid(context: CanvasRenderingContext2D, payload: NutritionPlanShareImagePayload, x: number, y: number, totalWidth: number) {
   const gap = 14;
   const cardWidth = (totalWidth - gap * 2) / 3;
-  const cardHeight = 204;
+  const cardHeight = 220;
   const cards: { bottle?: NutritionPlanShareImageBottle; carried?: boolean }[] = payload.bottles.map((bottle) => ({ bottle }));
 
   if (payload.carriedItems.length > 0) {
@@ -192,7 +193,7 @@ function drawBottleCard(
   strokeRoundedRect(context, x, y, width, height, 22);
   drawText(context, bottle.name, x + 22, y + 24, 27, 33, width - 44, COLORS.ink, 900, 1);
   drawText(context, bottle.meta, x + 22, y + 62, 16, 21, width - 44, COLORS.inkMuted, 800, 2);
-  drawIngredientList(context, bottle.ingredients, x + 22, y + 134, width - 44, 270, emptyText, moreLabel, 4);
+  drawIngredientList(context, bottle.ingredients, x + 22, y + 134, width - 44, 296, emptyText, moreLabel, 4);
 }
 
 function drawCarriedCard(
@@ -211,7 +212,7 @@ function drawCarriedCard(
   context.lineWidth = 2;
   strokeRoundedRect(context, x, y, width, height, 22);
   drawText(context, title, x + 22, y + 24, 30, 36, width - 44, COLORS.ink, 900, 2);
-  drawIngredientList(context, items, x + 22, y + 122, width - 44, 280, emptyText, moreLabel, 5);
+  drawIngredientList(context, items, x + 22, y + 122, width - 44, 306, emptyText, moreLabel, 5);
 }
 
 function drawCompactBottleCard(
@@ -230,7 +231,7 @@ function drawCompactBottleCard(
   strokeRoundedRect(context, x, y, width, height, 18);
   drawText(context, bottle.name, x + 18, y + 17, 22, 27, width - 36, COLORS.ink, 900, 1);
   drawText(context, bottle.meta, x + 18, y + 48, 13, 17, width - 36, COLORS.inkMuted, 800, 2);
-  drawIngredientList(context, bottle.ingredients, x + 18, y + 93, width - 36, 92, emptyText, moreLabel, 2, "compact");
+  drawIngredientList(context, bottle.ingredients, x + 18, y + 88, width - 36, 118, emptyText, moreLabel, 3, "compact");
 }
 
 function drawCompactCarriedCard(
@@ -249,7 +250,7 @@ function drawCompactCarriedCard(
   context.lineWidth = 2;
   strokeRoundedRect(context, x, y, width, height, 18);
   drawText(context, title, x + 18, y + 17, 22, 27, width - 36, COLORS.ink, 900, 2);
-  drawIngredientList(context, items, x + 18, y + 84, width - 36, 102, emptyText, moreLabel, 2, "compact");
+  drawIngredientList(context, items, x + 18, y + 82, width - 36, 124, emptyText, moreLabel, 3, "compact");
 }
 
 function drawIngredientList(
@@ -270,14 +271,14 @@ function drawIngredientList(
   }
 
   const visibleItems = items.slice(0, maxItems);
-  const rowGap = density === "compact" ? 45 : 70;
+  const rowGap = density === "compact" ? 39 : 70;
   const dotRadius = density === "compact" ? 7.5 : 10;
   const dotY = density === "compact" ? 10 : 13;
-  const titleSize = density === "compact" ? 15 : 18;
-  const titleLineHeight = density === "compact" ? 19 : 23;
-  const metaSize = density === "compact" ? 11 : 14;
-  const metaLineHeight = density === "compact" ? 14 : 18;
-  const metaOffset = density === "compact" ? 20 : 24;
+  const titleSize = density === "compact" ? 14 : 18;
+  const titleLineHeight = density === "compact" ? 18 : 23;
+  const metaSize = density === "compact" ? 10.5 : 14;
+  const metaLineHeight = density === "compact" ? 13 : 18;
+  const metaOffset = density === "compact" ? 18 : 24;
 
   visibleItems.forEach((item, index) => {
     const rowY = y + index * rowGap;
