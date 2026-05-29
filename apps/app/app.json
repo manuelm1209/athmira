@@ -4,7 +4,11 @@
     "slug": "athmira",
     "scheme": "athmira",
     "version": "0.1.0",
-    "platforms": ["ios", "android", "web"],
+    "platforms": [
+      "ios",
+      "android",
+      "web"
+    ],
     "orientation": "default",
     "icon": "./assets/icon.png",
     "primaryColor": "#00857d",
@@ -51,7 +55,9 @@
       "versionCode": 1,
       "package": "com.athmira.app",
       "allowBackup": false,
-      "blockedPermissions": ["android.permission.RECORD_AUDIO"],
+      "blockedPermissions": [
+        "android.permission.RECORD_AUDIO"
+      ],
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#111820"
@@ -63,6 +69,20 @@
       "bundler": "metro",
       "output": "static",
       "favicon": "./assets/favicon.png"
-    }
+    },
+    "extra": {
+      "authRedirectUrl": "https://athmira.com/auth/callback",
+      "siteUrl": "https://athmira.com",
+      "supabaseUrl": "https://hlfopndkilkwlffcehec.supabase.co",
+      "supabaseAnonKey": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhsZm9wbmRraWxrd2xmZmNlaGVjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg3MTA2NTMsImV4cCI6MjA5NDI4NjY1M30.fC2v-LPFsntBJw_XQyQ9SB_JaQY1dOk8rgSOjHbM-a4",
+      "turnstileSiteKey": "1x00000000000000000000AA",
+      "router": {
+        "origin": "https://athmira.com"
+      },
+      "eas": {
+        "projectId": "2d4a90e2-c79c-4a2a-b634-522690ee57e5"
+      }
+    },
+    "owner": "manuelm1209"
   }
 }

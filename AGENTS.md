@@ -410,11 +410,16 @@ The code should still be structured as if real pose detection will be added late
 
 Native camera requirements:
 
-- Use `expo-camera` for iOS and Android camera previews.
-- Request only camera permission unless a feature truly records audio.
+- Use `expo-camera` (`CameraView`) for iOS and Android camera previews. The web targets continue to use the browser `getUserMedia` API in `*.web.tsx` siblings.
+- Native pose detection runs MoveNet Single-Pose Lightning via `@tensorflow-models/pose-detection` on the `@tensorflow/tfjs-backend-cpu` backend, behind the shared `useMoveNetDetector` hook in `apps/app/src/features/analysis/native/`. The hook polls `CameraView.takePictureAsync({ base64: true, quality: 0.4 })` every ~700 ms, decodes the JPEG with `jpeg-js`, builds a `tf.Tensor3D`, and feeds it to the detector. Effective frame rate is roughly 1 FPS — enough for posture-trend recording, not enough for real-time tracking.
+- Why polling instead of frame processors: `react-native-vision-camera` (both v4 worklets-core and v5 Nitro stacks) currently fails to compile against Expo SDK 55 / React Native 0.83 because the bundled Folly version does not expose `folly/coro/Coroutine.h`, which any worklets implementation needs. Five EAS build attempts confirmed the issue is upstream. Revisit when Folly catches up — likely with the next Expo SDK that ships an updated React Native + Folly pair.
+- Do **not** reintroduce `react-native-vision-camera`, `react-native-fast-tflite`, `react-native-worklets-core`, `react-native-worklets`, `react-native-nitro-modules`, or `react-native-nitro-image` to the camera path until the Folly issue is resolved upstream. Each of these will fail to compile on iOS today.
+- MoveNet model: the polling path downloads the model from TF Hub at runtime via `@tensorflow-models/pose-detection`. The locally committed `apps/app/assets/models/movenet_singlepose_lightning.tflite` (gitignored) is **not used** by this path — it was kept on disk because it is hard to source again and may be useful when the native-fast-tflite path becomes viable again.
+- Expo Go is fully supported again — no EAS dev build needed for normal development. Run `npm run dev` and scan the QR with Expo Go on iPhone or Android.
+- Request only camera permission unless a feature truly records audio. The `expo-camera` plugin in `app.json` is already wired to disable microphone and the barcode scanner.
 - Do not request Android `RECORD_AUDIO` for bike fit or posture capture.
-- Keep the device awake during active camera analysis.
-- Mirror front-camera previews when they are used for rider setup.
+- Keep the device awake during active camera analysis via `expo-keep-awake`.
+- Mirror front-camera previews when they are used for rider setup (`CameraView`'s `mirror` prop).
 - Handle `onCameraReady` and `onMountError` before enabling analysis actions.
 - Keep camera screens responsive to notches, home indicators, small phones, tablets, and Android navigation areas.
 - Stop or unmount camera sessions when leaving the analysis flow.

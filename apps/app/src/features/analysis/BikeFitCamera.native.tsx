@@ -1,15 +1,48 @@
-import { analyzePoseFrame } from "@athmira/pose-engine";
+import { selectCyclingSide } from "@athmira/pose-engine";
+import type { PoseFrameResult } from "@athmira/types";
 import { Body, Button, Card, colors, spacing } from "@athmira/ui";
 import { CameraView, useCameraPermissions } from "expo-camera";
 import { useKeepAwake } from "expo-keep-awake";
-import { forwardRef, useEffect, useImperativeHandle, useRef, useState, type ElementRef } from "react";
+import {
+  Fragment,
+  forwardRef,
+  useCallback,
+  useEffect,
+  useImperativeHandle,
+  useMemo,
+  useRef,
+  useState,
+  type ElementRef
+} from "react";
 import { StyleSheet, Text, View, useWindowDimensions } from "react-native";
-import Svg, { Path } from "react-native-svg";
+import Svg, { Circle, Line, Path, Rect, Text as SvgText } from "react-native-svg";
 
 import type { BikeFitCameraHandle, BikeFitCameraProps } from "./BikeFitCamera.types";
 import { RiderSilhouetteOverlay } from "./RiderSilhouetteOverlay";
+import {
+  BIKE_FIT_JOINT_NAMES,
+  BIKE_FIT_SEGMENTS,
+  KEYPOINT_CONFIDENCE_THRESHOLD,
+  LABEL_BG,
+  LABEL_BORDER,
+  POSE_CONFIDENCE_THRESHOLD,
+  SKELETON_COLOR,
+  bikeFitBadges,
+  findKeypoint
+} from "./native/poseOverlayMath";
+import { useMoveNetDetector } from "./native/useMoveNetDetector";
 
 type AnalysisPhase = "idle" | "countdown" | "recording" | "complete";
+
+type RecordingState = {
+  countdownMs: number;
+  durationMs: number;
+  recordingStartedAt?: number;
+  reject: (error: Error) => void;
+  resolve: (samples: PoseFrameResult[]) => void;
+  samples: PoseFrameResult[];
+  startedAt: number;
+};
 
 export const BikeFitCamera = forwardRef<BikeFitCameraHandle, BikeFitCameraProps>(function BikeFitCamera(
   { labels, onLiveResult, onReadyChange },
@@ -22,22 +55,44 @@ export const BikeFitCamera = forwardRef<BikeFitCameraHandle, BikeFitCameraProps>
   const [phase, setPhase] = useState<AnalysisPhase>("idle");
   const [countdownSeconds, setCountdownSeconds] = useState<number | null>(null);
   const [recordingProgress, setRecordingProgress] = useState<number | null>(null);
-  const timersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
-  const intervalsRef = useRef<ReturnType<typeof setInterval>[]>([]);
+  const [livePose, setLivePose] = useState<PoseFrameResult | null>(null);
+  const recordingRef = useRef<RecordingState | null>(null);
+  const tickIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const { height, width } = useWindowDimensions();
   const compact = width < 520;
   const isPortrait = height > width;
   const hasPermission = Boolean(permission?.granted);
-  const isReady = hasPermission && previewReady && !mountError;
 
   useKeepAwake("athmira-side-bike-fit-camera");
 
+  const handlePose = useCallback(
+    (result: PoseFrameResult | null) => {
+      setLivePose(result);
+      onLiveResult?.(result);
+
+      const recording = recordingRef.current;
+      if (!recording || !recording.recordingStartedAt) {
+        return;
+      }
+      if (result && result.confidenceScore >= POSE_CONFIDENCE_THRESHOLD) {
+        recording.samples.push(result);
+      }
+    },
+    [onLiveResult]
+  );
+
+  const detectorEnabled = Boolean(hasPermission && previewReady && !mountError);
+  const { errorMessage: modelError, state: modelState } = useMoveNetDetector({
+    cameraRef,
+    enabled: detectorEnabled,
+    onPose: handlePose
+  });
+
+  const isReady = detectorEnabled && modelState === "loaded";
+
   useEffect(() => {
     onReadyChange?.(isReady);
-
-    if (isReady) {
-      onLiveResult?.(analyzePoseFrame({ height: 720, timestampMs: Date.now(), width: 1280 }));
-    } else {
+    if (!isReady) {
       onLiveResult?.(null);
     }
   }, [isReady, onLiveResult, onReadyChange]);
@@ -50,85 +105,89 @@ export const BikeFitCamera = forwardRef<BikeFitCameraHandle, BikeFitCameraProps>
 
   useEffect(() => {
     return () => {
-      clearTimers();
+      if (tickIntervalRef.current) {
+        clearInterval(tickIntervalRef.current);
+        tickIntervalRef.current = null;
+      }
+      recordingRef.current?.reject(new Error(labels.cameraAnalysisUnavailable));
+      recordingRef.current = null;
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-  function clearTimers() {
-    timersRef.current.forEach((handle) => clearTimeout(handle));
-    intervalsRef.current.forEach((handle) => clearInterval(handle));
-    timersRef.current = [];
-    intervalsRef.current = [];
-  }
 
   useImperativeHandle(ref, () => ({
     async captureSnapshot() {
       if (!isReady) {
         return null;
       }
-
-      const snapshot = await cameraRef.current?.takePictureAsync({
-        quality: 0.7,
-        skipProcessing: true
-      });
-
-      return snapshot?.uri ?? null;
+      try {
+        const photo = await cameraRef.current?.takePictureAsync({
+          quality: 0.7,
+          skipProcessing: true
+        });
+        return photo?.uri ?? null;
+      } catch {
+        return null;
+      }
     },
     async startAnalysis({ countdownMs = 10000, durationMs = 8000 } = {}) {
       if (!isReady) {
         throw new Error(labels.poseNotReady);
       }
 
-      clearTimers();
-      setPhase(countdownMs > 0 ? "countdown" : "recording");
-      setCountdownSeconds(countdownMs > 0 ? Math.ceil(countdownMs / 1000) : null);
-      setRecordingProgress(countdownMs > 0 ? null : 0);
+      if (tickIntervalRef.current) {
+        clearInterval(tickIntervalRef.current);
+        tickIntervalRef.current = null;
+      }
 
-      return new Promise<ReturnType<typeof analyzePoseFrame>[]>((resolve) => {
-        if (countdownMs > 0) {
-          const totalSeconds = Math.ceil(countdownMs / 1000);
-          const tick = setInterval(() => {
-            setCountdownSeconds((current) => {
-              const next = (current ?? totalSeconds) - 1;
-              if (next <= 0) {
-                clearInterval(tick);
-                return 0;
-              }
-              return next;
-            });
-          }, 1000);
-          intervalsRef.current.push(tick);
-        }
+      return new Promise<PoseFrameResult[]>((resolve, reject) => {
+        recordingRef.current = {
+          countdownMs,
+          durationMs,
+          reject,
+          resolve,
+          samples: [],
+          startedAt: Date.now()
+        };
+        setCountdownSeconds(countdownMs > 0 ? Math.ceil(countdownMs / 1000) : null);
+        setPhase(countdownMs > 0 ? "countdown" : "recording");
+        setRecordingProgress(countdownMs > 0 ? null : 0);
 
-        const startRecordingHandle = setTimeout(() => {
-          setPhase("recording");
-          setCountdownSeconds(null);
-          setRecordingProgress(0);
-
-          const recordingStartedAt = Date.now();
-          const progressTick = setInterval(() => {
-            const elapsed = Date.now() - recordingStartedAt;
-            setRecordingProgress(Math.min(1, elapsed / durationMs));
-          }, 100);
-          intervalsRef.current.push(progressTick);
-
-          const completeHandle = setTimeout(() => {
-            clearTimers();
+        tickIntervalRef.current = setInterval(() => {
+          const recording = recordingRef.current;
+          if (!recording) {
+            return;
+          }
+          const now = Date.now();
+          if (!recording.recordingStartedAt) {
+            const remainingMs = recording.countdownMs - (now - recording.startedAt);
+            setCountdownSeconds(Math.max(0, Math.ceil(remainingMs / 1000)));
+            if (remainingMs <= 0) {
+              recording.recordingStartedAt = now;
+              setCountdownSeconds(null);
+              setPhase("recording");
+              setRecordingProgress(0);
+            }
+            return;
+          }
+          const elapsedMs = now - recording.recordingStartedAt;
+          setRecordingProgress(Math.min(1, elapsedMs / recording.durationMs));
+          if (elapsedMs >= recording.durationMs) {
+            const finished = recording;
+            recordingRef.current = null;
+            if (tickIntervalRef.current) {
+              clearInterval(tickIntervalRef.current);
+              tickIntervalRef.current = null;
+            }
             setPhase("complete");
             setRecordingProgress(null);
-            resolve(
-              Array.from({ length: 12 }, (_, index) =>
-                analyzePoseFrame({
-                  height: 720,
-                  timestampMs: Date.now() + index * 120,
-                  width: 1280
-                })
-              )
-            );
-          }, durationMs);
-          timersRef.current.push(completeHandle);
-        }, countdownMs);
-        timersRef.current.push(startRecordingHandle);
+            if (finished.samples.length < 6) {
+              finished.reject(new Error(labels.insufficientPoseSamples));
+            } else {
+              finished.resolve(finished.samples);
+            }
+          }
+        }, 100);
       });
     }
   }));
@@ -166,13 +225,8 @@ export const BikeFitCamera = forwardRef<BikeFitCameraHandle, BikeFitCameraProps>
     );
   }
 
-  const overlay = getPhaseOverlay({
-    bigNumberOverride: null,
-    countdownSeconds,
-    labels,
-    phase,
-    progress: recordingProgress
-  });
+  const overlay = getPhaseOverlay({ countdownSeconds, labels, phase, progress: recordingProgress });
+  const poseDetected = Boolean(livePose && livePose.confidenceScore >= POSE_CONFIDENCE_THRESHOLD);
 
   return (
     <View style={[styles.cameraFrame, compact && styles.cameraFrameCompact]}>
@@ -187,33 +241,45 @@ export const BikeFitCamera = forwardRef<BikeFitCameraHandle, BikeFitCameraProps>
           setMountError(event.message);
           setPreviewReady(false);
         }}
+        pictureSize="1280x720"
         ratio="16:9"
         ref={cameraRef}
         responsiveOrientationWhenOrientationLocked
         style={styles.camera}
       />
-      <View style={[styles.overlay, styles.noPointerEvents]}>
+      <View style={[styles.overlay, styles.noPointerEvents]} pointerEvents="none">
         {!previewReady ? (
           <View style={styles.previewStatus}>
             <Text style={styles.previewStatusText}>{labels.cameraPermissionRequesting}</Text>
           </View>
-        ) : phase === "idle" ? (
-          <RiderSilhouetteOverlay
-            detected={false}
-            detectedLabel={labels.riderPositionDetected}
-            guide={labels.riderPositionGuide}
-            title={labels.riderPositionTitle}
-          />
+        ) : modelState === "loading" ? (
+          <View style={styles.statusBadge}>
+            <Text style={styles.previewStatusText}>{labels.poseDetectorLoading}</Text>
+          </View>
         ) : null}
+        {modelError ? (
+          <View style={styles.statusBadge}>
+            <Text style={styles.previewStatusText}>{modelError}</Text>
+          </View>
+        ) : null}
+        {livePose && poseDetected ? <BikeFitSkeleton pose={livePose} /> : null}
       </View>
+      {!poseDetected && phase === "idle" && previewReady ? (
+        <RiderSilhouetteOverlay
+          detected={false}
+          detectedLabel={labels.riderPositionDetected}
+          guide={labels.riderPositionGuide}
+          title={labels.riderPositionTitle}
+        />
+      ) : null}
       {overlay ? (
-        <View style={[styles.phaseOverlay, styles.noPointerEvents]}>
+        <View style={[styles.phaseOverlay, styles.noPointerEvents]} pointerEvents="none">
           {overlay.heading ? <Text style={styles.phaseHeading}>{overlay.heading}</Text> : null}
           {overlay.bigNumber ? <Text style={styles.phaseBigNumber}>{overlay.bigNumber}</Text> : null}
         </View>
       ) : null}
-      {isPortrait && previewReady && phase === "idle" ? (
-        <View style={[styles.rotatePrompt, styles.noPointerEvents]}>
+      {isPortrait && phase === "idle" && previewReady ? (
+        <View style={[styles.rotatePrompt, styles.noPointerEvents]} pointerEvents="none">
           <View style={styles.rotateIconWrapper}>
             <Svg viewBox="0 0 24 24" height={64} width={64}>
               <Path
@@ -235,8 +301,107 @@ export const BikeFitCamera = forwardRef<BikeFitCameraHandle, BikeFitCameraProps>
   );
 });
 
+function BikeFitSkeleton({ pose }: { pose: PoseFrameResult }) {
+  const side = useMemo(() => selectCyclingSide(pose.keypoints), [pose.keypoints]);
+  const segments = useMemo(() => BIKE_FIT_SEGMENTS(side), [side]);
+  const jointNames = useMemo(() => new Set(BIKE_FIT_JOINT_NAMES(side)), [side]);
+  const badges = useMemo(() => bikeFitBadges(side, pose.angles), [side, pose.angles]);
+
+  return (
+    <Svg style={[StyleSheet.absoluteFillObject]} viewBox="0 0 1000 1000" preserveAspectRatio="none">
+      {segments.map(([startName, endName]) => {
+        const start = findKeypoint(pose.keypoints, startName);
+        const end = findKeypoint(pose.keypoints, endName);
+        if (!start || !end) {
+          return null;
+        }
+        return (
+          <Line
+            key={`${startName}-${endName}`}
+            stroke={SKELETON_COLOR}
+            strokeLinecap="round"
+            strokeWidth={6}
+            x1={start.x * 1000}
+            x2={end.x * 1000}
+            y1={start.y * 1000}
+            y2={end.y * 1000}
+          />
+        );
+      })}
+      {pose.keypoints.map((keypoint) => {
+        if (keypoint.confidence < KEYPOINT_CONFIDENCE_THRESHOLD || !jointNames.has(keypoint.name)) {
+          return null;
+        }
+        return (
+          <Circle
+            cx={keypoint.x * 1000}
+            cy={keypoint.y * 1000}
+            fill="rgba(13, 27, 34, 0.9)"
+            key={keypoint.name}
+            r={8}
+            stroke={SKELETON_COLOR}
+            strokeWidth={2.5}
+          />
+        );
+      })}
+      {badges.map((badge) => {
+        const point = findKeypoint(pose.keypoints, badge.pointName);
+        if (!point || typeof badge.value !== "number") {
+          return null;
+        }
+        const px = point.x * 1000;
+        const py = point.y * 1000;
+        const badgeWidth = 95;
+        const badgeHeight = 52;
+        const offset = 36;
+        let x = px;
+        let y = py;
+        if (badge.direction === "right") {
+          x = px + offset;
+          y = py - badgeHeight / 2;
+        } else if (badge.direction === "left") {
+          x = px - offset - badgeWidth;
+          y = py - badgeHeight / 2;
+        } else if (badge.direction === "up") {
+          x = px - badgeWidth / 2;
+          y = py - offset - badgeHeight;
+        } else {
+          x = px - badgeWidth / 2;
+          y = py + offset;
+        }
+        return (
+          <Fragment key={badge.label}>
+            <Rect
+              fill={LABEL_BG}
+              height={badgeHeight}
+              rx={10}
+              ry={10}
+              stroke={LABEL_BORDER}
+              strokeWidth={1.5}
+              width={badgeWidth}
+              x={x}
+              y={y}
+            />
+            <SvgText
+              fill={SKELETON_COLOR}
+              fontSize={12}
+              fontWeight="700"
+              x={x + 12}
+              y={y + 18}
+            >
+              {badge.label.toUpperCase()}
+            </SvgText>
+            <SvgText fill="#ffffff" fontSize={22} fontWeight="900" x={x + 12} y={y + 42}>
+              {`${badge.value}°`}
+            </SvgText>
+          </Fragment>
+        );
+      })}
+    </Svg>
+  );
+}
+
 function getPhaseOverlay(input: {
-  bigNumberOverride: string | null;
   countdownSeconds: number | null;
   labels: BikeFitCameraProps["labels"];
   phase: AnalysisPhase;
@@ -244,25 +409,22 @@ function getPhaseOverlay(input: {
 }) {
   if (input.phase === "countdown") {
     return {
-      bigNumber: input.bigNumberOverride ?? String(input.countdownSeconds ?? 0),
+      bigNumber: String(input.countdownSeconds ?? 0),
       heading: input.labels.bikeFitGetReady
     };
   }
-
   if (input.phase === "recording") {
     return {
       bigNumber: `${Math.round((input.progress ?? 0) * 100)}%`,
       heading: input.labels.bikeFitRecording
     };
   }
-
   if (input.phase === "complete") {
     return {
       bigNumber: null as string | null,
       heading: input.labels.bikeFitComplete
     };
   }
-
   return null;
 }
 
@@ -301,6 +463,15 @@ const styles = StyleSheet.create({
     position: "absolute",
     right: 0,
     top: 0
+  },
+  statusBadge: {
+    backgroundColor: "rgba(13,27,34,0.74)",
+    borderRadius: 6,
+    left: spacing.md,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    position: "absolute",
+    top: spacing.md
   },
   previewStatusText: {
     color: "#ffffff",

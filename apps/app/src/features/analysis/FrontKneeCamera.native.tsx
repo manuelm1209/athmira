@@ -1,15 +1,46 @@
-import { analyzePoseFrame } from "@athmira/pose-engine";
+import { analyzeFrontKneeTracking, toFrontKneeTrackingSample } from "@athmira/fit-engine";
+import type { FrontKneeTrackingSample, PoseFrameResult } from "@athmira/types";
 import { Body, Button, Card, colors, spacing } from "@athmira/ui";
 import { CameraView, useCameraPermissions } from "expo-camera";
 import { useKeepAwake } from "expo-keep-awake";
-import { forwardRef, useEffect, useImperativeHandle, useRef, useState, type ElementRef } from "react";
+import {
+  Fragment,
+  forwardRef,
+  useCallback,
+  useEffect,
+  useImperativeHandle,
+  useMemo,
+  useRef,
+  useState,
+  type ElementRef
+} from "react";
 import { StyleSheet, Text, View, useWindowDimensions } from "react-native";
+import Svg, { Circle, Line, Polyline, Rect, Text as SvgText } from "react-native-svg";
 
 import type { FrontKneeCameraHandle, FrontKneeCameraProps } from "./FrontKneeCamera.types";
+import {
+  LABEL_BG,
+  LABEL_BORDER,
+  PATH_COLOR,
+  POSE_CONFIDENCE_THRESHOLD,
+  SKELETON_COLOR
+} from "./native/poseOverlayMath";
+import { useMoveNetDetector } from "./native/useMoveNetDetector";
 
 type TrackingPhase = "idle" | "countdown" | "recording" | "complete";
 
 const ACCENT = "#b7e64a";
+const VIEWBOX = 1000;
+
+type TrackingState = {
+  countdownMs: number;
+  durationMs: number;
+  recordingStartedAt?: number;
+  reject: (error: Error) => void;
+  resolve: (samples: PoseFrameResult[]) => void;
+  samples: PoseFrameResult[];
+  startedAt: number;
+};
 
 export const FrontKneeCamera = forwardRef<FrontKneeCameraHandle, FrontKneeCameraProps>(function FrontKneeCamera(
   { labels, onLiveResult, onReadyChange },
@@ -22,21 +53,46 @@ export const FrontKneeCamera = forwardRef<FrontKneeCameraHandle, FrontKneeCamera
   const [phase, setPhase] = useState<TrackingPhase>("idle");
   const [countdownSeconds, setCountdownSeconds] = useState<number | null>(null);
   const [recordingProgress, setRecordingProgress] = useState<number | null>(null);
-  const timersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
-  const intervalsRef = useRef<ReturnType<typeof setInterval>[]>([]);
+  const [livePose, setLivePose] = useState<PoseFrameResult | null>(null);
+  const [trackedSamples, setTrackedSamples] = useState<FrontKneeTrackingSample[]>([]);
+  const trackingRef = useRef<TrackingState | null>(null);
+  const tickIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const { width } = useWindowDimensions();
   const compact = width < 520;
   const hasPermission = Boolean(permission?.granted);
-  const isReady = hasPermission && previewReady && !mountError;
 
   useKeepAwake("athmira-front-knee-camera");
 
+  const handlePose = useCallback(
+    (result: PoseFrameResult | null) => {
+      setLivePose(result);
+      onLiveResult?.(result);
+
+      const tracking = trackingRef.current;
+      if (!tracking || !tracking.recordingStartedAt) {
+        return;
+      }
+      if (result && result.confidenceScore >= POSE_CONFIDENCE_THRESHOLD) {
+        tracking.samples.push(result);
+        const sample = toFrontKneeTrackingSample(result);
+        setTrackedSamples((current) => [...current, sample]);
+      }
+    },
+    [onLiveResult]
+  );
+
+  const detectorEnabled = Boolean(hasPermission && previewReady && !mountError);
+  const { errorMessage: modelError, state: modelState } = useMoveNetDetector({
+    cameraRef,
+    enabled: detectorEnabled,
+    onPose: handlePose
+  });
+
+  const isReady = detectorEnabled && modelState === "loaded";
+
   useEffect(() => {
     onReadyChange?.(isReady);
-
-    if (isReady) {
-      onLiveResult?.(analyzePoseFrame({ height: 720, timestampMs: Date.now(), width: 1280 }));
-    } else {
+    if (!isReady) {
       onLiveResult?.(null);
     }
   }, [isReady, onLiveResult, onReadyChange]);
@@ -49,85 +105,91 @@ export const FrontKneeCamera = forwardRef<FrontKneeCameraHandle, FrontKneeCamera
 
   useEffect(() => {
     return () => {
-      clearTimers();
+      if (tickIntervalRef.current) {
+        clearInterval(tickIntervalRef.current);
+        tickIntervalRef.current = null;
+      }
+      trackingRef.current?.reject(new Error(labels.cameraAnalysisUnavailable));
+      trackingRef.current = null;
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-  function clearTimers() {
-    timersRef.current.forEach((handle) => clearTimeout(handle));
-    intervalsRef.current.forEach((handle) => clearInterval(handle));
-    timersRef.current = [];
-    intervalsRef.current = [];
-  }
 
   useImperativeHandle(ref, () => ({
     async captureSnapshot() {
       if (!isReady) {
         return null;
       }
-
-      const snapshot = await cameraRef.current?.takePictureAsync({
-        quality: 0.7,
-        skipProcessing: true
-      });
-
-      return snapshot?.uri ?? null;
+      try {
+        const photo = await cameraRef.current?.takePictureAsync({
+          quality: 0.7,
+          skipProcessing: true
+        });
+        return photo?.uri ?? null;
+      } catch {
+        return null;
+      }
     },
     async startTracking({ countdownMs = 10000, durationMs = 10000 } = {}) {
-      if (!isReady) {
+      if (!isReady || !livePose || livePose.confidenceScore < POSE_CONFIDENCE_THRESHOLD) {
         throw new Error(labels.poseNotReady);
       }
 
-      clearTimers();
-      setPhase(countdownMs > 0 ? "countdown" : "recording");
-      setCountdownSeconds(countdownMs > 0 ? Math.ceil(countdownMs / 1000) : null);
-      setRecordingProgress(countdownMs > 0 ? null : 0);
+      if (tickIntervalRef.current) {
+        clearInterval(tickIntervalRef.current);
+        tickIntervalRef.current = null;
+      }
 
-      return new Promise<ReturnType<typeof analyzePoseFrame>[]>((resolve) => {
-        if (countdownMs > 0) {
-          const totalSeconds = Math.ceil(countdownMs / 1000);
-          const tick = setInterval(() => {
-            setCountdownSeconds((current) => {
-              const next = (current ?? totalSeconds) - 1;
-              if (next <= 0) {
-                clearInterval(tick);
-                return 0;
-              }
-              return next;
-            });
-          }, 1000);
-          intervalsRef.current.push(tick);
-        }
+      setTrackedSamples([]);
 
-        const startRecordingHandle = setTimeout(() => {
-          setPhase("recording");
-          setCountdownSeconds(null);
-          setRecordingProgress(0);
+      return new Promise<PoseFrameResult[]>((resolve, reject) => {
+        trackingRef.current = {
+          countdownMs,
+          durationMs,
+          reject,
+          resolve,
+          samples: [],
+          startedAt: Date.now()
+        };
+        setCountdownSeconds(countdownMs > 0 ? Math.ceil(countdownMs / 1000) : null);
+        setPhase(countdownMs > 0 ? "countdown" : "recording");
+        setRecordingProgress(countdownMs > 0 ? null : 0);
 
-          const recordingStartedAt = Date.now();
-          const progressTick = setInterval(() => {
-            const elapsed = Date.now() - recordingStartedAt;
-            setRecordingProgress(Math.min(1, elapsed / durationMs));
-          }, 100);
-          intervalsRef.current.push(progressTick);
-
-          const completeHandle = setTimeout(() => {
-            clearTimers();
+        tickIntervalRef.current = setInterval(() => {
+          const tracking = trackingRef.current;
+          if (!tracking) {
+            return;
+          }
+          const now = Date.now();
+          if (!tracking.recordingStartedAt) {
+            const remainingMs = tracking.countdownMs - (now - tracking.startedAt);
+            setCountdownSeconds(Math.max(0, Math.ceil(remainingMs / 1000)));
+            if (remainingMs <= 0) {
+              tracking.recordingStartedAt = now;
+              setCountdownSeconds(null);
+              setPhase("recording");
+              setRecordingProgress(0);
+            }
+            return;
+          }
+          const elapsedMs = now - tracking.recordingStartedAt;
+          setRecordingProgress(Math.min(1, elapsedMs / tracking.durationMs));
+          if (elapsedMs >= tracking.durationMs) {
+            const finished = tracking;
+            trackingRef.current = null;
+            if (tickIntervalRef.current) {
+              clearInterval(tickIntervalRef.current);
+              tickIntervalRef.current = null;
+            }
             setPhase("complete");
             setRecordingProgress(null);
-            resolve(
-              Array.from({ length: 30 }, (_, index) =>
-                analyzePoseFrame({
-                  height: 720,
-                  timestampMs: Date.now() + index * 333,
-                  width: 1280
-                })
-              )
-            );
-          }, durationMs);
-          timersRef.current.push(completeHandle);
-        }, countdownMs);
-        timersRef.current.push(startRecordingHandle);
+            if (finished.samples.length < 8) {
+              finished.reject(new Error(labels.insufficientPoseSamples));
+            } else {
+              finished.resolve(finished.samples);
+            }
+          }
+        }, 100);
       });
     }
   }));
@@ -165,12 +227,8 @@ export const FrontKneeCamera = forwardRef<FrontKneeCameraHandle, FrontKneeCamera
     );
   }
 
-  const overlay = getPhaseOverlay({
-    countdownSeconds,
-    labels,
-    phase,
-    progress: recordingProgress
-  });
+  const overlay = getPhaseOverlay({ countdownSeconds, labels, phase, progress: recordingProgress });
+  const poseDetected = Boolean(livePose && livePose.confidenceScore >= POSE_CONFIDENCE_THRESHOLD);
 
   return (
     <View style={[styles.cameraFrame, compact && styles.cameraFrameCompact]}>
@@ -185,27 +243,38 @@ export const FrontKneeCamera = forwardRef<FrontKneeCameraHandle, FrontKneeCamera
           setMountError(event.message);
           setPreviewReady(false);
         }}
+        pictureSize="1280x720"
         ratio="4:3"
         ref={cameraRef}
         responsiveOrientationWhenOrientationLocked
         style={styles.camera}
       />
-      <View style={[styles.overlay, styles.noPointerEvents]}>
+      <View style={[styles.overlay, styles.noPointerEvents]} pointerEvents="none">
         {!previewReady ? (
           <View style={styles.previewStatus}>
             <Text style={styles.previewStatusText}>{labels.cameraPermissionRequesting}</Text>
           </View>
+        ) : modelState === "loading" ? (
+          <View style={styles.statusBadge}>
+            <Text style={styles.previewStatusText}>{labels.poseDetectorLoading}</Text>
+          </View>
+        ) : null}
+        {modelError ? (
+          <View style={styles.statusBadge}>
+            <Text style={styles.previewStatusText}>{modelError}</Text>
+          </View>
         ) : null}
         <View style={styles.centerGuide} pointerEvents="none" />
+        <FrontKneeOverlay pose={poseDetected ? livePose : null} samples={trackedSamples} />
       </View>
       {overlay ? (
-        <View style={[styles.phaseOverlay, styles.noPointerEvents]}>
+        <View style={[styles.phaseOverlay, styles.noPointerEvents]} pointerEvents="none">
           {overlay.heading ? <Text style={styles.phaseHeading}>{overlay.heading}</Text> : null}
           {overlay.bigNumber ? <Text style={styles.phaseBigNumber}>{overlay.bigNumber}</Text> : null}
         </View>
       ) : null}
       {phase === "idle" && previewReady ? (
-        <View style={[styles.positionGuide, styles.noPointerEvents]}>
+        <View style={[styles.positionGuide, styles.noPointerEvents]} pointerEvents="none">
           <Text style={styles.positionGuideTitle}>{labels.frontKneePositionTitle}</Text>
           <Text style={styles.positionGuideBody}>{labels.frontKneePositionGuide}</Text>
         </View>
@@ -213,6 +282,225 @@ export const FrontKneeCamera = forwardRef<FrontKneeCameraHandle, FrontKneeCamera
     </View>
   );
 });
+
+function FrontKneeOverlay({
+  pose,
+  samples
+}: {
+  pose: PoseFrameResult | null;
+  samples: FrontKneeTrackingSample[];
+}) {
+  const liveSample = useMemo(() => (pose ? toFrontKneeTrackingSample(pose) : null), [pose]);
+  const allSamples = useMemo(
+    () => (samples.length ? samples : liveSample ? [liveSample] : []),
+    [samples, liveSample]
+  );
+  const analysis = useMemo(() => {
+    if (!allSamples.length || !pose) {
+      return null;
+    }
+    return analyzeFrontKneeTracking(
+      allSamples.map((sample) => sampleToFrame(sample, pose)),
+      { durationMs: 10000 }
+    );
+  }, [allSamples, pose]);
+
+  return (
+    <Svg style={[StyleSheet.absoluteFillObject]} viewBox={`0 0 ${VIEWBOX} ${VIEWBOX}`} preserveAspectRatio="none">
+      <KneePath points={samples.map((sample) => sample.leftKnee)} />
+      <KneePath points={samples.map((sample) => sample.rightKnee)} />
+      {liveSample ? (
+        <>
+          <JointGroup hip={liveSample.leftHip} knee={liveSample.leftKnee} ankle={liveSample.leftAnkle} />
+          <JointGroup hip={liveSample.rightHip} knee={liveSample.rightKnee} ankle={liveSample.rightAnkle} />
+          <AlignmentTrack from={liveSample.leftHip} to={liveSample.leftAnkle} />
+          <AlignmentTrack from={liveSample.rightHip} to={liveSample.rightAnkle} />
+          {analysis ? (
+            <>
+              <DriftBadge
+                direction="left"
+                driftMm={analysis.left.kneeDriftMm}
+                driftPx={analysis.left.kneeDriftPx}
+                point={liveSample.leftKnee}
+                side="L"
+              />
+              <DriftBadge
+                direction="right"
+                driftMm={analysis.right.kneeDriftMm}
+                driftPx={analysis.right.kneeDriftPx}
+                point={liveSample.rightKnee}
+                side="R"
+              />
+            </>
+          ) : null}
+        </>
+      ) : null}
+    </Svg>
+  );
+}
+
+function KneePath({ points }: { points: ({ x: number; y: number } | undefined)[] }) {
+  const usable = points.filter((point): point is { x: number; y: number } => Boolean(point));
+  if (usable.length < 2) {
+    return null;
+  }
+  const polyPoints = usable.map((point) => `${point.x * VIEWBOX},${point.y * VIEWBOX}`).join(" ");
+  return (
+    <Polyline
+      fill="none"
+      points={polyPoints}
+      stroke={PATH_COLOR}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth={4}
+    />
+  );
+}
+
+function JointGroup({
+  hip,
+  knee,
+  ankle
+}: {
+  hip?: { x: number; y: number };
+  knee?: { x: number; y: number };
+  ankle?: { x: number; y: number };
+}) {
+  return (
+    <Fragment>
+      {hip && knee ? (
+        <Line
+          stroke={SKELETON_COLOR}
+          strokeLinecap="round"
+          strokeWidth={6}
+          x1={hip.x * VIEWBOX}
+          x2={knee.x * VIEWBOX}
+          y1={hip.y * VIEWBOX}
+          y2={knee.y * VIEWBOX}
+        />
+      ) : null}
+      {knee && ankle ? (
+        <Line
+          stroke={SKELETON_COLOR}
+          strokeLinecap="round"
+          strokeWidth={6}
+          x1={knee.x * VIEWBOX}
+          x2={ankle.x * VIEWBOX}
+          y1={knee.y * VIEWBOX}
+          y2={ankle.y * VIEWBOX}
+        />
+      ) : null}
+      <JointMarker point={hip} />
+      <JointMarker point={knee} />
+      <JointMarker point={ankle} />
+    </Fragment>
+  );
+}
+
+function JointMarker({ point }: { point?: { x: number; y: number } }) {
+  if (!point) {
+    return null;
+  }
+  return (
+    <Circle
+      cx={point.x * VIEWBOX}
+      cy={point.y * VIEWBOX}
+      fill="rgba(13, 27, 34, 0.9)"
+      r={9}
+      stroke={SKELETON_COLOR}
+      strokeWidth={2.5}
+    />
+  );
+}
+
+function AlignmentTrack({
+  from,
+  to
+}: {
+  from?: { x: number; y: number };
+  to?: { x: number; y: number };
+}) {
+  if (!from || !to) {
+    return null;
+  }
+  return (
+    <Line
+      stroke="rgba(183, 230, 74, 0.45)"
+      strokeDasharray="4,6"
+      strokeWidth={1.5}
+      x1={from.x * VIEWBOX}
+      x2={to.x * VIEWBOX}
+      y1={from.y * VIEWBOX}
+      y2={to.y * VIEWBOX}
+    />
+  );
+}
+
+function DriftBadge({
+  direction,
+  driftMm,
+  driftPx,
+  point,
+  side
+}: {
+  direction: "left" | "right";
+  driftMm: number | null;
+  driftPx: number;
+  point?: { x: number; y: number };
+  side: "L" | "R";
+}) {
+  if (!point) {
+    return null;
+  }
+  const value = driftMm !== null ? `${driftMm} mm` : `${Math.round(driftPx)} px`;
+  const badgeWidth = 130;
+  const badgeHeight = 72;
+  const offset = 40;
+  const px = point.x * VIEWBOX;
+  const py = point.y * VIEWBOX;
+  const x = direction === "left" ? px - offset - badgeWidth : px + offset;
+  const y = py - badgeHeight / 2;
+
+  return (
+    <Fragment>
+      <Rect
+        fill={LABEL_BG}
+        height={badgeHeight}
+        rx={10}
+        ry={10}
+        stroke={LABEL_BORDER}
+        strokeWidth={1.5}
+        width={badgeWidth}
+        x={x}
+        y={y}
+      />
+      <SvgText fill={SKELETON_COLOR} fontSize={14} fontWeight="700" x={x + 14} y={y + 22}>
+        {`${side} DRIFT`}
+      </SvgText>
+      <SvgText fill="#ffffff" fontSize={26} fontWeight="900" x={x + 14} y={y + 54}>
+        {value}
+      </SvgText>
+    </Fragment>
+  );
+}
+
+function sampleToFrame(sample: FrontKneeTrackingSample, source: PoseFrameResult): PoseFrameResult {
+  return {
+    angles: source.angles,
+    confidenceScore: source.confidenceScore,
+    frame: source.frame
+      ? { height: source.frame.height, timestampMs: sample.timestampMs, width: source.frame.width }
+      : undefined,
+    keypoints: [
+      sample.leftHip ? { confidence: sample.leftHip.confidence, name: "left_hip", x: sample.leftHip.x, y: sample.leftHip.y } : null,
+      sample.leftKnee ? { confidence: sample.leftKnee.confidence, name: "left_knee", x: sample.leftKnee.x, y: sample.leftKnee.y } : null,
+      sample.leftAnkle ? { confidence: sample.leftAnkle.confidence, name: "left_ankle", x: sample.leftAnkle.x, y: sample.leftAnkle.y } : null,
+      sample.rightHip ? { confidence: sample.rightHip.confidence, name: "right_hip", x: sample.rightHip.x, y: sample.rightHip.y } : null,
+      sample.rightKnee ? { confidence: sample.rightKnee.confidence, name: "right_knee", x: sample.rightKnee.x, y: sample.rightKnee.y } : null,
+      sample.rightAnkle ? { confidence: sample.rightAnkle.confidence, name: "right_ankle", x: sample.rightAnkle.x, y: sample.rightAnkle.y } : null
+    ].filter(Boolean) as PoseFrameResult["keypoints"]
+  };
+}
 
 function getPhaseOverlay(input: {
   countdownSeconds: number | null;
@@ -226,21 +514,18 @@ function getPhaseOverlay(input: {
       heading: input.labels.frontKneeGetReady
     };
   }
-
   if (input.phase === "recording") {
     return {
       bigNumber: `${Math.round((input.progress ?? 0) * 100)}%`,
       heading: input.labels.frontKneeRecording
     };
   }
-
   if (input.phase === "complete") {
     return {
       bigNumber: null as string | null,
       heading: input.labels.frontKneeComplete
     };
   }
-
   return null;
 }
 
@@ -281,6 +566,15 @@ const styles = StyleSheet.create({
     position: "absolute",
     right: 0,
     top: 0
+  },
+  statusBadge: {
+    backgroundColor: "rgba(13,27,34,0.74)",
+    borderRadius: 6,
+    left: spacing.md,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    position: "absolute",
+    top: spacing.md
   },
   previewStatusText: {
     color: "#ffffff",
