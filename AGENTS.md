@@ -91,16 +91,37 @@ Web, iOS, and Android must remain first-class targets. New features should be de
 - When pose detection or any other capability is not yet available natively, still implement the surrounding UX (countdowns, instructions, phase overlays) so users see the same flow on every platform; gate only the capability-dependent visuals behind feature detection until the native implementation ships.
 - Add or update i18n keys in `apps/app/src/i18n/translations.ts` (both `en` and `es`) for every user-facing string introduced in any platform variant.
 - When changing shared screens, verify that shared primitives render acceptably on native as well as React Native Web; do not leave native with a different interaction model unless there is a documented platform reason.
-- Prefer Expo SDK modules before adding custom native code.
+- Prefer Expo SDK modules before adding custom native code for ordinary features.
+- **Expo is not a performance ceiling.** For high-throughput camera and image-processing scenarios — especially the bike-fit **frontal (front knee tracking)** and **lateral (side bike fit)** capture flows, future aero posture capture, wind-tunnel-style visual feedback, and any other real-time pose/CV pipeline — drop down to native code on iOS and Android whenever JS/TS or an off-the-shelf Expo module cannot sustain the required frame rate, latency, thermal envelope, or memory profile. Implement the hot path in Swift (with Metal / AVFoundation / Vision when useful) on iOS and Kotlin (with CameraX + GPU delegate) on Android, wrap it as a local Expo Module under `apps/app/modules/`, and expose it through a typed TypeScript façade so the rest of the app stays platform-agnostic. The existing `apps/app/modules/expo-pose-landmarker/` is the canonical reference: Swift + MediaPipe Metal delegate on iOS, Kotlin + MediaPipe GPU delegate on Android, single typed TS API consumed by shared engines.
 - Test native functionality in Expo Go first when possible.
-- Use development builds or EAS builds only when a feature needs a local Expo module, native config plugin, or native dependency outside Expo Go.
+- Use EAS dev builds (not Expo Go) whenever a feature needs a local Expo module, native config plugin, or native dependency outside Expo Go. The MediaPipe-backed camera flows require a dev build — see the EAS Build Profiles section below for which profile matches your target device.
 - Keep platform branches explicit with `.web.ts`, `.native.ts`, `.ios.ts`, or `.android.ts` files instead of scattering platform checks through screens.
-- Add a web fallback or clear unsupported state for every native-only capability.
-- Keep Swift/Kotlin/Java code inside local Expo modules only when JavaScript/TypeScript and Expo SDK modules are not enough.
+- Add a web fallback or clear unsupported state for every native-only capability. When the native path is the only way to meet performance requirements, the web build should degrade to a lower-fidelity equivalent (e.g. TFJS WebGL, lower polling rate, or a non-realtime variant) rather than block the user.
+- Keep Swift/Kotlin/Java code inside local Expo modules. Reach for native code whenever JavaScript/TypeScript and Expo SDK modules are not enough — including any case where image processing, pose detection, GPU delegation, video pipelines, or sensor fusion need native-level throughput.
 - Expose custom native modules through typed TypeScript APIs and keep domain calculations in shared packages such as `pose-engine`, `fit-engine`, `aero-engine`, or `nutrition-engine`.
 - Do not commit generated `ios/` or `android/` folders unless the project intentionally moves from managed Expo to committed native projects.
 - Use `native:prebuild`, `native:prebuild:ios`, and `native:prebuild:android` script names for Expo prebuild commands. Do not add npm lifecycle scripts named `prebuild`, because npm runs them automatically before `build`.
 - Keep native app configuration in `apps/app/app.json`, `apps/app/app.config.js`, and `apps/app/eas.json`; document new permissions, entitlements, or build profile changes in README.
+
+### EAS Build Profiles
+
+The build profiles live in `apps/app/eas.json`. There are two distinct iOS development paths — pick the right one for your target:
+
+- **`development`** — for **physical iOS devices** (real iPhone/iPad) and Android phones (APK). Internal-distribution dev client. This is the profile to use when validating the real camera pipeline (MediaPipe GPU/Metal delegate, frame rate, thermal behavior, real-world lighting) on a device you can hold. All bike-fit performance work and pose-detection benchmarks must happen on this profile.
+  ```bash
+  cd apps/app
+  npx eas build --profile development --platform ios       # physical iPhone/iPad
+  npx eas build --profile development --platform android   # Android APK on phones
+  ```
+- **`development-simulator`** — for the **iOS Simulator** only (`ios.simulator: true`). Produces a simulator-compatible `.app` bundle. Use this for fast iteration on UI, navigation, copy, and non-realtime logic on a Mac without a physical device attached. MediaPipe's GPU/Metal delegate is unavailable on the simulator and will silently fall back to CPU, so **do not benchmark pose detection here** — always switch to the `development` profile on a real device for any performance or thermal work.
+  ```bash
+  cd apps/app
+  npx eas build --profile development-simulator --platform ios
+  ```
+- **`preview`** — Android APK for internal stakeholder testing.
+- **`production`** — store-ready builds with `autoIncrement` for version codes.
+
+When adding a new profile, document its purpose in `apps/app/eas.json` and in the README so contributors know which one matches their device/target.
 
 ## Image and Asset Optimization
 
@@ -410,13 +431,14 @@ The code should still be structured as if real pose detection will be added late
 
 Native camera requirements:
 
-- Use `expo-camera` (`CameraView`) for iOS and Android camera previews. The web targets continue to use the browser `getUserMedia` API in `*.web.tsx` siblings.
+- The bike-fit **frontal** and **lateral** capture flows are explicitly treated as performance-critical paths. They are free to use native modules (Swift on iOS, Kotlin on Android) instead of pure JavaScript whenever doing so unlocks better frame rates, lower latency, GPU delegation, or reduced thermal load. Expo must never become the reason these flows feel slow — if an Expo SDK module or JS pipeline can't keep up, write a local Expo Module with the native hot path and expose a typed TypeScript façade.
+- Use `expo-camera` (`CameraView`) for iOS and Android camera previews when realtime CV is not required. The web targets continue to use the browser `getUserMedia` API in `*.web.tsx` siblings.
 - Native pose detection runs MediaPipe Pose Landmarker (Lite) via the local Expo Module at `apps/app/modules/expo-pose-landmarker/`. Swift uses the Metal GPU delegate (`MediaPipeTasksVision` pod); Kotlin uses the Android GPU delegate (`com.google.mediapipe:tasks-vision`). The module exposes a `<PoseLandmarkerView />` React component (drop-in replacement for `expo-camera`'s `CameraView`) that owns the `AVCaptureSession` / CameraX pipeline and runs MediaPipe in live-stream mode — poses are emitted directly via the `onPose` event at the device's native frame rate. Target FPS: ≥20 on iPhone 12+ / Pixel 6+. No TFJS, no `jpeg-js`, no manual decode loop, no polling.
 - The module emits 17 COCO-style keypoints (`nose`, `left_shoulder`, etc.) in normalized `[0, 1]` coords; MediaPipe's full 33-landmark output is filtered/renamed natively via the mapping table in `src/landmarkMapping.ts` (kept in lockstep with the iOS Swift `mediaPipeIndexToCoco17` and Android Kotlin `MEDIAPIPE_TO_COCO17`). This keeps the existing SVG overlays, `poseOverlayMath.ts`, and `fit-engine` consumers unchanged.
 - Do **not** reintroduce `react-native-vision-camera`, `react-native-fast-tflite`, `react-native-worklets-core`, `react-native-worklets`, `react-native-nitro-modules`, or `react-native-nitro-image` to the camera path. The upstream `folly/coro/Coroutine.h` bug (facebook/react-native#53575) still blocks all worklets-based stacks on RN 0.83 and there is no public confirmation it's fixed on RN 0.85. MediaPipe Tasks Vision does not pull `folly::coro` and is the supported route.
 - MediaPipe model file: `pose_landmarker_lite.task` (~5 MB) must be downloaded once from Google's CDN and placed inside both `apps/app/modules/expo-pose-landmarker/ios/Resources/` and `apps/app/modules/expo-pose-landmarker/android/src/main/assets/`. Both copies are gitignored. See the module's README for the exact `curl` command.
 - The legacy `apps/app/assets/models/movenet_singlepose_lightning.tflite` is no longer used and can be deleted once M2 ships and the polling path is removed.
-- Local Expo Modules cannot run in Expo Go. Native development of the analysis flow requires an EAS dev build (`eas build --profile development --platform ios|android`). Web development still works in `npm run dev` because the web pose pipeline (TFJS WebGL) is untouched.
+- Local Expo Modules cannot run in Expo Go. Native development of the analysis flow requires an EAS dev build. On a **physical iPhone/iPad** use `eas build --profile development --platform ios`; on the **iOS Simulator** use `eas build --profile development-simulator --platform ios` (note that MediaPipe falls back to CPU on the simulator — benchmark only on real devices). On Android use `eas build --profile development --platform android` (APK). Web development still works in `npm run dev` because the web pose pipeline (TFJS WebGL) is untouched.
 - Request only camera permission unless a feature truly records audio. The `expo-camera` plugin in `app.json` is already wired to disable microphone and the barcode scanner.
 - Do not request Android `RECORD_AUDIO` for bike fit or posture capture.
 - Keep the device awake during active camera analysis via `expo-keep-awake`.

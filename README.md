@@ -86,27 +86,56 @@ npm run web
 
 ## Native iOS And Android
 
-The same Expo app in `apps/app` targets web, iOS, and Android. Start with Expo Go for native validation:
+The same Expo app in `apps/app` targets web, iOS, and Android. Start with Expo Go for quick native validation of non-CV screens:
 
 ```bash
 npm run ios
 npm run android
 ```
 
-The native camera flows use `expo-camera` with only the camera permission enabled. Android explicitly blocks microphone recording permission, and the app keeps the screen awake while an analysis camera is mounted.
+The native camera flows use `expo-camera` (or the local `expo-pose-landmarker` module on the analysis screens) with only the camera permission enabled. Android explicitly blocks microphone recording permission, and the app keeps the screen awake while an analysis camera is mounted.
 
-Use EAS profiles from `apps/app/eas.json` when you need installable native builds:
+### Native modules for performance-critical flows
+
+Expo is **not** a hard ceiling on what athmira can do natively. For high-throughput camera and image-processing scenarios — especially the bike-fit **frontal (front knee tracking)** and **lateral (side bike fit)** capture flows, and any future aero posture, video, or sensor-fusion pipeline — the project explicitly allows (and encourages) dropping into native code on each platform: Swift (with Metal / AVFoundation / Vision when useful) on iOS, Kotlin (with CameraX + GPU delegate) on Android. The goal is that no real-time CV feature is ever slow because of an Expo-imposed JS path.
+
+The contract for that native code is:
+
+- Wrap it as a **local Expo Module** under `apps/app/modules/` (see `apps/app/modules/expo-pose-landmarker/` as the canonical reference: Swift + MediaPipe Metal delegate on iOS, Kotlin + MediaPipe GPU delegate on Android).
+- Expose a single typed **TypeScript façade** so screens, shared engines (`pose-engine`, `fit-engine`, `aero-engine`), and tests stay platform-agnostic.
+- Provide a **web fallback** (lower-fidelity is fine — e.g. TFJS WebGL, slower polling) so the web build never blocks the user.
+- Keep business logic in shared packages or services, **not** inside the native module bridge.
+
+### EAS build profiles
+
+Profiles live in `apps/app/eas.json`. There are two distinct iOS dev paths — pick the one that matches your target:
 
 ```bash
 cd apps/app
+
+# Physical iPhone / iPad — required for camera, pose, GPU/Metal, and thermal benchmarks
 npx eas build --profile development --platform ios
+
+# iOS Simulator only — fast UI iteration on a Mac without a device.
+# MediaPipe's GPU/Metal delegate is not available on the simulator and will
+# fall back to CPU, so do not benchmark pose detection here.
+npx eas build --profile development-simulator --platform ios
+
+# Android phones — internal-distribution APK with the dev client
+npx eas build --profile development --platform android
+
+# Stakeholder testing (Android APK)
 npx eas build --profile preview --platform android
+
+# Store-ready builds (auto-increments version codes)
 npx eas build --profile production --platform all
 ```
 
+Both `development` and `development-simulator` produce a dev-client build, so the local `expo-pose-landmarker` module and any future custom native modules are usable in both — but only the `development` profile (on a real device) gives you accurate frame-rate, thermal, and battery measurements.
+
 Run `npm run native:prebuild:ios` or `npm run native:prebuild:android` only when a custom native module, config plugin, or local native debugging requires generated `ios/` or `android/` folders. Do not commit generated native folders unless the project intentionally moves away from managed Expo.
 
-When adding device-specific features, prefer Expo SDK modules first. If custom native code is required, implement it as a local Expo module with a TypeScript API, Swift for iOS, and Kotlin/Java for Android, plus a web fallback or an explicit unsupported state. Keep business logic in shared packages or services, not inside the native module bridge.
+When adding device-specific features, prefer Expo SDK modules first for ordinary functionality. For anything performance-critical, follow the native-module contract above.
 
 ## Authenticated Playwright Access
 

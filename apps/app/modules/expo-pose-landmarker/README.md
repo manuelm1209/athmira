@@ -35,11 +35,20 @@ Both copies are gitignored — see `.gitignore` at the module root.
 ```sh
 cd apps/app
 npm run native:prebuild
-eas build --profile development --platform ios   # for iOS dev build
-eas build --profile development --platform android # for Android dev build
+
+# Physical iPhone/iPad — required for real frame rate, GPU/Metal,
+# and thermal benchmarks. MediaPipe runs on the Metal delegate here.
+eas build --profile development --platform ios
+
+# iOS Simulator only — fine for UI/navigation iteration, but MediaPipe
+# falls back to CPU on the simulator. Do not measure performance here.
+eas build --profile development-simulator --platform ios
+
+# Android phones (APK with dev client)
+eas build --profile development --platform android
 ```
 
-Expo Go cannot load this module — you need a dev build.
+Expo Go cannot load this module — you need a dev build. See `apps/app/eas.json` for the full profile list (`development`, `development-simulator`, `preview`, `production`).
 
 ## Public API
 

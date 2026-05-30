@@ -1,6 +1,6 @@
 import { createPoseFrameResult } from "@athmira/pose-engine";
 import type { PoseFrameResult } from "@athmira/types";
-import { requireNativeView } from "expo-modules-core";
+import { requireNativeViewManager } from "expo-modules-core";
 import { forwardRef, useCallback, useImperativeHandle, useRef } from "react";
 import type { StyleProp, ViewStyle } from "react-native";
 
@@ -35,7 +35,7 @@ type NativeProps = {
   onMountError?: (event: NativeOnMountErrorEvent) => void;
 };
 
-const NativeView = requireNativeView<NativeProps>("ExpoPoseLandmarkerModule");
+const NativeView = requireNativeViewManager<NativeProps>("ExpoPoseLandmarkerModule");
 
 export type PoseLandmarkerViewProps = {
   facing?: "front" | "back";
