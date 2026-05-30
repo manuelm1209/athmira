@@ -1,0 +1,10 @@
+{
+  "platforms": ["apple", "android"],
+  "apple": {
+    "modules": ["ExpoPoseLandmarkerModule"],
+    "podspecPath": "ios/ExpoPoseLandmarker.podspec"
+  },
+  "android": {
+    "modules": ["expo.modules.poselandmarker.ExpoPoseLandmarkerModule"]
+  }
+}

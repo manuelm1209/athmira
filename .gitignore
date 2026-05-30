@@ -17,6 +17,10 @@ android/
 ios/
 apps/**/android/
 apps/**/ios/
+# But DO keep local Expo Modules' native source under modules/ — these are
+# hand-written, committed source code, not Expo's generated native projects.
+!apps/**/modules/**/android/
+!apps/**/modules/**/ios/
 
 # TFLite models (binary, downloaded from official sources — see
 # apps/app/assets/models/README.md for download instructions).
