@@ -1,8 +1,9 @@
 import { selectCyclingSide } from "@athmira/pose-engine";
 import type { PoseFrameResult } from "@athmira/types";
 import { Body, Button, Card, colors, spacing } from "@athmira/ui";
-import { CameraView, useCameraPermissions } from "expo-camera";
+import { useCameraPermissions } from "expo-camera";
 import { useKeepAwake } from "expo-keep-awake";
+import { PoseLandmarkerView, type PoseLandmarkerViewRef } from "expo-pose-landmarker";
 import {
   Fragment,
   forwardRef,
@@ -11,8 +12,7 @@ import {
   useImperativeHandle,
   useMemo,
   useRef,
-  useState,
-  type ElementRef
+  useState
 } from "react";
 import { StyleSheet, Text, View, useWindowDimensions } from "react-native";
 import Svg, { Circle, Line, Path, Rect, Text as SvgText } from "react-native-svg";
@@ -30,7 +30,6 @@ import {
   bikeFitBadges,
   findKeypoint
 } from "./native/poseOverlayMath";
-import { useMoveNetDetector } from "./native/useMoveNetDetector";
 
 type AnalysisPhase = "idle" | "countdown" | "recording" | "complete";
 
@@ -48,7 +47,7 @@ export const BikeFitCamera = forwardRef<BikeFitCameraHandle, BikeFitCameraProps>
   { labels, onLiveResult, onReadyChange },
   ref
 ) {
-  const cameraRef = useRef<ElementRef<typeof CameraView> | null>(null);
+  const cameraRef = useRef<PoseLandmarkerViewRef | null>(null);
   const [permission, requestPermission] = useCameraPermissions();
   const [previewReady, setPreviewReady] = useState(false);
   const [mountError, setMountError] = useState<string | null>(null);
@@ -82,13 +81,10 @@ export const BikeFitCamera = forwardRef<BikeFitCameraHandle, BikeFitCameraProps>
   );
 
   const detectorEnabled = Boolean(hasPermission && previewReady && !mountError);
-  const { errorMessage: modelError, state: modelState } = useMoveNetDetector({
-    cameraRef,
-    enabled: detectorEnabled,
-    onPose: handlePose
-  });
-
-  const isReady = detectorEnabled && modelState === "loaded";
+  // M2: pose detection now runs continuously inside PoseLandmarkerView (live
+  // stream). The view emits poses directly via onPose. No more polling hook
+  // or loading state — onReady fires once the camera session is up.
+  const isReady = detectorEnabled;
 
   useEffect(() => {
     onReadyChange?.(isReady);
@@ -121,11 +117,7 @@ export const BikeFitCamera = forwardRef<BikeFitCameraHandle, BikeFitCameraProps>
         return null;
       }
       try {
-        const photo = await cameraRef.current?.takePictureAsync({
-          quality: 0.7,
-          skipProcessing: true
-        });
-        return photo?.uri ?? null;
+        return (await cameraRef.current?.takePicture()) ?? null;
       } catch {
         return null;
       }
@@ -230,36 +222,23 @@ export const BikeFitCamera = forwardRef<BikeFitCameraHandle, BikeFitCameraProps>
 
   return (
     <View style={[styles.cameraFrame, compact && styles.cameraFrameCompact]}>
-      <CameraView
-        active={hasPermission}
-        animateShutter={false}
+      <PoseLandmarkerView
+        enabled={hasPermission}
         facing="front"
         mirror
-        mode="picture"
-        onCameraReady={() => setPreviewReady(true)}
-        onMountError={(event) => {
-          setMountError(event.message);
+        onMountError={(message) => {
+          setMountError(message);
           setPreviewReady(false);
         }}
-        pictureSize="1280x720"
-        ratio="16:9"
+        onPose={handlePose}
+        onReady={() => setPreviewReady(true)}
         ref={cameraRef}
-        responsiveOrientationWhenOrientationLocked
         style={styles.camera}
       />
       <View style={[styles.overlay, styles.noPointerEvents]} pointerEvents="none">
         {!previewReady ? (
           <View style={styles.previewStatus}>
             <Text style={styles.previewStatusText}>{labels.cameraPermissionRequesting}</Text>
-          </View>
-        ) : modelState === "loading" ? (
-          <View style={styles.statusBadge}>
-            <Text style={styles.previewStatusText}>{labels.poseDetectorLoading}</Text>
-          </View>
-        ) : null}
-        {modelError ? (
-          <View style={styles.statusBadge}>
-            <Text style={styles.previewStatusText}>{modelError}</Text>
           </View>
         ) : null}
         {livePose && poseDetected ? <BikeFitSkeleton pose={livePose} /> : null}

@@ -118,6 +118,27 @@ public class ExpoPoseLandmarkerModule: Module {
     Function("getActiveDelegate") { () -> String in
       return self.activeDelegate == .GPU ? "gpu" : "cpu"
     }
+
+    // M2: live-stream view. Owns the AVCaptureSession, runs MediaPipe in
+    // `.liveStream` mode, emits poses directly via the `onPose` event.
+    // See PoseLandmarkerView.swift for the implementation.
+    View(PoseLandmarkerView.self) {
+      Events("onPose", "onReady", "onMountError")
+
+      Prop("facing") { (view: PoseLandmarkerView, value: String) in
+        view.facing = value
+      }
+      Prop("mirror") { (view: PoseLandmarkerView, value: Bool) in
+        view.mirror = value
+      }
+      Prop("enabled") { (view: PoseLandmarkerView, value: Bool) in
+        view.enabled = value
+      }
+
+      AsyncFunction("takePicture") { (view: PoseLandmarkerView, promise: Promise) in
+        view.takePicture(promise: promise)
+      }
+    }
   }
 
   // MARK: - Private helpers

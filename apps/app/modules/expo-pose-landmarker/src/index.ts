@@ -62,3 +62,5 @@ export function getActiveDelegate(): "gpu" | "cpu" {
 
 export type { RawPoseDetection, RawPoseLandmark } from "./PoseFrameResult";
 export { COCO17_KEYPOINT_NAMES, mapMediaPipePoseToCoco17 } from "./landmarkMapping";
+export { PoseLandmarkerView } from "./PoseLandmarkerView";
+export type { PoseLandmarkerViewProps, PoseLandmarkerViewRef } from "./PoseLandmarkerView";

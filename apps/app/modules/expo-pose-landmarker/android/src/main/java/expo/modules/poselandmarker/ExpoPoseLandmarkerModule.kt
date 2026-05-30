@@ -142,6 +142,27 @@ class ExpoPoseLandmarkerModule : Module() {
     Function("getActiveDelegate") {
       if (activeDelegate == Delegate.GPU) "gpu" else "cpu"
     }
+
+    // M2: live-stream view. Owns the CameraX pipeline, runs MediaPipe in
+    // LIVE_STREAM mode, emits poses directly via the `onPose` event. See
+    // PoseLandmarkerView.kt for the implementation.
+    View(PoseLandmarkerView::class) {
+      Events("onPose", "onReady", "onMountError")
+
+      Prop("facing") { view: PoseLandmarkerView, value: String ->
+        view.facing = value
+      }
+      Prop("mirror") { view: PoseLandmarkerView, value: Boolean ->
+        view.mirror = value
+      }
+      Prop("enabled") { view: PoseLandmarkerView, value: Boolean ->
+        view.enabled = value
+      }
+
+      AsyncFunction("takePicture") { view: PoseLandmarkerView ->
+        view.takePicture()
+      }
+    }
   }
 
   // MARK: - Private helpers
