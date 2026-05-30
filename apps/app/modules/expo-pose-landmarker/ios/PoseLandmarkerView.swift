@@ -78,9 +78,25 @@ public class PoseLandmarkerView: ExpoView, AVCaptureVideoDataOutputSampleBufferD
       self?.initializeLandmarker()
       self?.session.startRunning()
       DispatchQueue.main.async {
+        self?.applyCurrentDeviceOrientation()
         self?.onReady([:])
       }
     }
+
+    // Track device rotation so the camera follows the UI when the user
+    // flips between portrait and landscape.
+    UIDevice.current.beginGeneratingDeviceOrientationNotifications()
+    NotificationCenter.default.addObserver(
+      self,
+      selector: #selector(handleOrientationChange),
+      name: UIDevice.orientationDidChangeNotification,
+      object: nil
+    )
+  }
+
+  deinit {
+    NotificationCenter.default.removeObserver(self)
+    UIDevice.current.endGeneratingDeviceOrientationNotifications()
   }
 
   public override func layoutSubviews() {
@@ -130,17 +146,11 @@ public class PoseLandmarkerView: ExpoView, AVCaptureVideoDataOutputSampleBufferD
     if session.canAddOutput(output) { session.addOutput(output) }
     videoOutput = output
 
-    // Lock the output connection to portrait so coordinates are stable
-    if let connection = output.connection(with: .video) {
-      if connection.isVideoOrientationSupported {
-        connection.videoOrientation = .portrait
-      }
-    }
-
     session.commitConfiguration()
 
     DispatchQueue.main.async {
       self.applyMirroringIfNeeded()
+      self.applyCurrentDeviceOrientation()
     }
   }
 
@@ -161,8 +171,36 @@ public class PoseLandmarkerView: ExpoView, AVCaptureVideoDataOutputSampleBufferD
       // Mirror only the front camera when requested by the JS side
       connection.isVideoMirrored = (facing == "front") && mirror
     }
-    if connection.isVideoOrientationSupported {
-      connection.videoOrientation = .portrait
+  }
+
+  @objc private func handleOrientationChange() {
+    DispatchQueue.main.async {
+      self.applyCurrentDeviceOrientation()
+    }
+  }
+
+  /// Map the physical device orientation to the right
+  /// `AVCaptureVideoOrientation` and propagate to both the preview layer
+  /// and the data output. Called once on mount and on every device rotation.
+  private func applyCurrentDeviceOrientation() {
+    let videoOrientation: AVCaptureVideoOrientation = {
+      switch UIDevice.current.orientation {
+      case .portrait: return .portrait
+      case .portraitUpsideDown: return .portraitUpsideDown
+      // Note: device "landscape left" (home button on the left) corresponds
+      // to the camera's "landscape right" and vice versa — this is the
+      // standard iOS convention.
+      case .landscapeLeft: return .landscapeRight
+      case .landscapeRight: return .landscapeLeft
+      default: return .portrait
+      }
+    }()
+
+    if let connection = previewLayer?.connection, connection.isVideoOrientationSupported {
+      connection.videoOrientation = videoOrientation
+    }
+    if let connection = videoOutput?.connection(with: .video), connection.isVideoOrientationSupported {
+      connection.videoOrientation = videoOrientation
     }
   }
 

@@ -220,6 +220,23 @@ export const BikeFitCamera = forwardRef<BikeFitCameraHandle, BikeFitCameraProps>
   const overlay = getPhaseOverlay({ countdownSeconds, labels, phase, progress: recordingProgress });
   const poseDetected = Boolean(livePose && livePose.confidenceScore >= POSE_CONFIDENCE_THRESHOLD);
 
+  // Portrait + idle: show only the rotate-phone prompt as a full-width card.
+  // We don't mount PoseLandmarkerView here — the bike fit flow is designed
+  // for landscape only, and the camera would just be a cropped sliver
+  // behind the prompt. Once the user rotates the device, the camera frame
+  // takes over below.
+  if (isPortrait && phase === "idle") {
+    return (
+      <Card style={styles.rotateCard}>
+        <View style={styles.rotateIconWrapper}>
+          <RotatePhoneIcon />
+        </View>
+        <Text style={styles.rotateTitle}>{labels.bikeFitRotatePromptTitle}</Text>
+        <Text style={styles.rotateBody}>{labels.bikeFitRotatePromptBody}</Text>
+      </Card>
+    );
+  }
+
   return (
     <View style={[styles.cameraFrame, compact && styles.cameraFrameCompact]}>
       <PoseLandmarkerView
@@ -257,28 +274,27 @@ export const BikeFitCamera = forwardRef<BikeFitCameraHandle, BikeFitCameraProps>
           {overlay.bigNumber ? <Text style={styles.phaseBigNumber}>{overlay.bigNumber}</Text> : null}
         </View>
       ) : null}
-      {isPortrait && phase === "idle" && previewReady ? (
-        <View style={[styles.rotatePrompt, styles.noPointerEvents]} pointerEvents="none">
-          <View style={styles.rotateIconWrapper}>
-            <Svg viewBox="0 0 24 24" height={64} width={64}>
-              <Path
-                d="M16.48 2.52a1 1 0 0 1 1.41 0l4.59 4.59a1 1 0 0 1 0 1.41l-4.59 4.59a1 1 0 0 1-1.7-.71V10H10a4 4 0 0 0-4 4v6a1 1 0 1 1-2 0v-6a6 6 0 0 1 6-6h6.19V3.23a1 1 0 0 1 .29-.71z"
-                fill="#b7e64a"
-              />
-              <Path
-                d="M7.52 21.48a1 1 0 0 1-1.41 0L1.52 16.9a1 1 0 0 1 0-1.41l4.59-4.59a1 1 0 0 1 1.7.71V14H14a4 4 0 0 0 4-4V4a1 1 0 1 1 2 0v6a6 6 0 0 1-6 6H7.81v2.77a1 1 0 0 1-.29.71z"
-                fill="#ffffff"
-                fillOpacity={0.55}
-              />
-            </Svg>
-          </View>
-          <Text style={styles.rotateTitle}>{labels.bikeFitRotatePromptTitle}</Text>
-          <Text style={styles.rotateBody}>{labels.bikeFitRotatePromptBody}</Text>
-        </View>
-      ) : null}
     </View>
   );
 });
+
+// "Spin" icon — two arrows curving in a circular motion, signalling the
+// rotate-your-phone action. ViewBox 0 0 52 52; both arcs in the brand
+// lime so the rotation reads as one continuous gesture.
+function RotatePhoneIcon() {
+  return (
+    <Svg viewBox="0 0 52 52" height={80} width={80}>
+      <Path
+        d="M43.82,8.181C39.509,3.869,33.778,1.5,27.67,1.5c-0.039,0-0.079,0-0.118,0C22.189,1.526,17.101,3.375,13,6.745V1c0-0.553-0.448-1-1-1s-1,0.447-1,1v8c0,0.13,0.027,0.26,0.077,0.382c0.101,0.245,0.296,0.439,0.541,0.541C11.74,9.973,11.87,10,12,10h9c0.552,0,1-0.447,1-1s-0.448-1-1-1h-6.34c3.679-2.884,8.168-4.476,12.901-4.5c0.036,0,0.072,0,0.107,0c5.574,0,10.804,2.162,14.737,6.095c7.768,7.768,8.14,20.363,0.846,28.676c-0.364,0.415-0.323,1.047,0.092,1.411c0.19,0.166,0.425,0.248,0.659,0.248c0.278,0,0.555-0.115,0.752-0.341C52.742,30.487,52.331,16.691,43.82,8.181z"
+        fill="#b7e64a"
+      />
+      <Path
+        d="M40.382,42.077C40.26,42.026,40.13,42,40,42h-9c-0.552,0-1,0.447-1,1s0.448,1,1,1h6.34c-3.679,2.884-8.168,4.476-12.901,4.5c-5.623,0.04-10.886-2.137-14.844-6.095c-7.771-7.771-8.141-20.37-0.84-28.682c0.364-0.415,0.323-1.047-0.092-1.411c-0.414-0.364-1.047-0.323-1.411,0.091c-7.994,9.103-7.586,22.901,0.929,31.416c4.311,4.312,10.042,6.681,16.15,6.681c0.039,0,0.079,0,0.118,0c5.363-0.026,10.45-1.875,14.551-5.245V51c0,0.553,0.448,1,1,1s1-0.447,1-1v-8c0-0.13-0.027-0.26-0.077-0.382C40.822,42.373,40.627,42.178,40.382,42.077z"
+        fill="#b7e64a"
+      />
+    </Svg>
+  );
+}
 
 function BikeFitSkeleton({ pose }: { pose: PoseFrameResult }) {
   const side = useMemo(() => selectCyclingSide(pose.keypoints), [pose.keypoints]);
@@ -486,24 +502,21 @@ const styles = StyleSheet.create({
     textShadowOffset: { height: 2, width: 0 },
     textShadowRadius: 12
   },
-  rotatePrompt: {
-    ...StyleSheet.absoluteFillObject,
+  rotateCard: {
     alignItems: "center",
-    backgroundColor: "rgba(13,27,34,0.92)",
     gap: spacing.sm,
-    justifyContent: "center",
-    paddingHorizontal: spacing.xl,
-    paddingVertical: spacing.lg
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.xl
   },
   rotateIconWrapper: {
     alignItems: "center",
-    height: 64,
+    height: 80,
     justifyContent: "center",
-    marginBottom: spacing.sm,
-    width: 64
+    marginBottom: spacing.md,
+    width: 80
   },
   rotateTitle: {
-    color: "#b7e64a",
+    color: colors.primary,
     fontSize: 18,
     fontWeight: "900",
     letterSpacing: 0.4,
@@ -511,7 +524,7 @@ const styles = StyleSheet.create({
     textTransform: "uppercase"
   },
   rotateBody: {
-    color: "#ffffff",
+    color: colors.inkMuted,
     fontSize: 14,
     fontWeight: "600",
     lineHeight: 20,
