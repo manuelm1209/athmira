@@ -89,3 +89,7 @@ Thumbs.db
 .vscode/*
 !.vscode/extensions.json
 !.vscode/settings.json
+
+# Source MediaPipe model download (kept locally only — copies committed inside
+# apps/app/modules/expo-pose-landmarker/{ios,android}/.../)
+/pose_landmarker_lite.task
