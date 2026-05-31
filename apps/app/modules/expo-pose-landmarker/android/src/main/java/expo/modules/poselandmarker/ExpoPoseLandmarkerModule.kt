@@ -156,7 +156,7 @@ class ExpoPoseLandmarkerModule : Module() {
         view.mirror = value
       }
       Prop("enabled") { view: PoseLandmarkerView, value: Boolean ->
-        view.enabled = value
+        view.analysisEnabled = value
       }
 
       AsyncFunction("takePicture") { view: PoseLandmarkerView ->

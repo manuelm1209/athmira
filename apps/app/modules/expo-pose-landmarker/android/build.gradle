@@ -12,10 +12,12 @@ useExpoPublishing()
 
 android {
   namespace "expo.modules.poselandmarker"
+  compileSdk rootProject.ext.has("compileSdk") ? rootProject.ext.get("compileSdk") : 36
   defaultConfig {
     versionCode 1
     versionName "0.1.0"
     minSdkVersion 24
+    targetSdkVersion rootProject.ext.has("targetSdk") ? rootProject.ext.get("targetSdk") : 36
   }
   compileOptions {
     sourceCompatibility JavaVersion.VERSION_17
@@ -37,4 +39,7 @@ dependencies {
   implementation "androidx.camera:camera-camera2:${cameraxVersion}"
   implementation "androidx.camera:camera-lifecycle:${cameraxVersion}"
   implementation "androidx.camera:camera-view:${cameraxVersion}"
+
+  // FragmentActivity host required to attach the CameraX LifecycleOwner.
+  implementation "androidx.fragment:fragment-ktx:1.6.2"
 }

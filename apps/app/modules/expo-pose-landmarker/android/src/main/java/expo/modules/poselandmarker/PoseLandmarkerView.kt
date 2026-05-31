@@ -63,7 +63,7 @@ class PoseLandmarkerView(context: Context, appContext: AppContext) : ExpoView(co
       if (changed) restartCamera()
     }
   var mirror: Boolean = true
-  var enabled: Boolean = true
+  var analysisEnabled: Boolean = true
 
   private val previewView = PreviewView(context).apply {
     layoutParams = android.view.ViewGroup.LayoutParams(
@@ -229,7 +229,7 @@ class PoseLandmarkerView(context: Context, appContext: AppContext) : ExpoView(co
 
   private fun analyze(imageProxy: ImageProxy) {
     val landmarker = this.landmarker
-    if (!enabled || landmarker == null) {
+    if (!analysisEnabled || landmarker == null) {
       imageProxy.close()
       return
     }
