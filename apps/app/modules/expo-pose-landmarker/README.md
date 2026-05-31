@@ -26,29 +26,35 @@ Both copies are gitignored — see `.gitignore` at the module root.
 
 ## How it's wired
 
-- iOS: `MediaPipeTasksVision` Cocoapod (declared in `ios/ExpoPoseLandmarker.podspec`). Runs Metal GPU delegate by default; falls back to CPU silently on unsupported devices.
-- Android: `com.google.mediapipe:tasks-vision:0.10.x` Gradle dep. Same GPU → CPU fallback.
-- TS facade (`src/index.ts`) exposes `detectPoseFromUri`, `warmUp`, and `getActiveDelegate`.
+Both platforms discover this module automatically through **Expo Modules Autolinking** — no manual edits to `apps/app/ios/Podfile` or `apps/app/android/settings.gradle` are needed. The autolinking scanner finds the module via `apps/app/modules/expo-pose-landmarker/expo-module.config.json` and `package.json` and wires it into the app's Pods / Gradle graph on the next `pod install` / Gradle sync.
+
+- iOS: `MediaPipeTasksVision` Cocoapod (declared in `ios/ExpoPoseLandmarker.podspec`). Runs Metal GPU delegate by default; falls back to CPU silently on unsupported devices. After adding/changing native code: `npm run ios:pods` from the repo root, or just re-run `npm run ios`.
+- Android: `com.google.mediapipe:tasks-vision:0.10.x` Gradle dep (declared in `android/build.gradle`). Same GPU → CPU fallback. After adding/changing native code: `npm run android` re-syncs Gradle and recompiles the module.
+- TS facade (`src/index.ts`) exposes two APIs:
+  - **Live-stream (canonical for `/analysis` flows):** `<PoseLandmarkerView />` — owns the AVCaptureSession (iOS) / CameraX (Android) pipeline and emits poses through `onPose` at the device's native frame rate (~25-30 FPS).
+  - **Single-frame (legacy polling):** `detectPoseFromUri(uri)` for snapshots, plus `warmUp()` and `getActiveDelegate()`.
 
 ## After installing the model
 
+athmira is in Expo's **bare workflow** — `apps/app/ios/` and `apps/app/android/` are committed and edited directly. Builds run locally; there's no EAS Build dependency for this module. **Never run `expo prebuild`** on this repo (it would overwrite committed native config). See the root [README "Running the app"](../../../../README.md#running-the-app) for the full command table.
+
+From the repo root, with the model file in place:
+
 ```sh
-cd apps/app
-npm run native:prebuild
+# iOS Simulator — fast UI iteration. MediaPipe falls back to CPU here,
+# so do not benchmark pose detection on the simulator.
+npm run ios
 
-# Physical iPhone/iPad — required for real frame rate, GPU/Metal,
-# and thermal benchmarks. MediaPipe runs on the Metal delegate here.
-eas build --profile development --platform ios
+# iOS physical device — required for real frame rate, Metal GPU delegate,
+# and thermal benchmarks. iOS 26+ devices need the Xcode/devicectl
+# workaround documented in the root README.
+npm run ios:device     # (or: npm run ios:xcode → ⌘R)
 
-# iOS Simulator only — fine for UI/navigation iteration, but MediaPipe
-# falls back to CPU on the simulator. Do not measure performance here.
-eas build --profile development-simulator --platform ios
-
-# Android phones (APK with dev client)
-eas build --profile development --platform android
+# Android — emulator or any connected device with USB debugging.
+npm run android        # (or: npm run android:studio → Run)
 ```
 
-Expo Go cannot load this module — you need a dev build. See `apps/app/eas.json` for the full profile list (`development`, `development-simulator`, `preview`, `production`).
+Expo Go cannot load this module — it ships native Swift/Kotlin code. The bare workflow above is sufficient; the local Expo Module is autolinked into the bundled dev client automatically, no extra config required.
 
 ## Public API
 
