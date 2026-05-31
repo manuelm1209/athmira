@@ -5,7 +5,7 @@ athmira is a web-first, mobile-ready sports performance app for beginner and int
 English: **Train smarter. Go further.**  
 Spanish: **Entrena mejor. Llega más lejos.**
 
-The first MVP focuses on account creation, user profiles, bike profiles, a camera-based bike-fit flow, and preliminary mock results. It is built with Expo, React Native Web, Expo Router, TypeScript, Supabase, and Vercel.
+The first MVP focuses on account creation, user profiles, bike profiles, a camera-based bike-fit flow, and preliminary mock results. It is built with Expo (in **bare workflow** — `apps/app/ios/` and `apps/app/android/` are committed and edited directly; builds run locally with Xcode and Android Studio, no EAS Build), React Native Web, Expo Router, TypeScript, Supabase, and Vercel.
 
 ## Project Structure
 
@@ -86,14 +86,116 @@ npm run web
 
 ## Native iOS And Android
 
-The same Expo app in `apps/app` targets web, iOS, and Android. Start with Expo Go for quick native validation of non-CV screens:
-
-```bash
-npm run ios
-npm run android
-```
+The same Expo app in `apps/app` targets web, iOS, and Android. The repo uses Expo's **bare workflow**: `apps/app/ios/` and `apps/app/android/` are committed and edited directly, and builds run locally on the developer's Mac with Xcode (iOS) and Android Studio (Android). **`expo prebuild` MUST NOT be run again on this repo** — it would overwrite committed native changes.
 
 The native camera flows use `expo-camera` (or the local `expo-pose-landmarker` module on the analysis screens) with only the camera permission enabled. Android explicitly blocks microphone recording permission, and the app keeps the screen awake while an analysis camera is mounted.
+
+### Requirements for native builds
+
+In addition to the project [Requirements](#requirements):
+
+- **macOS** (iOS builds need Xcode, which is Mac-only).
+- **Xcode 16+** with the iOS SDK (current default Xcode in the team: 26.x).
+- **CocoaPods**: `brew install cocoapods`.
+- **JDK 17** (Zulu / Temurin / Oracle): `java -version` should report `17.x`.
+- **Android Studio** with Android SDK Platform 34+, Build-Tools 36+, NDK 27+, CMake, and Platform-Tools. Android Studio installs these on first project sync; the first `npm run android` will also auto-install missing pieces if it can find the SDK.
+- **Watchman** (recommended) for Metro file watching: `brew install watchman`.
+- **UTF-8 shell locale.** Add to `~/.zshrc`:
+
+  ```bash
+  export LANG=en_US.UTF-8
+  export LC_ALL=en_US.UTF-8
+  ```
+
+  CocoaPods 1.16 on Ruby 4 crashes with `Encoding::CompatibilityError` on shells without UTF-8. The `npm run ios*` scripts already bake this in, but other CocoaPods commands you run by hand will need it.
+
+### Running the app
+
+| Target | Command | Notes |
+|---|---|---|
+| Web (dev) | `npm run web` | Metro at <http://localhost:8081>. |
+| Web (production build) | `npm run build` | Static export to `apps/app/dist/`. |
+| iOS Simulator | `npm run ios` | First build takes 5-10 min (Pods compile from source). |
+| iOS physical device (USB) | `npm run ios:device` | See [Known issue: iOS 26+](#known-issue-ios-26-device-install) if it errors at install. |
+| iOS via Xcode | `npm run ios:xcode` → ⌘R | Easiest path; Xcode handles signing automatically. |
+| Android emulator or device | `npm run android` | Needs an AVD running (or device with USB debugging enabled). |
+| Android via Android Studio | `npm run android:studio` | Then *Sync Project with Gradle Files* → Run. |
+
+First-time Android build: if Gradle errors with `SDK location not found`, create `apps/app/android/local.properties` (gitignored):
+
+```
+sdk.dir=/Users/<you>/Library/Android/sdk
+```
+
+#### Known issue: iOS 26+ device install
+
+`expo run:ios --device` errors with `LockdowndClient.startSession: Cannot convert object to primitive value` against iPhones on iOS 26+ — this is a bug in the Expo CLI 55 internal lockdownd client, not in this project. The build itself **succeeds**; only the install step fails. Two workarounds:
+
+**Workaround A — Xcode (recommended, one click):**
+
+```bash
+npm run ios:xcode    # opens apps/app/ios/athmira.xcworkspace
+# Pick your iPhone in the device dropdown → ⌘R
+```
+
+Xcode uses `xcrun devicectl` under the hood and avoids the bug.
+
+**Workaround B — CLI (`xcrun devicectl`):**
+
+```bash
+# Make sure Developer Mode is enabled on the iPhone:
+# Settings → Privacy & Security → Developer Mode → On (requires reboot)
+
+# 1. Build the .app
+cd apps/app && LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8 \
+  xcodebuild -workspace ios/athmira.xcworkspace -scheme athmira \
+  -configuration Debug -destination 'generic/platform=iOS' \
+  -derivedDataPath ios/build/DerivedData build
+
+# 2. List the device's UDID
+xcrun devicectl list devices
+
+# 3. Install the .app
+xcrun devicectl device install app --device <UDID> \
+  ios/build/DerivedData/Build/Products/Debug-iphoneos/athmira.app
+
+# 4. Start Metro in another terminal
+npm run dev
+
+# 5. Launch the app
+xcrun devicectl device process launch --device <UDID> com.athmira.app
+```
+
+### Production builds
+
+| Output | Command | Where it lands |
+|---|---|---|
+| iOS `.xcarchive` | `npm run ios:archive` | `apps/app/ios/build/athmira.xcarchive` |
+| Android AAB (Play Store) | `npm run android:bundle` | `apps/app/android/app/build/outputs/bundle/release/app-release.aab` |
+| Android APK (sideload / internal testing) | `npm run android:apk` | `apps/app/android/app/build/outputs/apk/release/app-release.apk` |
+
+For iOS App Store uploads, open the `.xcarchive` in Xcode → *Organizer* → *Distribute App*, or use `npm run ios:xcode` and Product → Archive → Distribute App from there directly.
+
+For Play Store uploads, see [Signing → Android signing — pending: Play Console setup](#android-signing--pending-play-console-setup).
+
+### Modifying native code
+
+In bare workflow, `apps/app/ios/` and `apps/app/android/` are the **source of truth** for native configuration. Edit those files directly — `app.json` and `app.config.js` are no longer used to regenerate native config.
+
+| Change | Edit this file |
+|---|---|
+| iOS Info.plist (permissions, capabilities, display name) | `apps/app/ios/athmira/Info.plist` |
+| iOS app delegate / startup | `apps/app/ios/athmira/AppDelegate.swift` |
+| iOS entitlements | `apps/app/ios/athmira/athmira.entitlements` |
+| Add a CocoaPod | `apps/app/ios/Podfile` then `npm run ios:pods` |
+| Android manifest (permissions, deep links) | `apps/app/android/app/src/main/AndroidManifest.xml` |
+| Android app gradle (SDK levels, `versionCode`/`versionName`, deps) | `apps/app/android/app/build.gradle` |
+| Android Kotlin/Java startup | `apps/app/android/app/src/main/java/com/athmira/app/` |
+| Add a local Expo Module | `apps/app/modules/` (see `expo-pose-landmarker/` as template) |
+
+**Never run `expo prebuild` again on this repo.** It would overwrite all the manual native changes that have been committed.
+
+`app.json` and `app.config.js` are still valid — but only for **Expo runtime metadata**: slug, scheme, `version` displayed in Expo APIs, the expo-router origin plugin, etc.
 
 ### Native modules for performance-critical flows
 
@@ -106,36 +208,13 @@ The contract for that native code is:
 - Provide a **web fallback** (lower-fidelity is fine — e.g. TFJS WebGL, slower polling) so the web build never blocks the user.
 - Keep business logic in shared packages or services, **not** inside the native module bridge.
 
-### EAS build profiles
-
-Profiles live in `apps/app/eas.json`. There are two distinct iOS dev paths — pick the one that matches your target:
-
-```bash
-cd apps/app
-
-# Physical iPhone / iPad — required for camera, pose, GPU/Metal, and thermal benchmarks
-npx eas build --profile development --platform ios
-
-# iOS Simulator only — fast UI iteration on a Mac without a device.
-# MediaPipe's GPU/Metal delegate is not available on the simulator and will
-# fall back to CPU, so do not benchmark pose detection here.
-npx eas build --profile development-simulator --platform ios
-
-# Android phones — internal-distribution APK with the dev client
-npx eas build --profile development --platform android
-
-# Stakeholder testing (Android APK)
-npx eas build --profile preview --platform android
-
-# Store-ready builds (auto-increments version codes)
-npx eas build --profile production --platform all
-```
-
-Both `development` and `development-simulator` produce a dev-client build, so the local `expo-pose-landmarker` module and any future custom native modules are usable in both — but only the `development` profile (on a real device) gives you accurate frame-rate, thermal, and battery measurements.
-
-Run `npm run native:prebuild:ios` or `npm run native:prebuild:android` only when a custom native module, config plugin, or local native debugging requires generated `ios/` or `android/` folders. Do not commit generated native folders unless the project intentionally moves away from managed Expo.
-
 When adding device-specific features, prefer Expo SDK modules first for ordinary functionality. For anything performance-critical, follow the native-module contract above.
+
+### EAS Build (legacy)
+
+EAS Build is no longer used by this project. The original `apps/app/eas.json` is preserved at `apps/app/.archive/eas.json.legacy` as a historical reference. The bare workflow described above replaces it on all platforms.
+
+The `eas.projectId` in `apps/app/app.json` is intentionally still in place, so if the project ever needs to return to EAS for OTA updates, store submission via `eas submit`, or remote builds, restore `eas.json` from the archive and `eas` commands will continue to resolve the project.
 
 ## Signing
 
@@ -374,14 +453,64 @@ The web build is produced by Expo static export. The main product app does not u
 ## Scripts
 
 ```bash
-npm run web        # Start Expo for web
-npm run build      # Export the Expo web app
-npm run expo:check # Check Expo SDK dependency compatibility
-npm run lint       # Run Expo lint
-npm run typecheck  # Run TypeScript checks
-npm run ios        # Start the app in Expo Go on iOS
-npm run android    # Start the app in Expo Go on Android
+# Web
+npm run web              # Dev server for web (Metro at http://localhost:8081)
+npm run build            # Static export of the Expo web app to apps/app/dist/
+
+# iOS
+npm run ios              # Build + install in the iOS Simulator
+npm run ios:device       # Build + install on a connected iPhone/iPad (see "Known issue: iOS 26+")
+npm run ios:release      # Build the iOS Release configuration on the simulator
+npm run ios:archive      # Build a .xcarchive for App Store distribution
+npm run ios:xcode        # Open apps/app/ios/athmira.xcworkspace in Xcode
+npm run ios:pods         # cd apps/app/ios && pod install
+
+# Android
+npm run android          # Build + install on the running emulator or USB device
+npm run android:release  # Build the Android Release variant locally
+npm run android:apk      # Assemble a signed (or debug-signed) release APK
+npm run android:bundle   # Bundle a signed (or debug-signed) release AAB
+npm run android:studio   # Open apps/app/android in Android Studio
+npm run android:clean    # ./gradlew clean
+
+# Dev server (shared)
+npm run dev              # expo start --dev-client (Metro for installed dev clients)
+
+# Quality
+npm run expo:check       # Check Expo SDK dependency compatibility
+npm run lint             # Run Expo lint
+npm run typecheck        # Run TypeScript checks
 ```
+
+All `npm run ios*` scripts include `LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8` to work around the CocoaPods 1.16 + Ruby 4 encoding bug. Other scripts run as-is.
+
+## Troubleshooting
+
+**`Encoding::CompatibilityError` from CocoaPods** — Your shell isn't in UTF-8. Either export `LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8` in `~/.zshrc` (recommended) or prefix the failing command with them inline. The `npm run ios*` scripts already do this.
+
+**`Pod not found` / Pods out of date** — `npm run ios:pods`.
+
+**`SDK location not found` (Android Gradle)** — Create `apps/app/android/local.properties` (gitignored):
+
+```
+sdk.dir=/Users/<you>/Library/Android/sdk
+```
+
+**`MediaPipe pose_landmarker_lite.task not found`** — The model file is gitignored and must be downloaded once into both copies. See [apps/app/modules/expo-pose-landmarker/README.md](apps/app/modules/expo-pose-landmarker/README.md).
+
+**`expo run:ios --device` errors with `LockdowndClient.startSession`** — Known Expo CLI 55 bug on iOS 26+. The build is fine; only the install fails. Use [Workaround A or B](#known-issue-ios-26-device-install).
+
+**`Could not load JS bundle`** — Metro isn't running. Open a second terminal and run `npm run dev`. The dev client looks for Metro at `http://<your-LAN-IP>:8081`.
+
+**App lints/typechecks clean locally but Vercel preview shows errors** — Vercel runs `npm run build` which does **not** run `lint` or `typecheck`. Run them locally before pushing:
+
+```bash
+npm run typecheck && npm run lint
+```
+
+**Android emulator boots but the app never starts** — Metro and the emulator must be on the same loopback. After a long pause adb may forget the device — `adb kill-server && adb start-server` and check `adb devices`.
+
+**`expo prebuild` was accidentally run** — Stop the command if it's still going. `git status` will show massive diffs to `apps/app/ios/` and `apps/app/android/`. Discard them: `git checkout -- apps/app/ios apps/app/android` and `git clean -fd apps/app/ios apps/app/android`. The committed bare-workflow versions of those folders are the canonical source.
 
 ## Safety And Claims
 

@@ -1,13 +1,26 @@
-# MoveNet TFLite model
+# MoveNet TFLite model — **LEGACY / UNUSED**
 
-The native (iOS / Android) bike fit and front knee cameras run real-time
-pose detection through `react-native-fast-tflite` using Google's MoveNet
-Single-Pose Lightning model.
+> **This path is no longer active.** Native pose detection runs through
+> the local `expo-pose-landmarker` Expo Module (MediaPipe with Metal/GPU
+> delegates). See
+> [`apps/app/modules/expo-pose-landmarker/README.md`](../../modules/expo-pose-landmarker/README.md)
+> for the current setup.
+>
+> This file is kept only for reference until the legacy TFLite polling
+> path is fully removed. No `npm run` script in the bare-workflow setup
+> depends on the MoveNet model. Skip the rest of this README unless
+> you're explicitly maintaining the legacy code path.
+
+Historically the native (iOS / Android) bike fit and front knee cameras
+ran real-time pose detection through `react-native-fast-tflite` using
+Google's MoveNet Single-Pose Lightning model. That stack hit known
+worklets/folly issues on RN 0.83 and was replaced by MediaPipe Tasks
+Vision.
 
 The model file is intentionally **not** committed to this repository: it
 is a binary asset and is fetched from Google's official TF Hub host.
 
-## Required file
+## Required file (legacy)
 
 Place a file named exactly:
 
@@ -15,8 +28,8 @@ Place a file named exactly:
 apps/app/assets/models/movenet_singlepose_lightning.tflite
 ```
 
-This file must be present **before** running `npm run native:prebuild`
-or any EAS build, otherwise Metro will fail to bundle the native apps.
+Only required if you re-enable the legacy MoveNet pipeline. The
+production camera flows do not need it.
 
 ## Download
 
