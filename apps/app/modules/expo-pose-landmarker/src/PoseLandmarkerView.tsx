@@ -1,7 +1,14 @@
 import { createPoseFrameResult } from "@athmira/pose-engine";
 import type { PoseFrameResult } from "@athmira/types";
 import { requireNativeViewManager } from "expo-modules-core";
-import { forwardRef, useCallback, useImperativeHandle, useRef } from "react";
+import {
+  forwardRef,
+  useCallback,
+  useImperativeHandle,
+  useRef,
+  type ComponentType,
+  type RefAttributes
+} from "react";
 import type { StyleProp, ViewStyle } from "react-native";
 
 import { mapMediaPipePoseToCoco17 } from "./landmarkMapping";
@@ -35,7 +42,12 @@ type NativeProps = {
   onMountError?: (event: NativeOnMountErrorEvent) => void;
 };
 
-const NativeView = requireNativeViewManager<NativeProps>("ExpoPoseLandmarkerModule");
+// `requireNativeViewManager` returns a component typed without a `ref` prop,
+// but the underlying Expo Modules view forwards refs to its NativeViewMethods
+// (e.g. `takePicture`). Cast through `unknown` so TS lets us pass the ref.
+const NativeView = requireNativeViewManager<NativeProps>(
+  "ExpoPoseLandmarkerModule"
+) as unknown as ComponentType<NativeProps & RefAttributes<NativeViewMethods>>;
 
 export type PoseLandmarkerViewProps = {
   facing?: "front" | "back";
@@ -130,7 +142,7 @@ export const PoseLandmarkerView = forwardRef<PoseLandmarkerViewRef, PoseLandmark
         onMountError={handleNativeMountError}
         onPose={handleNativePose}
         onReady={handleNativeReady}
-        ref={nativeRef as never}
+        ref={nativeRef}
         style={style}
       />
     );
