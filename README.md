@@ -488,6 +488,13 @@ All `npm run ios*` scripts include `LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8` to work
 
 **`Encoding::CompatibilityError` from CocoaPods** — Your shell isn't in UTF-8. Either export `LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8` in `~/.zshrc` (recommended) or prefix the failing command with them inline. The `npm run ios*` scripts already do this.
 
+**`PhaseScriptExecution failed with a nonzero exit code` / `Operation not permitted` writing `ip.txt` / `Build input file cannot be found: …ReactCodegen/…-generated.mm`** — These three errors all come from the same root cause: Xcode 15+ enables `ENABLE_USER_SCRIPT_SANDBOXING = YES` by default, which prevents React Native's build scripts (the IP-writer in `react-native-xcode.sh` and the ReactCodegen `Generate Specs` phase) from writing inside the `.app` bundle or producing their declared outputs. The repo permanently disables it in two places:
+
+- `apps/app/ios/athmira.xcodeproj/project.pbxproj` (the app target).
+- `apps/app/ios/Podfile` `post_install` hook (every Pod target, applied automatically on each `pod install`).
+
+If you still hit this after a fresh `npm install`, run `npm run ios:pods` to re-apply the hook. Do not re-enable sandboxing unless you also patch `node_modules/react-native/scripts/react-native-xcode.sh`.
+
 **`Pod not found` / Pods out of date** — `npm run ios:pods`.
 
 **`SDK location not found` (Android Gradle)** — Create `apps/app/android/local.properties` (gitignored):
