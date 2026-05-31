@@ -7,16 +7,18 @@
     "packages/*"
   ],
   "scripts": {
-    "android": "npm run android -w @athmira/app",
     "dev": "npm run dev -w @athmira/app",
-    "ios": "npm run ios -w @athmira/app",
     "web": "npm run web -w @athmira/app",
     "build": "npm run build -w @athmira/app",
+    "ios": "npm run ios -w @athmira/app",
+    "ios:xcode": "npm run ios:xcode -w @athmira/app",
+    "ios:archive": "npm run ios:archive -w @athmira/app",
+    "android": "npm run android -w @athmira/app",
+    "android:studio": "npm run android:studio -w @athmira/app",
+    "android:bundle": "npm run android:bundle -w @athmira/app",
+    "android:apk": "npm run android:apk -w @athmira/app",
     "expo:check": "npm run expo:check -w @athmira/app",
     "lint": "npm run lint -w @athmira/app",
-    "native:prebuild": "npm run native:prebuild -w @athmira/app",
-    "native:prebuild:android": "npm run native:prebuild:android -w @athmira/app",
-    "native:prebuild:ios": "npm run native:prebuild:ios -w @athmira/app",
     "typecheck": "tsc --noEmit -p tsconfig.json"
   },
   "devDependencies": {
